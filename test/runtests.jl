@@ -157,3 +157,29 @@ end
     @test Outside() == Outside(0f0)
     @test Auto(2).ratio == 2.0
 end
+
+@testset "gridlayout constructor colsizes" begin
+    gl = GridLayout(2, 2; colsizes = Fixed(10), rowsizes = Relative(0.5))
+
+    @test gl.colsizes == GridLayoutBase.ContentSize[Fixed(10), Fixed(10)]
+    @test gl.rowsizes == GridLayoutBase.ContentSize[Relative(0.5), Relative(0.5)]
+
+    gl2 = GridLayout(2, 2;
+        colsizes = [Fixed(10), Relative(0.3)],
+        rowsizes = [Auto(false), Auto(true)])
+    @test gl2.colsizes == GridLayoutBase.ContentSize[Fixed(10), Relative(0.3)]
+    @test gl2.rowsizes == GridLayoutBase.ContentSize[Auto(false), Auto(true)]
+
+    @test_throws ErrorException GridLayout(; colsizes = "abc")
+    @test_throws ErrorException GridLayout(; rowsizes = missing)
+
+    gl3 = GridLayout(3, 3; addedcolgaps = Fixed(20), addedrowgaps = Fixed(0))
+    @test gl3.addedcolgaps == GridLayoutBase.GapSize[Fixed(20), Fixed(20)]
+    @test gl3.addedrowgaps == GridLayoutBase.GapSize[Fixed(0), Fixed(0)]
+
+    @test_throws ErrorException GridLayout(3, 1; addedcolgaps = "abc")
+    @test_throws ErrorException GridLayout(1, 3; addedrowgaps = "abc")
+
+    @test_throws ErrorException GridLayout(3, 1; addedcolgaps = [Fixed(20)])
+    @test_throws ErrorException GridLayout(3, 1; addedrowgaps = [Fixed(30)])
+end

@@ -113,16 +113,16 @@ function validategridlayout(gl::GridLayout)
     end
 
     if length(gl.rowsizes) != gl.nrows
-        error("There are $nrows rows but $(length(rowsizes)) row sizes.")
+        error("There are $nrows rows but $(length(gl.rowsizes)) row sizes.")
     end
     if length(gl.colsizes) != gl.ncols
-        error("There are $ncols columns but $(length(colsizes)) column sizes.")
+        error("There are $ncols columns but $(length(gl.colsizes)) column sizes.")
     end
     if length(gl.addedrowgaps) != gl.nrows - 1
-        error("There are $nrows rows but $(length(addedrowgaps)) row gaps.")
+        error("There are $nrows rows but $(length(gl.addedrowgaps)) row gaps.")
     end
     if length(gl.addedcolgaps) != gl.ncols - 1
-        error("There are $ncols columns but $(length(addedcolgaps)) column gaps.")
+        error("There are $ncols columns but $(length(gl.addedcolgaps)) column gaps.")
     end
 end
 
