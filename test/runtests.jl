@@ -152,3 +152,8 @@ end
     @test_throws ErrorException colsize!(layout, 3, Auto())
     @test_throws ErrorException rowsize!(layout, 0, Auto())
 end
+
+@testset "some constructors" begin
+    @test Outside() == Outside(0f0)
+    @test Auto(2).ratio == 2.0
+end
