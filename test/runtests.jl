@@ -258,6 +258,12 @@ end
     """
     text_short = repr(gl)
     @test text_short == "GridLayout[3, 5] (2 children)"
+
+    subgl = gl[1, 2] = GridLayout()
+    subgl[1:5, 3] = DebugRect()
+
+    text_longer = repr(MIME"text/plain"(), gl)
+    @test text_longer == "GridLayout[3, 5] with 3 children\n ┣━ [1:1 | 1:1] DebugRect\n ┣━ [2:3 | 4:5] DebugRect\n ┗━ [1:1 | 2:2] GridLayout[5, 3] with 1 children\n   ┗━ [1:5 | 3:3] DebugRect\n  \n"
 end
 
 @testset "vector and array assigning" begin
@@ -281,6 +287,21 @@ end
     @test_throws ErrorException gl[1:3, 2] = [DebugRect() for i in 1:2]
     @test_throws ErrorException gl[1:3, 1:3] = [DebugRect() for i in 1:10]
     @test_throws ErrorException gl[1:3, 1:3] = [DebugRect() for i in 1:3, j in 1:4]
+
+    gl5 = GridLayout()
+    gl5[] = [DebugRect() for i in 1:2, j in 1:3]
+    @test size(gl5) == (2, 3)
+
+    gl6 = GridLayout()
+    gl6[:v] = [DebugRect() for i in 1:3]
+    @test size(gl6) == (3, 1)
+
+    gl7 = GridLayout()
+    gl7[:h] = [DebugRect() for i in 1:3]
+    @test size(gl7) == (1, 3)
+
+    @test_throws ErrorException gl7[:abc] = [DebugRect() for i in 1:3]
+    @test_throws ErrorException gl7[] = [DebugRect() for i in 1:3]
 end
 
 @testset "grid api" begin
@@ -308,4 +329,13 @@ end
     for i in 1:2
         @test gl4.content[i].span == GridLayoutBase.Span(1:1, i:i)
     end
+end
+
+@testset "gridnest" begin
+    layout = GridLayout()
+    dr = layout[1:2, 3:4] = DebugRect()
+    subgl = gridnest!(layout, 1:2, 3:4)
+
+    @test size(subgl) == (2, 2)
+    @test subgl.content[1].span == GridLayoutBase.Span(1:2, 1:2)
 end
