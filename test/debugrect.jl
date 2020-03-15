@@ -10,18 +10,6 @@ mutable struct DebugRect
     topprot::Observable
 end
 
-# function default_attributes(T::Type{DebugRect})
-#     Attributes(
-#         height = nothing,
-#         width = nothing,
-#         halign = :center,
-#         valign = :center,
-#         topprot = 0,
-#         leftprot = 0,
-#         rightprot = 0,
-#         bottomprot = 0
-#     )
-# end
 
 observablify(x::Observable) = x
 observablify(x, type=Any) = Observable{type}(x)
@@ -43,9 +31,6 @@ function DebugRect(; bbox = nothing, width=nothing, height=nothing, halign=:cent
     end
 
     layoutobservables = GridLayoutBase.LayoutObservables(DebugRect, width, height, halign, valign; suggestedbbox = bbox, protrusions = protrusions)
-
-    # # trigger bbox
-    layoutobservables.suggestedbbox[] = layoutobservables.suggestedbbox[]
 
     DebugRect(layoutobservables, height, width, halign, valign, leftprot, rightprot, bottomprot, topprot)
 end
