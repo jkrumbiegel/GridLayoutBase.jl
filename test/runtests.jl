@@ -133,9 +133,9 @@ end
 end
 
 
-@testset "setting col and rowsizes" begin
+@testset "setting col and row sizes and gaps" begin
     bbox = BBox(0, 1000, 0, 1000)
-    layout = GridLayout(2, 2, bbox = bbox, alignmode = Outside(0))
+    layout = GridLayout(3, 3, bbox = bbox, alignmode = Outside(0))
 
     colsize!(layout, 1, Fixed(10))
     @test layout.colsizes[1] == Fixed(10)
@@ -149,8 +149,24 @@ end
     rowsize!(layout, 2, 15.3)
     @test layout.rowsizes[2] == Fixed(15.3)
 
-    @test_throws ErrorException colsize!(layout, 3, Auto())
+    @test_throws ErrorException colsize!(layout, 4, Auto())
     @test_throws ErrorException rowsize!(layout, 0, Auto())
+
+
+    colgap!(layout, 1, Fixed(10))
+    @test layout.addedcolgaps[1] == Fixed(10)
+    rowgap!(layout, 2, Relative(0.3))
+    @test layout.addedrowgaps[2] == Relative(0.3)
+
+    colgap!(layout, 10)
+    @test all(layout.addedcolgaps .== Ref(Fixed(10)))
+    rowgap!(layout, 20)
+    @test all(layout.addedrowgaps .== Ref(Fixed(20)))
+
+    colgap!(layout, Fixed(30))
+    @test all(layout.addedcolgaps .== Ref(Fixed(30)))
+    rowgap!(layout, Fixed(40))
+    @test all(layout.addedrowgaps .== Ref(Fixed(40)))
 end
 
 @testset "some constructors" begin
