@@ -182,4 +182,10 @@ end
 
     @test_throws ErrorException GridLayout(3, 1; addedcolgaps = [Fixed(20)])
     @test_throws ErrorException GridLayout(3, 1; addedrowgaps = [Fixed(30)])
+
+    @test_throws ErrorException GridLayout(3, 1; rowsizes = [Fixed(20)])
+    @test_throws ErrorException GridLayout(3, 2; colsizes = [Relative(0.4)])
+
+    @test_throws ErrorException GridLayout(0, 1)
+    @test_throws ErrorException GridLayout(1, 0)
 end
