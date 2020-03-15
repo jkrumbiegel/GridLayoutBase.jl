@@ -21,7 +21,7 @@ end
 
 create_suggested_bboxobservable(n::Nothing) = Observable(BBox(0, 100, 0, 100))
 create_suggested_bboxobservable(tup::Tuple) = Observable(BBox(tup...))
-create_suggested_bboxobservable(bbox::Rect2D) = Observable(BBox(bbox))
+create_suggested_bboxobservable(bbox::HyperRectangle{2}) = Observable(BBox(bbox))
 create_suggested_bboxobservable(observable::Observable{BBox}) = observable
 
 create_protrusions(p::Nothing) = Observable(RectSides{Float32}(0, 0, 0, 0))

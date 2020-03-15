@@ -1,23 +1,23 @@
-left(rect::Rect2D) = minimum(rect)[1]
-right(rect::Rect2D) = maximum(rect)[1]
+left(rect::HyperRectangle{2}) = minimum(rect)[1]
+right(rect::HyperRectangle{2}) = maximum(rect)[1]
 
-bottom(rect::Rect2D) = minimum(rect)[2]
-top(rect::Rect2D) = maximum(rect)[2]
-
-
-Base.getindex(bbox::Rect2D, ::Left) = left(bbox)
-Base.getindex(bbox::Rect2D, ::Right) = right(bbox)
-Base.getindex(bbox::Rect2D, ::Bottom) = bottom(bbox)
-Base.getindex(bbox::Rect2D, ::Top) = top(bbox)
+bottom(rect::HyperRectangle{2}) = minimum(rect)[2]
+top(rect::HyperRectangle{2}) = maximum(rect)[2]
 
 
-width(rect::Rect2D) = right(rect) - left(rect)
-height(rect::Rect2D) = top(rect) - bottom(rect)
+Base.getindex(bbox::HyperRectangle{2}, ::Left) = left(bbox)
+Base.getindex(bbox::HyperRectangle{2}, ::Right) = right(bbox)
+Base.getindex(bbox::HyperRectangle{2}, ::Bottom) = bottom(bbox)
+Base.getindex(bbox::HyperRectangle{2}, ::Top) = top(bbox)
 
-bottomleft(bbox::Rect2D{T}) where T = Point2{T}(left(bbox), bottom(bbox))
-topleft(bbox::Rect2D{T}) where T = Point2{T}(left(bbox), top(bbox))
-bottomright(bbox::Rect2D{T}) where T = Point2{T}(right(bbox), bottom(bbox))
-topright(bbox::Rect2D{T}) where T = Point2{T}(right(bbox), top(bbox))
+
+width(rect::HyperRectangle{2}) = right(rect) - left(rect)
+height(rect::HyperRectangle{2}) = top(rect) - bottom(rect)
+
+bottomleft(bbox::HyperRectangle{2}{T}) where T = Point2{T}(left(bbox), bottom(bbox))
+topleft(bbox::HyperRectangle{2}{T}) where T = Point2{T}(left(bbox), top(bbox))
+bottomright(bbox::HyperRectangle{2}{T}) where T = Point2{T}(right(bbox), bottom(bbox))
+topright(bbox::HyperRectangle{2}{T}) where T = Point2{T}(right(bbox), top(bbox))
 
 topline(bbox::BBox) = (topleft(bbox), topright(bbox))
 bottomline(bbox::BBox) = (bottomleft(bbox), bottomright(bbox))
@@ -31,8 +31,8 @@ function BBox(left::Number, right::Number, bottom::Number, top::Number)
     return BBox(mini, maxi .- mini)
 end
 
-function IRect2D(bbox::Rect2D)
-    return IRect2D(
+function IRect2D(bbox::HyperRectangle{2})
+    return HyperRectangle{2}(
         round.(Int, minimum(bbox)),
         round.(Int, widths(bbox))
     )
@@ -62,7 +62,7 @@ end
 
 """
 mapsides(
-       f, first::Union{Rect2D, RowCols}, rest::Union{Rect2D, RowCols}...
+       f, first::Union{HyperRectangle{2}, RowCols}, rest::Union{HyperRectangle{2}, RowCols}...
    )::BBox
 Maps f over all sides of the rectangle like arguments.
 e.g.
@@ -73,7 +73,7 @@ end::BBox
 ```
 """
 function mapsides(
-        f, first::Union{Rect2D, RowCols}, rest::Union{Rect2D, RowCols}...
+        f, first::Union{HyperRectangle{2}, RowCols}, rest::Union{HyperRectangle{2}, RowCols}...
     )
     return eachside() do side
         f(side, getindex.((first, rest...), (side,))...)
