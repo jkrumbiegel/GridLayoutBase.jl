@@ -205,3 +205,19 @@ end
     @test_throws ErrorException GridLayout(0, 1)
     @test_throws ErrorException GridLayout(1, 0)
 end
+
+
+@testset "printing gridlayouts" begin
+    gl = GridLayout(3, 3)
+    gl[1, 1] = DebugRect()
+    gl[2:3, 4:5] = DebugRect()
+
+    text_long = repr(MIME"text/plain"(), gl)
+    @test text_long == """
+    GridLayout[3, 5] with 2 children
+     ┣━ [1:1 | 1:1] DebugRect
+     ┗━ [2:3 | 4:5] DebugRect
+    """
+    text_short = repr(gl)
+    @test text_short == "GridLayout[3, 5] (2 children)"
+end
