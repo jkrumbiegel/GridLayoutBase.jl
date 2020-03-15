@@ -1,0 +1,13 @@
+name = "GridLayoutBase"
+uuid = "3955a311-db13-416c-9275-1d80ed98e5e9"
+authors = ["Julius Krumbiegel"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
