@@ -221,3 +221,26 @@ end
     text_short = repr(gl)
     @test text_short == "GridLayout[3, 5] (2 children)"
 end
+
+@testset "vector and array assigning" begin
+    gl = GridLayout()
+    gl[1, 1:3] = [DebugRect() for i in 1:3]
+    @test size(gl) == (1, 3)
+
+    gl2 = GridLayout()
+    gl2[2:3, 2] = [DebugRect() for i in 1:2]
+    @test size(gl2) == (3, 2)
+
+    gl3 = GridLayout()
+    gl3[1:3, 1:4] = [DebugRect() for i in 1:12]
+    @test size(gl3) == (3, 4)
+
+    gl4 = GridLayout()
+    gl4[1:3, 1:4] = [DebugRect() for i in 1:3, j in 1:4]
+    @test size(gl4) == (3, 4)
+
+    @test_throws ErrorException gl[1, 1:3] = [DebugRect() for i in 1:2]
+    @test_throws ErrorException gl[1:3, 2] = [DebugRect() for i in 1:2]
+    @test_throws ErrorException gl[1:3, 1:3] = [DebugRect() for i in 1:10]
+    @test_throws ErrorException gl[1:3, 1:3] = [DebugRect() for i in 1:3, j in 1:4]
+end
