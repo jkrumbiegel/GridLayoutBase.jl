@@ -244,3 +244,30 @@ end
     @test_throws ErrorException gl[1:3, 1:3] = [DebugRect() for i in 1:10]
     @test_throws ErrorException gl[1:3, 1:3] = [DebugRect() for i in 1:3, j in 1:4]
 end
+
+@testset "grid api" begin
+
+    gl1 = grid!([1:2, 1:2] => DebugRect(), [3, :] => DebugRect())
+    @test size(gl1) == (3, 2)
+    @test gl1.content[1].span == GridLayoutBase.Span(1:2, 1:2)
+    @test gl1.content[2].span == GridLayoutBase.Span(3:3, 1:2)
+
+    gl2 = grid!([DebugRect() for i in 1:3, j in 1:2])
+    @test size(gl2) == (3, 2)
+    for i in 1:3, j in 1:2
+        n = (i - 1) * 2 + j
+        @test gl2.content[n].span == GridLayoutBase.Span(i:i, j:j)
+    end
+
+    gl3 = vbox!(DebugRect(), DebugRect())
+    @test size(gl3) == (2, 1)
+    for i in 1:2
+        @test gl3.content[i].span == GridLayoutBase.Span(i:i, 1:1)
+    end
+
+    gl4 = hbox!(DebugRect(), DebugRect())
+    @test size(gl4) == (1, 2)
+    for i in 1:2
+        @test gl4.content[i].span == GridLayoutBase.Span(1:1, i:i)
+    end
+end
