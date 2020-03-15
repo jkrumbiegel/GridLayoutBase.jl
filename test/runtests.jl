@@ -94,6 +94,44 @@ end
     @test computedbboxobservable(dr)[] == BBox(100, 1000, 0, 800)
 end
 
+@testset "assigning content to protrusions" begin
+
+    bbox = BBox(0, 1000, 0, 1000)
+    layout = GridLayout(bbox = bbox, alignmode = Outside(0))
+    subgl = layout[1, 1] = GridLayout()
+
+    subgl[1, 1, Left()] = DebugRect(width = Fixed(100))
+    @test GridLayoutBase.protrusion(subgl, Left()) == 100
+
+    subgl[1, 1, Top()] = DebugRect(height = 50)
+    @test GridLayoutBase.protrusion(subgl, Top()) == 50
+
+    subgl[1, 1, Right()] = DebugRect(width = 120)
+    @test GridLayoutBase.protrusion(subgl, Right()) == 120
+
+    subgl[1, 1, Bottom()] = DebugRect(height = 40)
+    @test GridLayoutBase.protrusion(subgl, Bottom()) == 40
+
+    subgl[1, 1, TopLeft()] = DebugRect(width = 200, height = 200)
+    @test GridLayoutBase.protrusion(subgl, Left()) == 200
+    @test GridLayoutBase.protrusion(subgl, Top()) == 200
+
+    subgl[1, 1, TopRight()] = DebugRect(width = 210, height = 210)
+    @test GridLayoutBase.protrusion(subgl, Right()) == 210
+    @test GridLayoutBase.protrusion(subgl, Top()) == 210
+
+    subgl[1, 1, BottomRight()] = DebugRect(width = 220, height = 220)
+    @test GridLayoutBase.protrusion(subgl, Right()) == 220
+    @test GridLayoutBase.protrusion(subgl, Bottom()) == 220
+
+    subgl[1, 1, BottomLeft()] = DebugRect(width = 230, height = 230)
+    @test GridLayoutBase.protrusion(subgl, Left()) == 230
+    @test GridLayoutBase.protrusion(subgl, Bottom()) == 230
+
+    # dr = subgl[1, 1, GridLayoutBase.Outer()] = DebugRect()
+    # @test computedbboxobservable(dr)[].widths == (1000, 1000)
+end
+
 
 @testset "resizing through indexing out of range and trim!" begin
 
