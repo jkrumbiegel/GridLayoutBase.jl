@@ -424,51 +424,6 @@ function gridnest!(gl::GridLayout, rows::Indexables, cols::Indexables)
     subgl
 end
 
-function find_in_grid(obj, container::GridLayout)
-    for i in 1:length(container.content)
-        if container.content[i].content === obj
-            return i
-        end
-    end
-    nothing
-end
-
-
-function topmost_grid(gl::GridLayout)
-    candidate = gl
-    while true
-        if candidate.parent isa GridLayout
-            candidate = candidate.parent
-        else
-            return candidate
-        end
-    end
-end
-
-function find_in_grid_and_subgrids(obj, container::GridLayout)
-    for i in 1:length(container.content)
-        candidate = container.content[i].content
-
-        if candidate === obj
-            return container, i
-        elseif candidate isa GridLayout
-            return find_in_grid_and_subgrids(obj, candidate)
-        end
-    end
-    nothing, nothing
-end
-
-function find_in_grid_tree(obj, container::GridLayout)
-    topmost = topmost_grid(container)
-    find_in_grid_and_subgrids(obj, topmost)
-end
-
-function detachfromgridlayout!(obj, gl::GridLayout)
-    i = find_in_grid(obj, gl)
-    if !isnothing(i)
-        deleteat!(gl.content, i)
-    end
-end
 
 function Base.show(io::IO, ::MIME"text/plain", gl::GridLayout)
 
