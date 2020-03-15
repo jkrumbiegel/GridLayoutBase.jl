@@ -131,3 +131,24 @@ end
     trim!(layout)
     @test size(layout) == (2, 2)
 end
+
+
+@testset "setting col and rowsizes" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    layout = GridLayout(2, 2, bbox = bbox, alignmode = Outside(0))
+
+    colsize!(layout, 1, Fixed(10))
+    @test layout.colsizes[1] == Fixed(10)
+
+    colsize!(layout, 2, 20)
+    @test layout.colsizes[2] == Fixed(20)
+
+    rowsize!(layout, 1, Relative(0.2))
+    @test layout.rowsizes[1] == Relative(0.2)
+
+    rowsize!(layout, 2, 15.3)
+    @test layout.rowsizes[2] == Fixed(15.3)
+
+    @test_throws ErrorException colsize!(layout, 3, Auto())
+    @test_throws ErrorException rowsize!(layout, 0, Auto())
+end

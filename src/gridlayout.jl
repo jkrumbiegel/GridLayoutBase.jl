@@ -512,6 +512,8 @@ function colsize!(gl::GridLayout, i::Int, s::ContentSize)
     gl.needs_update[] = true
 end
 
+colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
+
 function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
     if !(1 <= i <= gl.nrows)
         error("Can't set size of invalid row $i.")
@@ -519,6 +521,8 @@ function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
     gl.rowsizes[i] = s
     gl.needs_update[] = true
 end
+
+rowsize!(gl::GridLayout, i::Int, s::Real) = rowsize!(gl, i, Fixed(s))
 
 function colgap!(gl::GridLayout, i::Int, s::GapSize)
     if !(1 <= i <= (gl.ncols - 1))
