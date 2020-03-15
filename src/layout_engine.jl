@@ -19,11 +19,6 @@ ismostin(gc::GridContent, grid, ::Right) = gc.span.cols.stop == grid.ncols
 ismostin(gc::GridContent, grid, ::Bottom) = gc.span.rows.stop == grid.nrows
 ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == 1
 
-isleftmostin(gc::GridContent, grid) = ismostin(gc, grid, Left())
-isrightmostin(gc::GridContent, grid) = ismostin(gc, grid, Right())
-isbottommostin(gc::GridContent, grid) = ismostin(gc, grid, Bottom())
-istopmostin(gc::GridContent, grid) = ismostin(gc, grid, Top())
-
 
 function protrusion(x::T, side::Side) where T
     protrusions = protrusionobservable(x)
