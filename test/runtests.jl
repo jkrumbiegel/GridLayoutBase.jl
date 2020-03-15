@@ -93,3 +93,41 @@ end
     @test GridLayoutBase.protrusion(layout, Right()) == 100
     @test computedbboxobservable(dr)[] == BBox(100, 1000, 0, 800)
 end
+
+
+@testset "resizing through indexing out of range and trim!" begin
+
+    bbox = BBox(0, 1000, 0, 1000)
+    layout = GridLayout(bbox = bbox, alignmode = Outside(0))
+
+    dr = layout[1, 1] = DebugRect()
+    @test size(layout) == (1, 1)
+
+    layout[1, 2] = dr
+    @test size(layout) == (1, 2)
+
+    layout[3, 2] = dr
+    @test size(layout) == (3, 2)
+
+    layout[4, 4] = dr
+    @test size(layout) == (4, 4)
+
+    layout[0, 1] = dr
+    @test size(layout) == (5, 4)
+
+    layout[1, 0] = dr
+    @test size(layout) == (5, 5)
+
+    layout[-1, -1] = dr
+    @test size(layout) == (7, 7)
+
+    layout[3, 3] = dr
+    trim!(layout)
+    @test size(layout) == (1, 1)
+
+    layout[2:3, 4:5] = dr
+    @test size(layout) == (3, 5)
+
+    trim!(layout)
+    @test size(layout) == (2, 2)
+end

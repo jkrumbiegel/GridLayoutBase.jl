@@ -248,13 +248,11 @@ function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=not
     rowsizes = convert_contentsizes(n, rowsizes)
     addedrowgaps = convert_gapsizes(n, addedrowgaps)
 
-    newcontent = map(gl.content) do gc
+    foreach(gl.content) do gc
         span = gc.span
         newspan = Span(span.rows .+ n, span.cols)
-        GridContent(gc.content, newspan, gc.side)
+        gc.span = newspan
     end
-    # because of too specific typing with the new parametric GridContent
-    gl.content = convert(Vector{GridContent}, newcontent)
 
     with_updates_suspended(gl) do
         gl.nrows += n
@@ -268,13 +266,11 @@ function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=not
     colsizes = convert_contentsizes(n, colsizes)
     addedcolgaps = convert_gapsizes(n, addedcolgaps)
 
-    newcontent = map(gl.content) do gc
+    foreach(gl.content) do gc
         span = gc.span
         newspan = Span(span.rows, span.cols .+ n)
-        GridContent(gc.content, newspan, gc.side)
+        gc.span = newspan
     end
-    # because of too specific typing with the new parametric GridContent
-    gl.content = convert(Vector{GridContent}, newcontent)
 
     with_updates_suspended(gl) do
         gl.ncols += n
@@ -1145,3 +1141,7 @@ end
 function Base.setindex!(gp::GridPosition, element)
     gp.layout[gp.rows, gp.cols] = element
 end
+
+ncols(g::GridLayout) = g.ncols
+nrows(g::GridLayout) = g.nrows
+Base.size(g::GridLayout) = (nrows(g), ncols(g))
