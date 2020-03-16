@@ -724,7 +724,7 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
         sum_dirsizes += dsize
     end
 
-    dirgapsstart, dirgapsstop = dirgaps(gl, Col())
+    dirgapsstart, dirgapsstop = dirgaps(gl, gdir)
 
     forceequalprotrusiongaps = gl.equalprotrusiongaps[gdir isa Row ? 1 : 2]
 
