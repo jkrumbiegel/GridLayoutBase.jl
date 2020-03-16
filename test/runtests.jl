@@ -432,3 +432,8 @@ end
     gp[] = dr
     @test gridcontent(dr).span == GridLayoutBase.Span(1:1, 1:1)
 end
+
+@testset "layoutobservables undefined" begin
+    struct MyType end
+    @test_throws ErrorException GridLayoutBase.layoutobservables(MyType())
+end
