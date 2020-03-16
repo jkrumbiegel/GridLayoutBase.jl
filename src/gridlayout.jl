@@ -1056,10 +1056,6 @@ function Base.lastindex(g::GridLayout, d)
     end
 end
 
-function is_range_within(inner::UnitRange, outer::UnitRange)
-    inner.start >= outer.start && inner.stop <= outer.stop
-end
-
 function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables)
     GridPosition(g, rows, cols)
 end
