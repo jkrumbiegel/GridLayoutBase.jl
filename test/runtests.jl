@@ -463,3 +463,37 @@ end
     @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800
     @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600
 end
+
+@testset "alignment" begin
+    boxwidth = 1000
+    boxheight = 800
+
+    gl = GridLayout(; bbox = BBox(0, boxwidth, 0, boxheight), alignmode = Outside(0))
+    gl[1, 1] = DebugRect(width = boxwidth, height = boxheight)
+    halign = Observable{Any}(:center)
+    valign = Observable{Any}(:center)
+
+    rectwidth = 400
+    rectheight = 200
+
+    dr = gl[1, 1] = DebugRect(width = rectwidth, height = 200, halign = halign, valign = valign)
+
+    @test computedbboxobservable(dr)[] == BBox(boxwidth/2 - rectwidth/2, boxwidth/2 + rectwidth/2, boxheight/2 - rectheight/2, boxheight/2 + rectheight/2)
+    halign[] = :left
+    @test computedbboxobservable(dr)[] == BBox(0, rectwidth, boxheight/2 - rectheight/2, boxheight/2 + rectheight/2)
+    halign[] = :right
+    @test computedbboxobservable(dr)[] == BBox(boxwidth - rectwidth, boxwidth, boxheight/2 - rectheight/2, boxheight/2 + rectheight/2)
+    valign[] = :top
+    @test computedbboxobservable(dr)[] == BBox(boxwidth - rectwidth, boxwidth, boxheight - rectheight, boxheight)
+    valign[] = :bottom
+    @test computedbboxobservable(dr)[] == BBox(boxwidth - rectwidth, boxwidth, 0, rectheight)
+
+    valign[] = 0.5
+    @test computedbboxobservable(dr)[] == BBox(boxwidth - rectwidth, boxwidth,  boxheight/2 - rectheight/2, boxheight/2 + rectheight/2)
+    halign[] = 0.5
+    @test computedbboxobservable(dr)[] == BBox(boxwidth/2 - rectwidth/2, boxwidth/2 + rectwidth/2,  boxheight/2 - rectheight/2, boxheight/2 + rectheight/2)
+
+    @test_throws ErrorException valign[] = :abc
+    valign[] = 0.5
+    @test_throws ErrorException halign[] = :abc
+end
