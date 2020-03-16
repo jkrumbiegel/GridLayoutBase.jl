@@ -12,9 +12,11 @@ include("layoutobservables.jl")
 include("gridapi.jl")
 include("helpers.jl")
 include("geometry_integration.jl")
+include("gridlayoutspec.jl")
 
 
 export GridLayout, GridPosition
+export GridLayoutSpec
 export BBox
 # export solve
 # export applylayout

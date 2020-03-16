@@ -507,3 +507,26 @@ end
     @test_throws ErrorException GridLayout(2, 2; rowsizes = [Fixed(10), Fixed(10)], addedrowgaps = [Fixed(10), Fixed(10)])
     @test_throws ErrorException GridLayout(2, 2; colsizes = [Fixed(10), Fixed(10)], addedcolgaps = [Fixed(10), Fixed(10)])
 end
+
+
+@testset "gridlayoutspec" begin
+    dr = DebugRect()
+    dr2 = DebugRect()
+    dr3 = DebugRect()
+
+    spec = GridLayoutSpec([
+            (1, 1) => dr,
+            (1:2, 4:5) => dr2,
+            (:, 0) => GridLayoutSpec([
+                (1:3, 2:4) => dr3
+            ])
+        ];
+        alignmode = Outside()
+    )
+
+    gl = GridLayout(spec)
+    @test gl.content[1].content isa DebugRect
+    @test gl.content[2].content isa DebugRect
+    @test gl.content[3].content isa GridLayout
+    @test gl.content[3].content.content[1].content isa DebugRect
+end
