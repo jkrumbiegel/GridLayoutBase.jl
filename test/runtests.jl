@@ -400,3 +400,22 @@ end
     # place the item somewhere else, this should error now
     @test_throws ErrorException layout[1, 2] = dr
 end
+
+@testset "equal protrusion gaps" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    layout = GridLayout(bbox = bbox, alignmode = Outside(0))
+    subgl = layout[1, 1] = GridLayout(3, 3, equalprotrusiongaps = (true, true),
+        addedcolgaps = Fixed(0), addedrowgaps = Fixed(0))
+    subgl[1, 1, BottomRight()] = DebugRect(width = 100, height = 100)
+
+    dr1 = subgl[1, 1] = DebugRect()
+    dr2 = subgl[2, 2] = DebugRect()
+    dr3 = subgl[3, 3] = DebugRect()
+
+    @test width(computedbboxobservable(dr1)[]) ≈ (1000 - 2 * 100) / 3.0f0
+    @test width(computedbboxobservable(dr2)[]) ≈ (1000 - 2 * 100) / 3.0f0
+    @test width(computedbboxobservable(dr3)[]) ≈ (1000 - 2 * 100) / 3.0f0
+    @test height(computedbboxobservable(dr1)[]) ≈ (1000 - 2 * 100) / 3.0f0
+    @test height(computedbboxobservable(dr2)[]) ≈ (1000 - 2 * 100) / 3.0f0
+    @test height(computedbboxobservable(dr3)[]) ≈ (1000 - 2 * 100) / 3.0f0
+end
