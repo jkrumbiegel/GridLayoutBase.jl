@@ -171,6 +171,34 @@ end
 end
 
 
+@testset "manually deleting rows / cols" begin
+    layout = GridLayout(4, 4)
+
+    deletecol!(layout, 2)
+    @test size(layout) == (4, 3)
+
+    deleterow!(layout, 3)
+    @test size(layout) == (3, 3)
+
+    deleterow!(layout, 1)
+    @test size(layout) == (2, 3)
+
+    deletecol!(layout, 1)
+    @test size(layout) == (2, 2)
+
+    deleterow!(layout, 2)
+    @test size(layout) == (1, 2)
+
+    deletecol!(layout, 2)
+    @test size(layout) == (1, 1)
+
+    @test_throws ErrorException deletecol!(layout, 2)
+    @test_throws ErrorException deleterow!(layout, 2)
+    @test_throws ErrorException deletecol!(layout, 1)
+    @test_throws ErrorException deleterow!(layout, 1)
+end
+
+
 @testset "setting col and row sizes and gaps" begin
     bbox = BBox(0, 1000, 0, 1000)
     layout = GridLayout(3, 3, bbox = bbox, alignmode = Outside(0))
