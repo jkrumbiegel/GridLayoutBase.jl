@@ -534,8 +534,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::BBox)
     rowgaps = maxgrid.tops[2:end] .+ maxgrid.bottoms[1:end-1]
 
     # determine the biggest gap
-    # using the biggest gap size for all gaps will make the layout more even, but one
-    # could make this aspect customizable, because it might waste space
+    # using the biggest gap size for all gaps will make the layout more even
     if gl.equalprotrusiongaps[2]
         colgaps = ones(gl.ncols - 1) .* (gl.ncols <= 1 ? 0.0 : maximum(colgaps))
     end
