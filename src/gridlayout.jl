@@ -16,46 +16,14 @@ function GridLayout(nrows::Int, ncols::Int;
         valign = :center,
         kwargs...)
 
-    if isnothing(rowsizes)
-        rowsizes = [Auto() for _ in 1:nrows]
-    # duplicate a single row size into a vector for every row
-    elseif rowsizes isa ContentSize
-        rowsizes = [rowsizes for _ in 1:nrows]
-    elseif !(typeof(rowsizes) <: Vector{<: ContentSize})
-        error("Row sizes must be one size or a vector of sizes, not $(typeof(rowsizes))")
-    end
-
-    if isnothing(colsizes)
-        colsizes = [Auto() for _ in 1:ncols]
-    # duplicate a single col size into a vector for every col
-    elseif colsizes isa ContentSize
-        colsizes = [colsizes for _ in 1:ncols]
-    elseif !(typeof(colsizes) <: Vector{<: ContentSize})
-        error("Column sizes must be one size or a vector of sizes, not $(typeof(colsizes))")
-    end
-
-    if isnothing(addedrowgaps)
-        addedrowgaps = [Fixed(20) for _ in 1:nrows-1]
-    elseif addedrowgaps isa GapSize
-        addedrowgaps = [addedrowgaps for _ in 1:nrows-1]
-    elseif !(typeof(addedrowgaps) <: Vector{<: GapSize})
-        error("Row gaps must be one size or a vector of sizes, not $(typeof(addedrowgaps))")
-    end
-
-    if isnothing(addedcolgaps)
-        addedcolgaps = [Fixed(20) for _ in 1:ncols-1]
-    elseif addedcolgaps isa GapSize
-        addedcolgaps = [addedcolgaps for _ in 1:ncols-1]
-    elseif !(typeof(addedcolgaps) <: Vector{<: GapSize})
-        error("Column gaps must be one size or a vector of sizes, not $(typeof(addedcolgaps))")
-    end
+    rowsizes = convert_contentsizes(nrows, rowsizes)
+    colsizes = convert_contentsizes(ncols, colsizes)
+    addedrowgaps = convert_gapsizes(nrows - 1, addedrowgaps)
+    addedcolgaps = convert_gapsizes(ncols - 1, addedcolgaps)
 
     needs_update = Observable(true)
 
     content = []
-
-    # attrs = merge!(Attributes(kwargs), default_attributes(GridLayout))
-
 
     layoutobservables = LayoutObservables(GridLayout, Observable{Any}(width), Observable{Any}(height), Observable{Any}(halign), Observable{Any}(valign);
         suggestedbbox = bbox)
