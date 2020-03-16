@@ -32,7 +32,7 @@ Base.show(io::IO, bb::BBox) = print(io, "BBox(l: $(left(bb)), r: $(right(bb)), b
 end
 
 @testset "GridLayout Outside AlignMode" begin
-    bbox = Observable(BBox(0, 1000, 0, 1000)) # just as observable for bbox conversion test 
+    bbox = Observable(BBox(0, 1000, 0, 1000)) # just as observable for bbox conversion test
     layout = GridLayout(bbox = bbox, alignmode = Outside(100, 200, 50, 150))
     dr = layout[1, 1] = DebugRect()
 
@@ -496,4 +496,14 @@ end
     @test_throws ErrorException valign[] = :abc
     valign[] = 0.5
     @test_throws ErrorException halign[] = :abc
+end
+
+
+@testset "invalid gridlayout construction" begin
+    @test_throws ErrorException GridLayout(2, 2; rowsizes = [Fixed(10)])
+    @test_throws ErrorException GridLayout(2, 2; colsizes = [Fixed(10)])
+    @test_throws ErrorException GridLayout(2, 2; addedrowgaps = [Fixed(10), Fixed(10)])
+    @test_throws ErrorException GridLayout(2, 2; addedcolgaps = [Fixed(10), Fixed(10)])
+    @test_throws ErrorException GridLayout(2, 2; rowsizes = [Fixed(10), Fixed(10)], addedrowgaps = [Fixed(10), Fixed(10)])
+    @test_throws ErrorException GridLayout(2, 2; colsizes = [Fixed(10), Fixed(10)], addedcolgaps = [Fixed(10), Fixed(10)])
 end
