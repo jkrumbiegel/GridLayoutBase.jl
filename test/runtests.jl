@@ -238,6 +238,9 @@ end
     @test all(layout.addedcolgaps .== Ref(Fixed(30)))
     rowgap!(layout, Fixed(40))
     @test all(layout.addedrowgaps .== Ref(Fixed(40)))
+
+    @test_throws ErrorException colgap!(layout, 10, Fixed(10))
+    @test_throws ErrorException rowgap!(layout, 10, Fixed(10))
 end
 
 @testset "some constructors" begin
