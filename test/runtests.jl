@@ -516,7 +516,7 @@ end
 
     spec = GridLayoutSpec([
             (1, 1) => dr,
-            (1:2, 4:5) => dr2,
+            (1:2, 4:5, Left()) => dr2,
             (:, 0) => GridLayoutSpec([
                 (1:3, 2:4) => dr3
             ])
