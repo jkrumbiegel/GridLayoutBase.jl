@@ -437,3 +437,21 @@ end
     struct MyType end
     @test_throws ErrorException GridLayoutBase.layoutobservables(MyType())
 end
+
+@testset "determine gridlayout size" begin
+    gl = GridLayout(;alignmode = Outside(0))
+    gl[1, 1] = DebugRect(width = 800, height = 600)
+
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800
+
+    gl[1, 1, Left()] = DebugRect(width = 200)
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800 + 200
+    gl[1, 1, Right()] = DebugRect(width = 200)
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800 + 200 + 200
+
+    gl[1, 1, Top()] = DebugRect(height = 100)
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600 + 100
+    gl[1, 1, Bottom()] = DebugRect(height = 100)
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600 + 100 + 100
+end
