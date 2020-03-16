@@ -201,6 +201,11 @@ end
     @test length(layout.content) == 1
     deletecol!(layout, 2)
     @test isempty(layout.content)
+
+    dr = layout[2, 1] = DebugRect()
+    @test length(layout.content) == 1
+    deleterow!(layout, 2)
+    @test isempty(layout.content)
 end
 
 
