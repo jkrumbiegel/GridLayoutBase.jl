@@ -339,3 +339,12 @@ end
     @test size(subgl) == (2, 2)
     @test subgl.content[1].span == GridLayoutBase.Span(1:2, 1:2)
 end
+
+@testset "invalid removal" begin
+    layout = GridLayout()
+    dr = layout[1, 1] = DebugRect()
+    # remove the item outside of the normal path
+    deleteat!(layout.content, 1)
+    # place the item somewhere else, this should error now
+    @test_throws ErrorException layout[1, 2] = dr
+end
