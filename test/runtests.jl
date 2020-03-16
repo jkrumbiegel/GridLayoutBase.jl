@@ -419,3 +419,16 @@ end
     @test height(computedbboxobservable(dr2)[]) ≈ (1000 - 2 * 100) / 3.0f0
     @test height(computedbboxobservable(dr3)[]) ≈ (1000 - 2 * 100) / 3.0f0
 end
+
+@testset "getindex gridposition" begin
+    layout = GridLayout()
+    dr = layout[2, 2] = DebugRect()
+
+    @test layout[2, 2] == GridPosition(layout, 2, 2)
+    @test layout[end, end] == GridPosition(layout, 2, 2)
+    @test_throws ErrorException layout[2, 2, end]
+
+    gp = GridPosition(layout, 1, 1)
+    gp[] = dr
+    @test gridcontent(dr).span == GridLayoutBase.Span(1:1, 1:1)
+end
