@@ -454,4 +454,12 @@ end
     @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600 + 100
     gl[1, 1, Bottom()] = DebugRect(height = 100)
     @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600 + 100 + 100
+
+    gl.alignmode = Outside(50)
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800 + 200 + 200 + 2 * 50
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600 + 100 + 100 + 2 * 50
+
+    gl.alignmode = Inside()
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600
 end
