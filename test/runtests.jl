@@ -304,7 +304,18 @@ end
     subgl[1:5, 3] = DebugRect()
 
     text_longer = repr(MIME"text/plain"(), gl)
+    # this is actually a bit buggy with the newline space space newline at the end
     @test text_longer == "GridLayout[3, 5] with 3 children\n ┣━ [1:1 | 1:1] DebugRect\n ┣━ [2:3 | 4:5] DebugRect\n ┗━ [1:1 | 2:2] GridLayout[5, 3] with 1 children\n   ┗━ [1:5 | 3:3] DebugRect\n  \n"
+
+
+    gl3 = GridLayout()
+    gl4 = gl3[1, 1] = GridLayout()
+    gl4[1, 1] = DebugRect()
+    gl3[2, 2] = DebugRect()
+    text_long_downconnection = repr(MIME"text/plain"(), gl3)
+
+    # this is also a bit buggy for the same reason as above
+    @test text_long_downconnection == "GridLayout[2, 2] with 2 children\n ┣━ [1:1 | 1:1] GridLayout[1, 1] with 1 children\n ┃ ┗━ [1:1 | 1:1] DebugRect\n ┃\n ┗━ [2:2 | 2:2] DebugRect\n"
 end
 
 @testset "vector and array assigning" begin
