@@ -196,6 +196,11 @@ end
     @test_throws ErrorException deleterow!(layout, 2)
     @test_throws ErrorException deletecol!(layout, 1)
     @test_throws ErrorException deleterow!(layout, 1)
+
+    dr = layout[1, 2] = DebugRect()
+    @test length(layout.content) == 1
+    deletecol!(layout, 2)
+    @test isempty(layout.content)
 end
 
 
