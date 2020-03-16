@@ -199,5 +199,3 @@ computedsizeobservable(x) = layoutobservables(x).computedsize
 autosizeobservable(x) = layoutobservables(x).autosize
 computedbboxobservable(x) = layoutobservables(x).computedbbox
 gridcontent(x) = layoutobservables(x).gridcontent
-
-align_to_bbox!(x, bbox) = suggestedbboxobservable(x)[] = bbox
