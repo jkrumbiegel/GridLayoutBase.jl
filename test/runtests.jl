@@ -32,7 +32,7 @@ Base.show(io::IO, bb::BBox) = print(io, "BBox(l: $(left(bb)), r: $(right(bb)), b
 end
 
 @testset "GridLayout Outside AlignMode" begin
-    bbox = BBox(0, 1000, 0, 1000)
+    bbox = Observable(BBox(0, 1000, 0, 1000)) # just as observable for bbox conversion test 
     layout = GridLayout(bbox = bbox, alignmode = Outside(100, 200, 50, 150))
     dr = layout[1, 1] = DebugRect()
 
@@ -468,7 +468,7 @@ end
     boxwidth = 1000
     boxheight = 800
 
-    gl = GridLayout(; bbox = BBox(0, boxwidth, 0, boxheight), alignmode = Outside(0))
+    gl = GridLayout(; bbox = (0, boxwidth, 0, boxheight), alignmode = Outside(0))
     gl[1, 1] = DebugRect(width = boxwidth, height = boxheight)
     halign = Observable{Any}(:center)
     valign = Observable{Any}(:center)
