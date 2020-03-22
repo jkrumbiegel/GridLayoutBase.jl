@@ -18,8 +18,7 @@ include("gridlayoutspec.jl")
 export GridLayout, GridPosition
 export GridLayoutSpec
 export BBox
-# export solve
-# export applylayout
+export LayoutObservables
 export Inside, Outside, Mixed
 export Fixed, Auto, Relative, Aspect
 export width, height, top, bottom, left, right
