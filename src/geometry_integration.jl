@@ -10,7 +10,7 @@ height(rect::HyperRectangle{2}) = top(rect) - bottom(rect)
 function BBox(left::Number, right::Number, bottom::Number, top::Number)
     mini = (left, bottom)
     maxi = (right, top)
-    return BBox(mini, maxi .- mini)
+    return FRect2D(mini, maxi .- mini)
 end
 
 
@@ -39,13 +39,13 @@ end
 """
 mapsides(
        f, first::Union{HyperRectangle{2}, RowCols}, rest::Union{HyperRectangle{2}, RowCols}...
-   )::BBox
+   )::FRect2D
 Maps f over all sides of the rectangle like arguments.
 e.g.
 ```
 mapsides(BBox(left, right, bottom, top)) do side::Side, side_val::Number
     return ...
-end::BBox
+end::FRect2D
 ```
 """
 function mapsides(

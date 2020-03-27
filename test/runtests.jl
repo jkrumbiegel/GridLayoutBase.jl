@@ -4,9 +4,6 @@ using Observables
 
 include("debugrect.jl")
 
-# have BBoxes show as such because the default is very verbose
-Base.show(io::IO, bb::BBox) = print(io, "BBox(l: $(left(bb)), r: $(right(bb)), b: $(bottom(bb)), t: $(top(bb)))")
-
 
 @testset "GridLayout Zero Outside AlignMode" begin
     bbox = BBox(0, 1000, 0, 1000)
