@@ -1,6 +1,6 @@
 module GridLayoutBase
 
-using GeometryTypes
+using GeometryBasics
 using Observables
 using Match
 

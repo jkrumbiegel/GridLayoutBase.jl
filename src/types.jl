@@ -1,5 +1,3 @@
-const FRect2D = HyperRectangle{2, Float32}
-
 const Optional{T} = Union{Nothing, T}
 
 struct RectSides{T}
