@@ -11,6 +11,7 @@ Observables = "510215fc-4207-5dde-b226-833fc4488ee2"
 [compat]
 Match = "^1"
 Observables = "^0.2, 0.3"
+GeometryBasics = "0.2"
 julia = "1"
 
 [extras]
