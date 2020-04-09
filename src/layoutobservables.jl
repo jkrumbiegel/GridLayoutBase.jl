@@ -1,4 +1,5 @@
-function LayoutObservables(T::Type, width::Observable, height::Observable, halign::Observable, valign::Observable;
+function LayoutObservables(T::Type, width::Observable, height::Observable, halign::Observable,
+        valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
         protrusions = nothing,
         computedsize = nothing,
@@ -11,12 +12,33 @@ function LayoutObservables(T::Type, width::Observable, height::Observable, halig
 
     suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
     protrusions = create_protrusions(protrusions)
-    autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
-    computedsize = computedsizeobservable!(sizeobservable, autosizeobservable)
-    finalbbox = alignedbboxobservable!(suggestedbbox_observable, computedsize, alignment, sizeobservable, autosizeobservable)
 
-    LayoutObservables{T, GridLayout}(suggestedbbox_observable, protrusions, computedsize, autosizeobservable, finalbbox, nothing)
+    protrusions_after_alignmode = Observable(RectSides{Float32}(0, 0, 0, 0))
+    onany(protrusions, alignmode) do prot, al
+        protrusions_after_alignmode[] = if al isa Inside
+            prot
+        elseif al isa Outside
+            RectSides{Float32}(0, 0, 0, 0)
+        else
+            maprectsides() do side
+                if isnothing(getfield(al.padding, side))
+                    getfield(prot, side)
+                else
+                    0f0
+                end
+            end
+        end
+    end
+
+    autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
+    computedsize = computedsizeobservable!(sizeobservable, autosizeobservable, alignmode, protrusions)
+    finalbbox = alignedbboxobservable!(suggestedbbox_observable, computedsize, alignment, sizeobservable, autosizeobservable,
+        alignmode, protrusions)
+
+    LayoutObservables{T, GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, computedsize, autosizeobservable, finalbbox, nothing)
 end
+
+maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
 
 
 create_suggested_bboxobservable(n::Nothing) = Observable(BBox(0, 100, 0, 100))
@@ -37,12 +59,12 @@ function sizeobservable!(widthattr::Observable, heightattr::Observable)
     sizeattrs
 end
 
-function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}})
+function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}}, alignmode, protrusions)
 
     # set up csizeobservable with correct type manually
     csizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
 
-    onany(sizeattrs, autosizeobservable) do sizeattrs, autosize
+    onany(sizeattrs, autosizeobservable, alignmode, protrusions) do sizeattrs, autosize, alignmode, protrusions
 
         wattr, hattr = sizeattrs
         wauto, hauto = autosize
@@ -50,7 +72,38 @@ function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
         wsize = computed_size(wattr, wauto)
         hsize = computed_size(hattr, hauto)
 
-        csizeobservable[] = (wsize, hsize)
+        csizeobservable[] = if alignmode isa Inside
+            (wsize, hsize)
+        elseif alignmode isa Outside
+            (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
+             isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
+        else
+            w = if isnothing(wsize)
+                nothing
+            else
+                w = wsize
+                if !isnothing(alignmode.padding.left)
+                    w += protrusions.left + alignmode.padding.left
+                end
+                if !isnothing(alignmode.padding.right)
+                    w += protrusions.right + alignmode.padding.right
+                end
+                w
+            end
+            h = if isnothing(hsize)
+                nothing
+            else
+                h = hsize
+                if !isnothing(alignmode.padding.bottom)
+                    h += protrusions.bottom + alignmode.padding.bottom
+                end
+                if !isnothing(alignmode.padding.top)
+                    h += protrusions.top + alignmode.padding.top
+                end
+                h
+            end
+            (w, h)
+        end
     end
 
     # trigger first value
@@ -59,7 +112,7 @@ function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
     csizeobservable
 end
 
-function computed_size(sizeattr, autosize)
+function computed_size(sizeattr, autosize, )
     ms = @match sizeattr begin
         sa::Nothing => nothing
         sa::Real => sa
@@ -86,7 +139,8 @@ function alignedbboxobservable!(
     computedsize::Observable{NTuple{2, Optional{Float32}}},
     alignment::Observable,
     sizeattrs::Observable,
-    autosizeobservable::Observable{NTuple{2, Optional{Float32}}})
+    autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
+    alignmode, protrusions)
 
     finalbbox = Observable(BBox(0, 100, 0, 100))
 
@@ -102,8 +156,7 @@ function alignedbboxobservable!(
         widthattr, heightattr = sizeattrs[]
 
         cwidth, cheight = csize
-
-        w = if isnothing(cwidth)
+        w_target = if isnothing(cwidth)
             @match widthattr begin
                 wa::Relative => wa.x * bw
                 wa::Nothing => bw
@@ -122,7 +175,7 @@ function alignedbboxobservable!(
             cwidth
         end
 
-        h = if isnothing(cheight)
+        h_target = if isnothing(cheight)
             @match heightattr begin
                 ha::Relative => ha.x * bh
                 ha::Nothing => bh
@@ -141,9 +194,36 @@ function alignedbboxobservable!(
             cheight
         end
 
+        inner_w, inner_h = if alignmode[] isa Inside
+            (w_target, h_target)
+        elseif alignmode[] isa Outside
+            (w_target - protrusions[].left - protrusions[].right - alignmode[].padding.left - alignmode[].padding.right,
+             h_target - protrusions[].top - protrusions[].bottom - alignmode[].padding.top - alignmode[].padding.bottom)
+        else
+            let
+                w = w_target
+                if !isnothing(alignmode[].padding.left)
+                    w -= protrusions[].left + alignmode[].padding.left
+                end
+                if !isnothing(alignmode[].padding.right)
+                    w -= protrusions[].right + alignmode[].padding.right
+                end
+
+                h = h_target
+                if !isnothing(alignmode[].padding.bottom)
+                    h -= protrusions[].bottom + alignmode[].padding.bottom
+                end
+                if !isnothing(alignmode[].padding.top)
+                    h -= protrusions[].top + alignmode[].padding.top
+                end
+
+                w, h
+            end
+        end
+
         # how much space is left in the bounding box
-        rw = bw - w
-        rh = bh - h
+        rw = bw - w_target
+        rh = bh - h_target
 
         xshift = @match al[1] begin
             :left => 0.0f0
@@ -161,12 +241,25 @@ function alignedbboxobservable!(
             x => error("Invalid vertical alignment $x (only Real or :bottom, :center, or :top allowed).")
         end
 
+        if alignmode[] isa Inside
+            # width and height are unaffected
+        elseif alignmode[] isa Outside
+            xshift = xshift + protrusions[].left + alignmode[].padding.left
+            yshift = yshift + protrusions[].bottom + alignmode[].padding.bottom
+        else
+            if !isnothing(alignmode[].padding.left)
+                xshift += protrusions[].left + alignmode[].padding.left
+            end
+            if !isnothing(alignmode[].padding.bottom)
+                yshift += protrusions[].bottom + alignmode[].padding.bottom
+            end
+        end
+
         # align the final bounding box in the layout bounding box
         l = left(sbbox) + xshift
         b = bottom(sbbox) + yshift
-        r = l + w
-        t = b + h
-
+        r = l + inner_w
+        t = b + inner_h
         newbbox = BBox(l, r, b, t)
         # if finalbbox[] != newbbox
         #     finalbbox[] = newbbox

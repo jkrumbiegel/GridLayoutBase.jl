@@ -24,7 +24,6 @@ export with_updates_suspended
 export appendcols!, appendrows!, prependcols!, prependrows!, deletecol!, deleterow!, trim!
 export gridnest!
 export AxisAspect, DataAspect
-export autolimits!
 export colsize!, rowsize!, colgap!, rowgap!
 export Left, Right, Top, Bottom, TopLeft, BottomLeft, TopRight, BottomRight
 export grid!, hbox!, vbox!
