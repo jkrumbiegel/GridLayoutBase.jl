@@ -1,10 +1,10 @@
-left(rect::HyperRectangle{2}) = minimum(rect)[1]
-right(rect::HyperRectangle{2}) = maximum(rect)[1]
-bottom(rect::HyperRectangle{2}) = minimum(rect)[2]
-top(rect::HyperRectangle{2}) = maximum(rect)[2]
+left(rect::Rect{2}) = minimum(rect)[1]
+right(rect::Rect{2}) = maximum(rect)[1]
+bottom(rect::Rect{2}) = minimum(rect)[2]
+top(rect::Rect{2}) = maximum(rect)[2]
 
-width(rect::HyperRectangle{2}) = right(rect) - left(rect)
-height(rect::HyperRectangle{2}) = top(rect) - bottom(rect)
+width(rect::Rect{2}) = right(rect) - left(rect)
+height(rect::Rect{2}) = top(rect) - bottom(rect)
 
 
 function BBox(left::Number, right::Number, bottom::Number, top::Number)
@@ -38,7 +38,7 @@ end
 
 """
 mapsides(
-       f, first::Union{HyperRectangle{2}, RowCols}, rest::Union{HyperRectangle{2}, RowCols}...
+       f, first::Union{Rect{2}, RowCols}, rest::Union{Rect{2}, RowCols}...
    )::FRect2D
 Maps f over all sides of the rectangle like arguments.
 e.g.
@@ -49,7 +49,7 @@ end::FRect2D
 ```
 """
 function mapsides(
-        f, first::Union{HyperRectangle{2}, RowCols}, rest::Union{HyperRectangle{2}, RowCols}...
+        f, first::Union{Rect{2}, RowCols}, rest::Union{Rect{2}, RowCols}...
     )
     return eachside() do side
         f(side, getindex.((first, rest...), (side,))...)

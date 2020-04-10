@@ -1,9 +1,8 @@
 module GridLayoutBase
 
-using GeometryTypes
+using GeometryBasics
 using Observables
 using Match
-
 
 include("types.jl")
 include("gridlayout.jl")
@@ -13,7 +12,6 @@ include("gridapi.jl")
 include("helpers.jl")
 include("geometry_integration.jl")
 include("gridlayoutspec.jl")
-
 
 export GridLayout, GridPosition
 export GridLayoutSpec
