@@ -122,7 +122,7 @@ function connect_layoutobservables!(gc::GridContent)
     gc.protrusions_handle = on(protrusionobservable(gc.content)) do p
         gc.needs_update[] = true
     end
-    gc.computedsize_handle = on(computedsizeobservable(gc.content)) do c
+    gc.reportedsize_handle = on(reportedsizeobservable(gc.content)) do c
         gc.needs_update[] = true
     end
 end
@@ -132,9 +132,9 @@ function disconnect_layoutobservables!(gc::GridContent)
         Observables.off(protrusionobservable(gc.content), gc.protrusions_handle)
         gc.protrusions_handle = nothing
     end
-    if !isnothing(gc.computedsize_handle)
-        Observables.off(computedsizeobservable(gc.content), gc.computedsize_handle)
-        gc.computedsize_handle = nothing
+    if !isnothing(gc.reportedsize_handle)
+        Observables.off(reportedsizeobservable(gc.content), gc.reportedsize_handle)
+        gc.reportedsize_handle = nothing
     end
 end
 
@@ -1034,11 +1034,11 @@ function GridContent(content::T, span::Span, side::Side) where T
     protrusions_handle = on(protrusionobservable(content)) do p
         needs_update[] = true
     end
-    computedsize_handle = on(computedsizeobservable(content)) do c
+    reportedsize_handle = on(reportedsizeobservable(content)) do c
         needs_update[] = true
     end
     GridContent{GridLayout, T}(nothing, content, span, side, needs_update,
-        protrusions_handle, computedsize_handle)
+        protrusions_handle, reportedsize_handle)
 end
 
 function add_content!(g::GridLayout, content, rows, cols, side::Side)
