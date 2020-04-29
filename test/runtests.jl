@@ -527,3 +527,10 @@ end
     @test gl.content[3].content isa GridLayout
     @test gl.content[3].content.content[1].content isa DebugRect
 end
+
+
+@testset "tellsize" begin
+    dr = DebugRect(width = 100, height = 200, tellwidth = true, tellheight = false)
+
+    @test dr.layoutobservables.computedsize[] == (100, nothing)
+end
