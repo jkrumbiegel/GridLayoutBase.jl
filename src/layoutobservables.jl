@@ -1,8 +1,9 @@
-function LayoutObservables(T::Type, width::Observable, height::Observable, halign::Observable,
+function LayoutObservables(T::Type, width::Observable, height::Observable,
+        tellwidth::Observable, tellheight::Observable, halign::Observable,
         valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
         protrusions = nothing,
-        computedsize = nothing,
+        reportedsize = nothing,
         autosize = nothing,
         computedbbox = nothing,
         gridcontent = nothing)
@@ -12,6 +13,8 @@ function LayoutObservables(T::Type, width::Observable, height::Observable, halig
 
     suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
     protrusions = create_protrusions(protrusions)
+
+    tellsizeobservable = map(tuple, tellwidth, tellheight)
 
     protrusions_after_alignmode = Observable(RectSides{Float32}(0, 0, 0, 0))
     onany(protrusions, alignmode) do prot, al
@@ -31,11 +34,11 @@ function LayoutObservables(T::Type, width::Observable, height::Observable, halig
     end
 
     autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
-    computedsize = computedsizeobservable!(sizeobservable, autosizeobservable, alignmode, protrusions)
-    finalbbox = alignedbboxobservable!(suggestedbbox_observable, computedsize, alignment, sizeobservable, autosizeobservable,
+    reportedsize = reportedsizeobservable!(sizeobservable, autosizeobservable, alignmode, protrusions, tellsizeobservable)
+    finalbbox = alignedbboxobservable!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
-    LayoutObservables{T, GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, computedsize, autosizeobservable, finalbbox, nothing)
+    LayoutObservables{T, GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, nothing)
 end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
@@ -59,20 +62,23 @@ function sizeobservable!(widthattr::Observable, heightattr::Observable)
     sizeattrs
 end
 
-function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}}, alignmode, protrusions)
+function reportedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
+        alignmode, protrusions, tellsizeobservable)
 
-    # set up csizeobservable with correct type manually
-    csizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
+    # set up rsizeobservable with correct type manually
+    rsizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
 
-    onany(sizeattrs, autosizeobservable, alignmode, protrusions) do sizeattrs, autosize, alignmode, protrusions
+    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs,
+            autosize, alignmode, protrusions, tellsizeobservable
 
         wattr, hattr = sizeattrs
         wauto, hauto = autosize
+        tellw, tellh = tellsizeobservable
 
-        wsize = computed_size(wattr, wauto)
-        hsize = computed_size(hattr, hauto)
+        wsize = computed_size(wattr, wauto, tellw)
+        hsize = computed_size(hattr, hauto, tellh)
 
-        csizeobservable[] = if alignmode isa Inside
+        rsizeobservable[] = if alignmode isa Inside
             (wsize, hsize)
         elseif alignmode isa Outside
             (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
@@ -109,24 +115,21 @@ function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
     # trigger first value
     sizeattrs[] = sizeattrs[]
 
-    csizeobservable
+    rsizeobservable
 end
 
-function computed_size(sizeattr, autosize, )
+function computed_size(sizeattr, autosize, tellsize)
+
+    if !tellsize
+        return nothing
+    end
+
     ms = @match sizeattr begin
         sa::Nothing => nothing
         sa::Real => sa
         sa::Fixed => sa.x
         sa::Relative => nothing
-        sa::Auto => if sa.trydetermine
-                # if trydetermine we report the autosize to the layout
-                autosize
-            else
-                # but not if it's false, this allows for single span content
-                # not to shrink its column or row, like a small legend next to an
-                # axis or a super title over a single axis
-                nothing
-            end
+        sa::Auto => autosize
         sa => error("""
             Invalid size attribute $sizeattr.
             Can only be Nothing, Fixed, Relative, Auto or Real""")
@@ -136,7 +139,7 @@ end
 
 function alignedbboxobservable!(
     suggestedbbox::Observable{FRect2D},
-    computedsize::Observable{NTuple{2, Optional{Float32}}},
+    reportedsize::Observable{NTuple{2, Optional{Float32}}},
     alignment::Observable,
     sizeattrs::Observable,
     autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
@@ -144,18 +147,18 @@ function alignedbboxobservable!(
 
     finalbbox = Observable(BBox(0, 100, 0, 100))
 
-    onany(suggestedbbox, alignment, computedsize) do sbbox, al, csize
+    onany(suggestedbbox, alignment, reportedsize) do sbbox, al, rsize
 
         bw = width(sbbox)
         bh = height(sbbox)
 
         # we only passively retrieve sizeattrs here because if they change
-        # they also trigger computedsize, which triggers this observable, too
+        # they also trigger reportedsize, which triggers this observable, too
         # we only need to know here if there are relative sizes given, because
         # those can only be computed knowing the suggestedbbox
         widthattr, heightattr = sizeattrs[]
 
-        cwidth, cheight = csize
+        cwidth, cheight = rsize
         w_target = if isnothing(cwidth)
             @match widthattr begin
                 wa::Relative => wa.x * bw
@@ -286,9 +289,9 @@ function layoutobservables(x::T) where T
 end
 
 # These are the default API functions to retrieve the layout parts from an object
-protrusionobservable(x) = layoutobservables(x).protrusions
+protrusionsobservable(x) = layoutobservables(x).protrusions
 suggestedbboxobservable(x) = layoutobservables(x).suggestedbbox
-computedsizeobservable(x) = layoutobservables(x).computedsize
+reportedsizeobservable(x) = layoutobservables(x).reportedsize
 autosizeobservable(x) = layoutobservables(x).autosize
 computedbboxobservable(x) = layoutobservables(x).computedbbox
 gridcontent(x) = layoutobservables(x).gridcontent

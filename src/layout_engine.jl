@@ -21,7 +21,7 @@ ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == 1
 
 
 function protrusion(x::T, side::Side) where T
-    protrusions = protrusionobservable(x)
+    protrusions = protrusionsobservable(x)
     @match side begin
         si::Left => protrusions[].left
         si::Right => protrusions[].right
@@ -149,19 +149,19 @@ means that the layout reports only its full width but not its height, because
 an element placed in the left protrusion loses its ability to influence height.
 """
 function determinedirsize(content, gdir::GridDir, side::Side)
-    computedsize = computedsizeobservable(content)
+    reportedsize = reportedsizeobservable(content)
     if gdir isa Row
         @match side begin
-            # TODO: is computedsize the correct thing to return? or plus protrusions depending on the side
+            # TODO: is reportedsize the correct thing to return? or plus protrusions depending on the side
             si::Union{Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight} =>
-                ifnothing(computedsize[][2], nothing)
+                ifnothing(reportedsize[][2], nothing)
             si::Union{Left, Right} => nothing
             si => error("$side not implemented")
         end
     else
         @match side begin
             si::Union{Inner, Left, Right, TopLeft, TopRight, BottomLeft, BottomRight} =>
-                ifnothing(computedsize[][1], nothing)
+                ifnothing(reportedsize[][1], nothing)
             si::Union{Top, Bottom} => nothing
             si => error("$side not implemented")
         end
