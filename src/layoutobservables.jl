@@ -171,8 +171,9 @@ function alignedbboxobservable!(
                         # use the width that was auto-computed
                         autosizeobservable[][1]
                     end
-                wa => error("At this point, if computed width is not known,
-                widthattr should be a Relative or Nothing, not $wa.")
+                wa::Fixed => wa.x
+                wa::Real => wa
+                wa => error("Unknown width attribute $wa")
             end
         else
             cwidth
@@ -190,8 +191,9 @@ function alignedbboxobservable!(
                         # use the height that was auto-computed
                         autosizeobservable[][2]
                     end
-                ha => error("At this point, if computed height is not known,
-                heightattr should be a Relative or Nothing, not $ha.")
+                ha::Fixed => ha.x
+                ha::Real => ha
+                ha => error("Unknown height attribute $ha")
             end
         else
             cheight
