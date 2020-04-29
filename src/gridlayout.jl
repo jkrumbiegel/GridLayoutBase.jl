@@ -63,7 +63,7 @@ function GridLayout(nrows::Int, ncols::Int;
         )
 
         if autosizeobservable(gl)[] == new_autosize &&
-                protrusionobservable(gl)[] == new_protrusions
+                protrusionsobservable(gl)[] == new_protrusions
 
             suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
         else
@@ -71,7 +71,7 @@ function GridLayout(nrows::Int, ncols::Int;
             # gridlayout into the next one
 
             # TODO: this is a double update?
-            protrusionobservable(gl)[] = new_protrusions
+            protrusionsobservable(gl)[] = new_protrusions
             autosizeobservable(gl)[] = new_autosize
 
             if isnothing(gridcontent(gl))
@@ -119,7 +119,7 @@ function connect_layoutobservables!(gc::GridContent)
 
     disconnect_layoutobservables!(gc::GridContent)
 
-    gc.protrusions_handle = on(protrusionobservable(gc.content)) do p
+    gc.protrusions_handle = on(protrusionsobservable(gc.content)) do p
         gc.needs_update[] = true
     end
     gc.reportedsize_handle = on(reportedsizeobservable(gc.content)) do c
@@ -129,7 +129,7 @@ end
 
 function disconnect_layoutobservables!(gc::GridContent)
     if !isnothing(gc.protrusions_handle)
-        Observables.off(protrusionobservable(gc.content), gc.protrusions_handle)
+        Observables.off(protrusionsobservable(gc.content), gc.protrusions_handle)
         gc.protrusions_handle = nothing
     end
     if !isnothing(gc.reportedsize_handle)
@@ -1031,7 +1031,7 @@ end
 function GridContent(content::T, span::Span, side::Side) where T
     needs_update = Observable(false)
     # connect the correct observables
-    protrusions_handle = on(protrusionobservable(content)) do p
+    protrusions_handle = on(protrusionsobservable(content)) do p
         needs_update[] = true
     end
     reportedsize_handle = on(reportedsizeobservable(content)) do c

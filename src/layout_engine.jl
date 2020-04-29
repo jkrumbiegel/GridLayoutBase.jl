@@ -21,7 +21,7 @@ ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == 1
 
 
 function protrusion(x::T, side::Side) where T
-    protrusions = protrusionobservable(x)
+    protrusions = protrusionsobservable(x)
     @match side begin
         si::Left => protrusions[].left
         si::Right => protrusions[].right

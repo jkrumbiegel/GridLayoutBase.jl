@@ -289,7 +289,7 @@ function layoutobservables(x::T) where T
 end
 
 # These are the default API functions to retrieve the layout parts from an object
-protrusionobservable(x) = layoutobservables(x).protrusions
+protrusionsobservable(x) = layoutobservables(x).protrusions
 suggestedbboxobservable(x) = layoutobservables(x).suggestedbbox
 reportedsizeobservable(x) = layoutobservables(x).reportedsize
 autosizeobservable(x) = layoutobservables(x).autosize
