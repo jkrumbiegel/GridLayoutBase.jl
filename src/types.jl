@@ -156,8 +156,10 @@ mutable struct GridLayout
     needs_update::Observable{Bool}
     block_updates::Bool
     layoutobservables::LayoutObservables
-    height::Observable
     width::Observable
+    height::Observable
+    tellwidth::Observable
+    tellheight::Observable
     halign::Observable
     valign::Observable
     _update_func_handle::Optional{Function} # stores a reference to the result of on(obs)
@@ -165,11 +167,11 @@ mutable struct GridLayout
     function GridLayout(
         content, nrows, ncols, rowsizes, colsizes,
         addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps, needs_update,
-        layoutobservables, height, width, halign, valign)
+        layoutobservables, width, height, tellwidth, tellheight, halign, valign)
 
         gl = new(content, nrows, ncols, rowsizes, colsizes,
             addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps,
-            needs_update, false, layoutobservables, height, width, halign, valign, nothing)
+            needs_update, false, layoutobservables, width, height, tellwidth, tellheight, halign, valign, nothing)
 
         validategridlayout(gl)
 

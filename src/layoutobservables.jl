@@ -1,4 +1,5 @@
-function LayoutObservables(T::Type, width::Observable, height::Observable, halign::Observable,
+function LayoutObservables(T::Type, width::Observable, height::Observable,
+        tellwidth::Observable, tellheight::Observable, halign::Observable,
         valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
         protrusions = nothing,
@@ -12,6 +13,8 @@ function LayoutObservables(T::Type, width::Observable, height::Observable, halig
 
     suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
     protrusions = create_protrusions(protrusions)
+
+    tellobservable = map(tuple, tellwidth, tellheight)
 
     protrusions_after_alignmode = Observable(RectSides{Float32}(0, 0, 0, 0))
     onany(protrusions, alignmode) do prot, al
@@ -31,7 +34,7 @@ function LayoutObservables(T::Type, width::Observable, height::Observable, halig
     end
 
     autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
-    computedsize = computedsizeobservable!(sizeobservable, autosizeobservable, alignmode, protrusions)
+    computedsize = computedsizeobservable!(sizeobservable, autosizeobservable, alignmode, protrusions, tellobservable)
     finalbbox = alignedbboxobservable!(suggestedbbox_observable, computedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
@@ -59,18 +62,21 @@ function sizeobservable!(widthattr::Observable, heightattr::Observable)
     sizeattrs
 end
 
-function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}}, alignmode, protrusions)
+function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
+        alignmode, protrusions, tellobservable)
 
     # set up csizeobservable with correct type manually
     csizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
 
-    onany(sizeattrs, autosizeobservable, alignmode, protrusions) do sizeattrs, autosize, alignmode, protrusions
+    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellobservable) do sizeattrs,
+            autosize, alignmode, protrusions, tellobservable
 
         wattr, hattr = sizeattrs
         wauto, hauto = autosize
+        tellw, tellh = tellobservable
 
-        wsize = computed_size(wattr, wauto)
-        hsize = computed_size(hattr, hauto)
+        wsize = computed_size(wattr, wauto, tellw)
+        hsize = computed_size(hattr, hauto, tellh)
 
         csizeobservable[] = if alignmode isa Inside
             (wsize, hsize)
@@ -112,21 +118,18 @@ function computedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
     csizeobservable
 end
 
-function computed_size(sizeattr, autosize, )
+function computed_size(sizeattr, autosize, tellsize)
+
+    if !tellsize
+        return nothing
+    end
+
     ms = @match sizeattr begin
         sa::Nothing => nothing
         sa::Real => sa
         sa::Fixed => sa.x
         sa::Relative => nothing
-        sa::Auto => if sa.trydetermine
-                # if trydetermine we report the autosize to the layout
-                autosize
-            else
-                # but not if it's false, this allows for single span content
-                # not to shrink its column or row, like a small legend next to an
-                # axis or a super title over a single axis
-                nothing
-            end
+        sa::Auto => autosize
         sa => error("""
             Invalid size attribute $sizeattr.
             Can only be Nothing, Fixed, Relative, Auto or Real""")

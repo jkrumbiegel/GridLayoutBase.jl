@@ -13,8 +13,10 @@ function GridLayout(nrows::Int, ncols::Int;
         alignmode = Inside(),
         equalprotrusiongaps = (false, false),
         bbox = nothing,
-        width = Auto(true),
-        height = Auto(true),
+        width = Auto(),
+        height = Auto(),
+        tellwidth = true,
+        tellheight = true,
         halign = :center,
         valign = :center,
         kwargs...)
@@ -30,16 +32,19 @@ function GridLayout(nrows::Int, ncols::Int;
 
     width = any_observable(width)
     height = any_observable(height)
+    tellwidth = any_observable(tellwidth)
+    tellheight = any_observable(tellheight)
     halign = any_observable(halign)
     valign = any_observable(valign)
 
     layoutobservables = layoutobservables = LayoutObservables(GridLayout, width,
-        height, halign, valign;
+        height, tellwidth, tellheight, halign, valign;
         suggestedbbox = bbox)
 
     gl = GridLayout(
         content, nrows, ncols, rowsizes, colsizes, addedrowgaps,
-        addedcolgaps, alignmode, equalprotrusiongaps, needs_update, layoutobservables, width, height, halign, valign)
+        addedcolgaps, alignmode, equalprotrusiongaps, needs_update, layoutobservables,
+        width, height, tellwidth, tellheight, halign, valign)
 
     on(computedbboxobservable(gl)) do cbb
         align_to_bbox!(gl, cbb)

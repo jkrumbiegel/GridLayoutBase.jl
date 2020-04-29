@@ -2,6 +2,8 @@ mutable struct DebugRect
     layoutobservables::GridLayoutBase.LayoutObservables
     width::Observable
     height::Observable
+    tellwidth::Observable
+    tellheight::Observable
     halign::Observable
     valign::Observable
     leftprot::Observable
@@ -14,11 +16,14 @@ end
 observablify(x::Observable) = x
 observablify(x, type=Any) = Observable{type}(x)
 
-function DebugRect(; bbox = nothing, width=nothing, height=nothing, halign=:center,
+function DebugRect(; bbox = nothing, width=nothing, height=nothing,
+    tellwidth = true, tellheight = true, halign=:center,
     valign=:center, topprot=0.0, leftprot=0.0, rightprot=0.0, bottomprot=0.0)
 
     width = observablify(width)
     height = observablify(height)
+    tellwidth = observablify(tellwidth)
+    tellheight = observablify(tellheight)
     halign = observablify(halign)
     valign = observablify(valign)
     topprot = observablify(topprot, Float32)
@@ -30,7 +35,9 @@ function DebugRect(; bbox = nothing, width=nothing, height=nothing, halign=:cent
         GridLayoutBase.RectSides{Float32}(l, r, b, t)
     end
 
-    layoutobservables = GridLayoutBase.LayoutObservables(DebugRect, width, height, halign, valign; suggestedbbox = bbox, protrusions = protrusions)
+    layoutobservables = GridLayoutBase.LayoutObservables(DebugRect, width,
+        height, tellwidth, tellheight, halign, valign; suggestedbbox = bbox, protrusions = protrusions)
 
-    DebugRect(layoutobservables, height, width, halign, valign, leftprot, rightprot, bottomprot, topprot)
+    DebugRect(layoutobservables, height, width, tellwidth, tellheight,
+        halign, valign, leftprot, rightprot, bottomprot, topprot)
 end
