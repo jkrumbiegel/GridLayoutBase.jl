@@ -19,12 +19,16 @@ function GridLayout(nrows::Int, ncols::Int;
         tellheight = true,
         halign = :center,
         valign = :center,
+        default_rowgap = DEFAULT_ROWGAP_GETTER[](),
+        default_colgap = DEFAULT_COLGAP_GETTER[](),
         kwargs...)
 
+    default_rowgap = default_rowgap isa Number ? Fixed(default_rowgap) : default_rowgap
+    default_colgap = default_colgap isa Number ? Fixed(default_colgap) : default_colgap
     rowsizes = convert_contentsizes(nrows, rowsizes)
     colsizes = convert_contentsizes(ncols, colsizes)
-    addedrowgaps = convert_gapsizes(nrows - 1, addedrowgaps)
-    addedcolgaps = convert_gapsizes(ncols - 1, addedcolgaps)
+    addedrowgaps = convert_gapsizes(nrows - 1, addedrowgaps, default_rowgap)
+    addedcolgaps = convert_gapsizes(ncols - 1, addedcolgaps, default_colgap)
 
     needs_update = Observable(true)
 
@@ -44,7 +48,7 @@ function GridLayout(nrows::Int, ncols::Int;
     gl = GridLayout(
         content, nrows, ncols, rowsizes, colsizes, addedrowgaps,
         addedcolgaps, alignmode, equalprotrusiongaps, needs_update, layoutobservables,
-        width, height, tellwidth, tellheight, halign, valign)
+        width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
 
     on(computedbboxobservable(gl)) do cbb
         align_to_bbox!(gl, cbb)
@@ -189,9 +193,9 @@ function convert_contentsizes(n, sizes)::Vector{ContentSize}
     end
 end
 
-function convert_gapsizes(n, gaps)::Vector{GapSize}
+function convert_gapsizes(n, gaps, defaultsize)::Vector{GapSize}
     if isnothing(gaps)
-        [Fixed(20) for _ in 1:n]
+        [defaultsize for _ in 1:n]
     elseif gaps isa GapSize
         [gaps for _ in 1:n]
     elseif gaps isa Vector{<:GapSize}
@@ -204,7 +208,7 @@ end
 function appendrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=nothing)
 
     rowsizes = convert_contentsizes(n, rowsizes)
-    addedrowgaps = convert_gapsizes(n, addedrowgaps)
+    addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
 
     with_updates_suspended(gl) do
         gl.nrows += n
@@ -216,7 +220,7 @@ end
 function appendcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing)
 
     colsizes = convert_contentsizes(n, colsizes)
-    addedcolgaps = convert_gapsizes(n, addedcolgaps)
+    addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
 
     with_updates_suspended(gl) do
         gl.ncols += n
@@ -228,7 +232,7 @@ end
 function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=nothing)
 
     rowsizes = convert_contentsizes(n, rowsizes)
-    addedrowgaps = convert_gapsizes(n, addedrowgaps)
+    addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
 
     foreach(gl.content) do gc
         span = gc.span
@@ -246,7 +250,7 @@ end
 function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing)
 
     colsizes = convert_contentsizes(n, colsizes)
-    addedcolgaps = convert_gapsizes(n, addedcolgaps)
+    addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
 
     foreach(gl.content) do gc
         span = gc.span

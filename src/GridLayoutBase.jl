@@ -4,6 +4,11 @@ using GeometryBasics
 using Observables
 using Match
 
+const DEFAULT_COLGAP = Ref{Any}(20.0)
+const DEFAULT_ROWGAP = Ref{Any}(20.0)
+const DEFAULT_ROWGAP_GETTER = Ref{Function}(() -> DEFAULT_ROWGAP[])
+const DEFAULT_COLGAP_GETTER = Ref{Function}(() -> DEFAULT_COLGAP[])
+
 include("types.jl")
 include("gridlayout.jl")
 include("layout_engine.jl")
