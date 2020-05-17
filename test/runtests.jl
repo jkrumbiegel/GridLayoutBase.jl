@@ -534,3 +534,24 @@ end
 
     @test dr.layoutobservables.reportedsize[] == (100, nothing)
 end
+
+
+@testset "aspect sizes referencing auto sizes" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    layout = GridLayout(2, 2, bbox = bbox, alignmode = Outside(0))
+    
+    colgap!(layout, 0)
+    rowgap!(layout, 0)
+
+    dr = layout[1, 1] = DebugRect()
+
+    colsize!(layout, 1, Aspect(1, 1.5))
+    @test computedbboxobservable(dr)[] == BBox(0, 750, 500, 1000)
+
+    colsize!(layout, 1, Auto())
+
+    rowsize!(layout, 1, Aspect(1, 1.5))
+    @test computedbboxobservable(dr)[] == BBox(0, 500, 250, 1000)
+
+    @test_throws ErrorException colsize!(layout, 1, Aspect(1, 1)) 
+end
