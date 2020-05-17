@@ -830,132 +830,201 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)
     # the space for columns and for rows is divided depending on the sizes
     # stored in the grid layout
 
-    # rows / cols with Auto size must have single span content that
-    # can report its own size, otherwise they can't determine their own size
-    # alternatively, if there is only one Auto row / col it can get the rest
-    # that remains after the other specified sizes are subtracted
+    # algorithm:
 
-    # rows / cols with Fixed size get that size
-
-    # rows / cols with Relative size get that fraction of the available space
+    # 1. get fixed sizes
+    # 2. compute relative sizes
+    # 3. determine determinable auto sizes
+    # 4. compute those aspect sizes that are relative to one of the three above categories
+    # 5. at least one side now has to have only undeterminable auto sizes left
+    # 6. compute remaining auto sizes for one side
+    # 7. compute remaining aspect sizes on other side
+    # 8. compute remaining auto sizes on the same side
 
     colwidths = zeros(gl.ncols)
     rowheights = zeros(gl.nrows)
 
-    # store sizes in arrays with indices so we can keep track of them
-    icsizes = collect(enumerate(gl.colsizes))
-    irsizes = collect(enumerate(gl.rowsizes))
+    determinedcols = zeros(Bool, gl.ncols)
+    determinedrows = zeros(Bool, gl.nrows)
 
-    filtersize(T::Type) = isize -> isize[2] isa T
+    # a function that iterates over those sizes that belong to a type T
+    # while enumerating all indices, so that i can be used to index colwidths / rowheights
+    # and determinedcols / determinedrows
+    filterenum(f, T::Type, iter) = foreach(f, ((i, value) for (i, value) in enumerate(iter) if value isa T))
 
-    fcsizes = filter(filtersize(Fixed), icsizes)
-    frsizes = filter(filtersize(Fixed), irsizes)
 
-    relcsizes = filter(filtersize(Relative), icsizes)
-    relrsizes = filter(filtersize(Relative), irsizes)
-
-    acsizes = filter(filtersize(Auto), icsizes)
-    arsizes = filter(filtersize(Auto), irsizes)
-
-    aspcsizes = filter(filtersize(Aspect), icsizes)
-    asprsizes = filter(filtersize(Aspect), irsizes)
-
-    determined_acsizes = map(acsizes) do (i, c)
-        (i, determinedirsize(i, gl, Col()))
+    # first fixed sizes
+    filterenum(Fixed, gl.colsizes) do (i, fixed)
+        colwidths[i] = fixed.x
+        determinedcols[i] = true
     end
-    det_acsizes = filter(tup -> !isnothing(tup[2]), determined_acsizes)
-    nondets_c = filter(tup -> isnothing(tup[2]), determined_acsizes)
-    nondet_acsizes = map(nondets_c) do (i, noth)
-        i, gl.colsizes[i]
+    filterenum(Fixed, gl.rowsizes) do (i, fixed)
+        rowheights[i] = fixed.x
+        determinedrows[i] = true
     end
 
-    determined_arsizes = map(arsizes) do (i, c)
-        (i, determinedirsize(i, gl, Row()))
+    # then relative sizes
+    filterenum(Relative, gl.colsizes) do (i, relative)
+        colwidths[i] = relative.x * spaceforcolumns
+        determinedcols[i] = true
     end
-    det_arsizes = filter(tup -> !isnothing(tup[2]), determined_arsizes)
-    nondets_r = filter(tup -> isnothing(tup[2]), determined_arsizes)
-    nondet_arsizes = map(nondets_r) do (i, noth)
-        i, gl.rowsizes[i]
-    end
-
-    # assign fixed sizes first
-    map(fcsizes) do (i, f)
-        colwidths[i] = f.x
-    end
-    map(frsizes) do (i, f)
-        rowheights[i] = f.x
+    filterenum(Relative, gl.rowsizes) do (i, relative)
+        rowheights[i] = relative.x * spaceforrows
+        determinedrows[i] = true
     end
 
-    # next relative sizes
-    map(relcsizes) do (i, r)
-        colwidths[i] = r.x * spaceforcolumns
+    # then determinable auto sizes
+    filterenum(Auto, gl.colsizes) do (i, auto)
+        size = determinedirsize(i, gl, Col())
+        if !isnothing(size)
+            colwidths[i] = size
+            determinedcols[i] = true
+        end
     end
-    map(relrsizes) do (i, r)
-        rowheights[i] = r.x * spaceforrows
+    filterenum(Auto, gl.rowsizes) do (i, auto)
+        size = determinedirsize(i, gl, Row())
+        if !isnothing(size)
+            rowheights[i] = size
+            determinedrows[i] = true
+        end
     end
 
-    # next determinable auto sizes
-    map(det_acsizes) do (i, x)
-        colwidths[i] = x
+    # now aspect sizes that refer to already determined counterparts
+    filterenum(Aspect, gl.colsizes) do (i, aspect)
+        if determinedrows[aspect.index]
+            colwidths[i] = aspect.ratio * rowheights[aspect.index]
+            determinedcols[i] = true
+        end
     end
-    map(det_arsizes) do (i, x)
-        rowheights[i] = x
+    filterenum(Aspect, gl.rowsizes) do (i, aspect)
+        if determinedcols[aspect.index]
+            rowheights[i] = aspect.ratio * colwidths[aspect.index]
+            determinedrows[i] = true
+        end
     end
 
-    # next aspect sizes
-    map(aspcsizes) do (i, asp)
-        index = asp.index
-        ratio = asp.ratio
-        rowsize = gl.rowsizes[index]
-        rowheight = if rowsize isa Union{Fixed, Relative, Auto}
-            if rowsize isa Auto
-                if !isempty(nondet_arsizes) && any(x -> x[1] == index, nondet_arsizes)
-                    error("Can't use aspect ratio with an undeterminable Auto size")
+    remaining_colspace = spaceforcolumns - sum(colwidths)
+    remaining_rowspace = spaceforrows - sum(rowheights)
+
+    # if we have aspect sizes left on one side, they can only be determined
+    # if the other side has only undeterminable autos left
+    n_col_aspects_left = sum(enumerate(gl.colsizes)) do (i, size)
+        (size isa Aspect) && (determinedcols[i] == false)
+    end
+    n_row_aspects_left = sum(enumerate(gl.rowsizes)) do (i, size)
+        (size isa Aspect) && (determinedrows[i] == false)
+    end
+
+    n_col_autos_left = sum(enumerate(gl.colsizes)) do (i, size)
+        (size isa Auto) && (determinedcols[i] == false)
+    end
+    n_row_autos_left = sum(enumerate(gl.rowsizes)) do (i, size)
+        (size isa Auto) && (determinedrows[i] == false)
+    end
+
+    if n_col_aspects_left == 0
+        let
+            indices = Int[]
+            ratios = Float64[]
+            i_ratios = filterenum(Auto, gl.colsizes) do (i, auto)
+                if determinedcols[i] == false
+                    push!(indices, i)
+                    push!(ratios, auto.ratio)
                 end
             end
-            rowheights[index]
-        else
-            error("Aspect size can only work in conjunction with Fixed, Relative, or determinable Auto, not $(typeof(gl.rowsizes[index]))")
+            sumratios = sum(ratios)
+            for (i, ratio) in zip(indices, ratios)
+                colwidths[i] = ratio / sumratios * remaining_colspace
+                determinedcols[i] = true
+            end
         end
-        colwidths[i] = rowheight * ratio
     end
 
-    map(asprsizes) do (i, asp)
-        index = asp.index
-        ratio = asp.ratio
-        colsize = gl.colsizes[index]
-        colwidth = if colsize isa Union{Fixed, Relative, Auto}
-            if colsize isa Auto
-                if !isempty(nondet_acsizes) && any(x -> x[1] == index, nondet_acsizes)
-                    error("Can't use aspect ratio with an undeterminable Auto size")
+    if n_row_aspects_left == 0
+        let
+            indices = Int[]
+            ratios = Float64[]
+            i_ratios = filterenum(Auto, gl.rowsizes) do (i, auto)
+                if determinedrows[i] == false
+                    push!(indices, i)
+                    push!(ratios, auto.ratio)
                 end
             end
-            colwidths[index]
-        else
-            error("Aspect size can only work in conjunction with Fixed, Relative, or determinable Auto, not $(typeof(gl.rowsizes[index]))")
+            sumratios = sum(ratios)
+            for (i, ratio) in zip(indices, ratios)
+                rowheights[i] = ratio / sumratios * remaining_rowspace
+                determinedrows[i] = true
+            end
         end
-        rowheights[i] = colwidth * ratio
     end
 
-    # next undeterminable auto sizes
-    if !isempty(nondet_acsizes)
-        remaining = spaceforcolumns - sum(colwidths)
-        nondet_acsizes
-        sumratios = sum(nondet_acsizes) do (i, c)
-            c.ratio
-        end
-        map(nondet_acsizes) do (i, c)
-            colwidths[i] = remaining * c.ratio / sumratios
+    # now if either columns or rows had no aspects left, they should have all sizes determined
+    # we run over the aspects again
+    filterenum(Aspect, gl.colsizes) do (i, aspect)
+        if determinedrows[aspect.index]
+            colwidths[i] = aspect.ratio * rowheights[aspect.index]
+            determinedcols[i] = true
+        else
+            error("Column $i was given an Aspect size relative to row $(aspect.index). This row's size could not be determined in time, therefore the layouting algorithm failed. This probably happened because you used an Aspect row and column size at the same time, which couldn't both be resolved.")
         end
     end
-    if !isempty(nondet_arsizes)
-        remaining = spaceforrows - sum(rowheights)
-        sumratios = sum(nondet_arsizes) do (i, r)
-            r.ratio
+    filterenum(Aspect, gl.rowsizes) do (i, aspect)
+        if determinedcols[aspect.index]
+            rowheights[i] = aspect.ratio * colwidths[aspect.index]
+            determinedrows[i] = true
+        else
+            error("Row $i was given an Aspect size relative to column $(aspect.index). This column's size could not be determined in time, therefore the layouting algorithm failed. This probably happened because you used an Aspect row and column size at the same time, which couldn't both be resolved.")
         end
-        map(nondet_arsizes) do (i, r)
-            rowheights[i] = remaining * r.ratio / sumratios
+    end
+
+    # if we haven't errored yet, all aspect sizes are done
+    # one more pass over the undetermined autos is all that's needed
+
+    remaining_colspace = spaceforcolumns - sum(colwidths)
+    remaining_rowspace = spaceforrows - sum(rowheights)
+
+    let
+        indices = Int[]
+        ratios = Float64[]
+        i_ratios = filterenum(Auto, gl.colsizes) do (i, auto)
+            if determinedcols[i] == false
+                push!(indices, i)
+                push!(ratios, auto.ratio)
+            end
         end
+        sumratios = sum(ratios)
+        for (i, ratio) in zip(indices, ratios)
+            colwidths[i] = ratio / sumratios * remaining_colspace
+            determinedcols[i] = true
+        end
+    end
+
+    let
+        indices = Int[]
+        ratios = Float64[]
+        i_ratios = filterenum(Auto, gl.rowsizes) do (i, auto)
+            if determinedrows[i] == false
+                push!(indices, i)
+                push!(ratios, auto.ratio)
+            end
+        end
+        sumratios = sum(ratios)
+        for (i, ratio) in zip(indices, ratios)
+            rowheights[i] = ratio / sumratios * remaining_rowspace
+            determinedrows[i] = true
+        end
+    end
+
+
+    # now all columns and rows should have their sizes
+    ncols_undetermined = sum(.!determinedcols)
+    nrows_undetermined = sum(.!determinedrows)
+
+    if ncols_undetermined > 0
+        error("After a non-erroring layouting pass, the number of undetermined columns is $ncols_undetermined. This must be a bug.")
+    end
+    if nrows_undetermined > 0
+        error("After a non-erroring layouting pass, the number of undetermined rows is $nrows_undetermined. This must be a bug.")
     end
 
     colwidths, rowheights
