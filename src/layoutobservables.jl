@@ -48,6 +48,13 @@ create_suggested_bboxobservable(n::Nothing) = Observable(BBox(0, 100, 0, 100))
 create_suggested_bboxobservable(tup::Tuple) = Observable(BBox(tup...))
 create_suggested_bboxobservable(bbox::Rect{2}) = Observable(FRect2D(bbox))
 create_suggested_bboxobservable(observable::Observable{FRect2D}) = observable
+function create_suggested_bboxobservable(observable::Observable{<:Rect{2}})
+    bbox = Observable(FRect2D(observable[]))
+    on(observable) do o
+        bbox[] = FRect2D(o)
+    end
+    bbox
+end
 
 create_protrusions(p::Nothing) = Observable(RectSides{Float32}(0, 0, 0, 0))
 create_protrusions(p::Observable{RectSides{Float32}}) = p
