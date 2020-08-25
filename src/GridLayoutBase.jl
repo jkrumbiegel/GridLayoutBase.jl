@@ -37,5 +37,6 @@ export grid!, hbox!, vbox!
 export swap!
 export protrusionsobservable, suggestedbboxobservable, reportedsizeobservable, autosizeobservable, computedbboxobservable, gridcontent
 export ncols, nrows
+export contents
 
 end

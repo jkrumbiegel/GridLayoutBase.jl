@@ -1147,14 +1147,38 @@ function Base.lastindex(g::GridLayout, d)
     end
 end
 
-function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables)
-    GridPosition(g, rows, cols)
+function GridPosition(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner())
+    span = Span(to_ranges(g, rows, cols)...)
+    GridPosition(g, span, side)
+end
+
+function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner())
+    GridPosition(g, rows, cols, side)
 end
 
 function Base.setindex!(gp::GridPosition, element)
-    gp.layout[gp.rows, gp.cols] = element
+    gp.layout[gp.span.rows, gp.span.cols, gp.side] = element
 end
 
 ncols(g::GridLayout) = g.ncols
 nrows(g::GridLayout) = g.nrows
 Base.size(g::GridLayout) = (nrows(g), ncols(g))
+
+Base.in(span1::Span, span2::Span) = span1.rows.start >= span2.rows.start &&
+    span1.rows.stop <= span2.rows.stop && 
+    span1.cols.start >= span2.cols.start &&
+    span1.cols.stop <= span2.cols.stop
+
+function contents(gp::GridPosition; exact::Bool = false)
+    contents = []
+    for c in gp.layout.content
+        if exact
+            if c.span == gp.span && c.side == gp.side
+                push!(contents, c.content)
+            end
+        elseif c.span in gp.span && c.side == gp.side
+            push!(contents, c.content)
+        end
+    end
+    contents
+end

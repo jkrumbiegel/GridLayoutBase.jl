@@ -186,8 +186,8 @@ const Indexables = Union{UnitRange, Int, Colon}
 
 struct GridPosition
     layout::GridLayout
-    rows::Indexables # this doesn't warrant type parameters I think
-    cols::Indexables # as these objects will only be used briefly
+    span::Span
+    side::Side
 end
 
 
