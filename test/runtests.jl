@@ -430,6 +430,48 @@ end
     @test gridcontent(dr).span == GridLayoutBase.Span(1:1, 1:1)
 end
 
+@testset "gridposition contents" begin
+    layout = GridLayout()
+    dr1 = layout[1, 1] = DebugRect()
+    dr2 = layout[1, 2] = DebugRect()
+    dr3 = layout[2, 1] = DebugRect()
+    dr4 = layout[2, 2] = DebugRect()
+
+    co = contents(layout[1, 1])
+    @test co == [dr1]
+
+    co = contents(layout[1:2, 1])
+    @test co == [dr1, dr3]
+
+    co = contents(layout[2, 1:2])
+    @test co == [dr3, dr4]
+
+    co = contents(layout[:, :])
+    @test co == [dr1, dr2, dr3, dr4]
+
+    dr5 = layout[2, 2, Right()] = DebugRect()
+
+    co = contents(layout[:, :]) # implicit Inner() side
+    @test co == [dr1, dr2, dr3, dr4]
+
+    @test contents(layout[2, 2, Right()]) == [dr5]
+
+    dr6 = layout[1:2, 2] = DebugRect()
+    @test contents(layout[1:2, 2]) == [dr2, dr4, dr6]
+    @test contents(layout[1:2, 2], exact = true) == [dr6]
+
+    @test contents(layout) == [dr1, dr2, dr3, dr4, dr5, dr6]
+end
+
+@testset "span containment" begin
+    Span = GridLayoutBase.Span
+    @test Span(1:2, 2:3) in Span(1:2, 2:3)
+    @test Span(1:2, 2:3) in Span(0:3, 1:4)
+    @test !(Span(0:3, 1:4) in Span(1:2, 2:3))
+    @test !(Span(1:2, 1:4) in Span(1:2, 2:3))
+    @test !(Span(0:3, 2:3) in Span(1:2, 2:3))
+end
+
 @testset "layoutobservables undefined" begin
     struct MyType end
     @test_throws ErrorException GridLayoutBase.layoutobservables(MyType())
@@ -522,10 +564,10 @@ end
     )
 
     gl = GridLayout(spec)
-    @test gl.content[1].content isa DebugRect
-    @test gl.content[2].content isa DebugRect
-    @test gl.content[3].content isa GridLayout
-    @test gl.content[3].content.content[1].content isa DebugRect
+    @test contents(gl)[1] isa DebugRect
+    @test contents(gl)[2] isa DebugRect
+    @test contents(gl)[3] isa GridLayout
+    @test contents(contents(gl)[3])[1] isa DebugRect
 end
 
 

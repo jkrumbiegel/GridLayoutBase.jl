@@ -41,3 +41,5 @@ function DebugRect(; bbox = nothing, width=nothing, height=nothing,
     DebugRect(layoutobservables, height, width, tellwidth, tellheight,
         halign, valign, leftprot, rightprot, bottomprot, topprot)
 end
+
+Base.show(io::IO, dr::DebugRect) = print(io, "DebugRect()")
