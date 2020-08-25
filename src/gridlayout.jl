@@ -1169,6 +1169,13 @@ Base.in(span1::Span, span2::Span) = span1.rows.start >= span2.rows.start &&
     span1.cols.start >= span2.cols.start &&
     span1.cols.stop <= span2.cols.stop
 
+"""
+    contents(gp::GridPosition; exact::Bool = false)
+
+Retrieve all objects placed in the `GridLayout` at the `Span` and `Side` stored
+in the `GridPosition` `gp`. If `exact == true`, elements are only included
+if they match the `Span` exactly, otherwise they can also be contained within the spanned layout area.
+"""
 function contents(gp::GridPosition; exact::Bool = false)
     contents = []
     for c in gp.layout.content
@@ -1176,9 +1183,23 @@ function contents(gp::GridPosition; exact::Bool = false)
             if c.span == gp.span && c.side == gp.side
                 push!(contents, c.content)
             end
-        elseif c.span in gp.span && c.side == gp.side
-            push!(contents, c.content)
+        else
+            if c.span in gp.span && c.side == gp.side
+                push!(contents, c.content)
+            end
         end
     end
     contents
+end
+
+"""
+    contents(g::GridLayout)
+
+Retrieve all objects placed in the `GridLayout` `g`, in the order they are stored, extracted from
+their containing `GridContent`s.
+"""
+function contents(g::GridLayout)
+    map(g.content) do gc
+        gc.content
+    end
 end

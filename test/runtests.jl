@@ -459,6 +459,8 @@ end
     dr6 = layout[1:2, 2] = DebugRect()
     @test contents(layout[1:2, 2]) == [dr2, dr4, dr6]
     @test contents(layout[1:2, 2], exact = true) == [dr6]
+
+    @test contents(layout) == [dr1, dr2, dr3, dr4, dr5, dr6]
 end
 
 @testset "span containment" begin
