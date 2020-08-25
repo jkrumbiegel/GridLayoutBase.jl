@@ -564,10 +564,10 @@ end
     )
 
     gl = GridLayout(spec)
-    @test gl.content[1].content isa DebugRect
-    @test gl.content[2].content isa DebugRect
-    @test gl.content[3].content isa GridLayout
-    @test gl.content[3].content.content[1].content isa DebugRect
+    @test contents(gl)[1] isa DebugRect
+    @test contents(gl)[2] isa DebugRect
+    @test contents(gl)[3] isa GridLayout
+    @test contents(contents(gl)[3])[1] isa DebugRect
 end
 
 
