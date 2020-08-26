@@ -17,7 +17,7 @@ end
 Swaps or rotates the layout positions of the given elements to their neighbor's.
 """
 function swap!(layout_elements...)
-    gridcontents = gridcontent.(layout_elements)
+    gridcontents = gridcontent.(collect(layout_elements))
 
     # copy relevant fields before gridcontents are mutated
     parents = map(gc -> gc.parent, gridcontents)
