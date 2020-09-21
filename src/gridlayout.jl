@@ -265,6 +265,16 @@ function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=not
     end
 end
 
+
+"""
+    insertrows!(gl::GridLayout, at::Int, n::Int; rowsizes=nothing, addedrowgaps=nothing)
+
+Insert `n` rows at row `at` into `GridLayout` `gl`. The new row sizes and row gaps can be
+optionally set with `rowsizes` and `addedrowgaps` keywords.
+Objects spanning from at least `at-1` up to or beyond `at` are getting extended to span
+over the new rows. Objects from `at` and beyond are pushed back, objects before `at` are
+unaffected.
+"""
 function insertrows!(gl::GridLayout, at::Int, n::Int; rowsizes=nothing, addedrowgaps=nothing)
 
     if !(1 <= at <= nrows(gl))
@@ -295,6 +305,15 @@ function insertrows!(gl::GridLayout, at::Int, n::Int; rowsizes=nothing, addedrow
     end
 end
 
+"""
+    insertcols!(gl::GridLayout, at::Int, n::Int; colsizes=nothing, addedcolgaps=nothing)
+
+Insert `n` columns at column `at` into `GridLayout` `gl`. The new column sizes and column gaps can be
+optionally set with `colsizes` and `addedcolgaps` keywords.
+Objects spanning from at least `at-1` up to or beyond `at` are getting extended to span
+over the new columns. Objects from `at` and beyond are pushed back, objects before `at` are
+unaffected.
+"""
 function insertcols!(gl::GridLayout, at::Int, n::Int; colsizes=nothing, addedcolgaps=nothing)
 
     if !(1 <= at <= ncols(gl))
