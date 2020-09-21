@@ -265,6 +265,66 @@ function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=not
     end
 end
 
+function insertrows!(gl::GridLayout, at::Int, n::Int; rowsizes=nothing, addedrowgaps=nothing)
+
+    if !(1 <= at <= nrows(gl))
+        error("Invalid row insertion at row $at. GridLayout has $(nrows(gl)) rows.")
+    end
+
+    rowsizes = convert_contentsizes(n, rowsizes)
+    addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
+
+    foreach(gl.content) do gc
+        span = gc.span
+        rows = span.rows
+        newrows = if rows.start < at <= rows.stop
+            rows.start : rows.stop + n
+        elseif rows.stop < at
+            rows
+        elseif rows.start >= at
+            rows .+ n
+        end
+        newspan = Span(newrows, span.cols)
+        gc.span = newspan
+    end
+
+    with_updates_suspended(gl) do
+        gl.nrows += n
+        splice!(gl.rowsizes, at:at-1, rowsizes)
+        splice!(gl.addedrowgaps, at:at-1, addedrowgaps)
+    end
+end
+
+function insertcols!(gl::GridLayout, at::Int, n::Int; colsizes=nothing, addedcolgaps=nothing)
+
+    if !(1 <= at <= ncols(gl))
+        error("Invalid column insertion at column $at. GridLayout has $(ncols(gl)) columns.")
+    end
+
+    colsizes = convert_contentsizes(n, colsizes)
+    addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
+
+    foreach(gl.content) do gc
+        span = gc.span
+        cols = span.cols
+        newcols = if cols.start < at <= cols.stop
+            cols.start : cols.stop + n
+        elseif cols.stop < at
+            cols
+        elseif cols.start >= at
+            cols .+ n
+        end
+        newspan = Span(span.rows, newcols)
+        gc.span = newspan
+    end
+
+    with_updates_suspended(gl) do
+        gl.ncols += n
+        splice!(gl.colsizes, at:at-1, colsizes)
+        splice!(gl.addedcolgaps, at:at-1, addedcolgaps)
+    end
+end
+
 function deleterow!(gl::GridLayout, irow::Int)
     if !(1 <= irow <= gl.nrows)
         error("Row $irow does not exist.")

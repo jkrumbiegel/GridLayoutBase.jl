@@ -205,6 +205,39 @@ end
     @test isempty(layout.content)
 end
 
+@testset "inserting rows / cols" begin
+
+    layout = GridLayout(4, 4)
+    dr1 = layout[1, 1] = DebugRect()
+    dr2 = layout[1, 2:3] = DebugRect()
+    dr3 = layout[1, 4] = DebugRect()
+    dr4 = layout[2:3, 1] = DebugRect()
+    dr5 = layout[4, 1] = DebugRect()
+    dr6 = layout[2:3, 2:3] = DebugRect()
+    dr7 = layout[1, 3] = DebugRect()
+    dr8 = layout[3, 1] = DebugRect()
+
+    @test_throws ErrorException insertcols!(layout, 0, 1)
+    @test_throws ErrorException insertcols!(layout, 5, 1)
+    @test_throws ErrorException insertrows!(layout, 0, 1)
+    @test_throws ErrorException insertrows!(layout, 5, 1)
+
+    insertcols!(layout, 3, 2)
+    @test gridcontent(dr1).span.cols == 1:1
+    @test gridcontent(dr2).span.cols == 2:5
+    @test gridcontent(dr3).span.cols == 6:6
+
+    insertrows!(layout, 3, 2)
+    @test gridcontent(dr1).span.rows == 1:1
+    @test gridcontent(dr4).span.rows == 2:5
+    @test gridcontent(dr5).span.rows == 6:6
+
+    @test gridcontent(dr6).span.cols == 2:5
+    @test gridcontent(dr6).span.rows == 2:5
+
+    @test gridcontent(dr7).span.cols == 5:5
+    @test gridcontent(dr8).span.rows == 5:5
+end
 
 @testset "setting col and row sizes and gaps" begin
     bbox = BBox(0, 1000, 0, 1000)
