@@ -503,6 +503,8 @@ function Base.show(io::IO, ::MIME"text/plain", gl::GridLayout)
 
     println(io, "GridLayout[$(gl.nrows), $(gl.ncols)] with $(length(gl.content)) children")
 
+    simplespan(span) = span.start == span.stop ? span.start : span
+
     for (i, c) in enumerate(gl.content)
         rows = c.span.rows
         cols = c.span.cols
@@ -513,9 +515,9 @@ function Base.show(io::IO, ::MIME"text/plain", gl::GridLayout)
         if content isa GridLayout
             downconnection = i < length(gl.content)
             str = spaceindent(repr(MIME"text/plain"(), content), 2, downconnection)
-            println(io, connector * "[$rows | $cols] $str")
+            println(io, connector * "[$(simplespan(rows)), $(simplespan(cols))] $str")
         else
-            println(io, connector * "[$rows | $cols] $(typeof(content))")
+            println(io, connector * "[$(simplespan(rows)), $(simplespan(cols))] $(typeof(content))")
         end
     end
 end
