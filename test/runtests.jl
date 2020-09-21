@@ -324,8 +324,8 @@ end
     text_long = repr(MIME"text/plain"(), gl)
     @test text_long == """
     GridLayout[3, 5] with 2 children
-     ┣━ [1:1 | 1:1] DebugRect
-     ┗━ [2:3 | 4:5] DebugRect
+     ┣━ [1, 1] DebugRect
+     ┗━ [2:3, 4:5] DebugRect
     """
     text_short = repr(gl)
     @test text_short == "GridLayout[3, 5] (2 children)"
@@ -335,7 +335,7 @@ end
 
     text_longer = repr(MIME"text/plain"(), gl)
     # this is actually a bit buggy with the newline space space newline at the end
-    @test text_longer == "GridLayout[3, 5] with 3 children\n ┣━ [1:1 | 1:1] DebugRect\n ┣━ [2:3 | 4:5] DebugRect\n ┗━ [1:1 | 2:2] GridLayout[5, 3] with 1 children\n   ┗━ [1:5 | 3:3] DebugRect\n  \n"
+    @test text_longer == "GridLayout[3, 5] with 3 children\n ┣━ [1, 1] DebugRect\n ┣━ [2:3, 4:5] DebugRect\n ┗━ [1, 2] GridLayout[5, 3] with 1 children\n   ┗━ [1:5, 3] DebugRect\n  \n"
 
 
     gl3 = GridLayout()
@@ -345,7 +345,7 @@ end
     text_long_downconnection = repr(MIME"text/plain"(), gl3)
 
     # this is also a bit buggy for the same reason as above
-    @test text_long_downconnection == "GridLayout[2, 2] with 2 children\n ┣━ [1:1 | 1:1] GridLayout[1, 1] with 1 children\n ┃ ┗━ [1:1 | 1:1] DebugRect\n ┃\n ┗━ [2:2 | 2:2] DebugRect\n"
+    @test text_long_downconnection == "GridLayout[2, 2] with 2 children\n ┣━ [1, 1] GridLayout[1, 1] with 1 children\n ┃ ┗━ [1, 1] DebugRect\n ┃\n ┗━ [2, 2] DebugRect\n"
 end
 
 @testset "vector and array assigning" begin
