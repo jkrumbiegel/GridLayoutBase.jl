@@ -51,6 +51,7 @@ function GridLayout(nrows::Int, ncols::Int;
         width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
 
     on(computedbboxobservable(gl)) do cbb
+        # 0.7s inference time for this anonymous function. TODO? precompile
         align_to_bbox!(gl, cbb)
     end
 
@@ -1246,7 +1247,7 @@ nrows(g::GridLayout) = g.nrows
 Base.size(g::GridLayout) = (nrows(g), ncols(g))
 
 Base.in(span1::Span, span2::Span) = span1.rows.start >= span2.rows.start &&
-    span1.rows.stop <= span2.rows.stop && 
+    span1.rows.stop <= span2.rows.stop &&
     span1.cols.start >= span2.cols.start &&
     span1.cols.stop <= span2.cols.stop
 
