@@ -1,3 +1,5 @@
+using InteractiveUtils
+
 const Emptykwargs = Base.Iterators.Pairs{Union{}, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}
 
 function _precompile_()
@@ -19,11 +21,23 @@ function _precompile_()
     end
     @assert precompile(align_to_bbox!, (GridLayout, FRect2D))
     @assert precompile(update_gl!, (GridLayout,))
+    for I in subtypes(Indexables), J in subtypes(Indexables)
+        @assert precompile(setindex!, (GridLayout, UnitRange{Int}, I, J))
+        @assert precompile(setindex!, (GridLayout, Any, I, J))
+    end
     @assert precompile(trim!, (GridLayout,))
     @assert precompile(sizeobservable!, (Observable{Any}, Observable{Any}))
-    for SizeAttrs in (Tuple{Auto,Auto}, Tuple{Nothing,Nothing}, Tuple{Fixed,Nothing}, Tuple{Int,Nothing}, Tuple{Nothing,Int}, Tuple{Int,Int})
-        for AutoSize in (Tuple{Nothing,Nothing}, Tuple{Float32,Float32})
-            @assert precompile(_reportedsizeobservable, (SizeAttrs, AutoSize, Inside, RectSides{Float32}, Tuple{Bool,Bool}))
-        end
+    @assert precompile(_reportedsizeobservable, (Tuple{SizeAttribute,SizeAttribute}, Tuple{AutoSize,AutoSize}, AlignMode, RectSides{Float32}, Tuple{Bool,Bool}))
+    for T in subtypes(Side)
+        @assert precompile(bbox_for_solving_from_side, (RowCols{Vector{Float64}}, FRect2D, RowCols{Int}, T))
     end
+    for S in (Left, Right, Top, Bottom)
+        @assert precompile(protrusion, (GridContent{GridLayout,GridLayout}, S))
+    end
+    @assert precompile(suggestedbboxobservable, (GridLayout,))
+    for VC in (Vector{Auto}, Vector{GapSize}, Vector{Fixed}, Vector{Relative}, Vector{ContentSize})
+        @assert precompile(convert_contentsizes, (Int, VC))
+    end
+    @assert precompile(filterenum, (Function, Type, Vector{ContentSize}))
+    @assert precompile(zcumsum, (Vector{Float64},))
 end
