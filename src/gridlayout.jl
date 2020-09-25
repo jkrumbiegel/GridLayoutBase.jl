@@ -51,45 +51,47 @@ function GridLayout(nrows::Int, ncols::Int;
         width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
 
     on(computedbboxobservable(gl)) do cbb
-        # 0.7s inference time for this anonymous function. TODO? precompile
         align_to_bbox!(gl, cbb)
     end
 
-    on(needs_update) do u
-        w = determinedirsize(gl, Col())
-        h = determinedirsize(gl, Row())
-
-        new_autosize = (w, h)
-        new_protrusions = RectSides{Float32}(
-            protrusion(gl, Left()),
-            protrusion(gl, Right()),
-            protrusion(gl, Bottom()),
-            protrusion(gl, Top()),
-        )
-
-        if autosizeobservable(gl)[] == new_autosize &&
-                protrusionsobservable(gl)[] == new_protrusions
-
-            suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
-        else
-            # otherwise these values will not already be up to date when adding the
-            # gridlayout into the next one
-
-            # TODO: this is a double update?
-            protrusionsobservable(gl)[] = new_protrusions
-            autosizeobservable(gl)[] = new_autosize
-
-            if isnothing(gridcontent(gl))
-                suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
-            end
-        end
-
-        nothing
+    on(needs_update) do _
+        update_gl!(gl)
     end
 
     gl
 end
 
+function update_gl!(gl)
+    w = determinedirsize(gl, Col())
+    h = determinedirsize(gl, Row())
+
+    new_autosize = (w, h)
+    new_protrusions = RectSides{Float32}(
+        protrusion(gl, Left()),
+        protrusion(gl, Right()),
+        protrusion(gl, Bottom()),
+        protrusion(gl, Top()),
+    )
+
+    if autosizeobservable(gl)[] == new_autosize &&
+            protrusionsobservable(gl)[] == new_protrusions
+
+        suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
+    else
+        # otherwise these values will not already be up to date when adding the
+        # gridlayout into the next one
+
+        # TODO: this is a double update?
+        protrusionsobservable(gl)[] = new_protrusions
+        autosizeobservable(gl)[] = new_autosize
+
+        if isnothing(gridcontent(gl))
+            suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
+        end
+    end
+
+    nothing
+end
 
 function validategridlayout(gl::GridLayout)
     if gl.nrows < 1

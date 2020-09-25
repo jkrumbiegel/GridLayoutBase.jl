@@ -18,19 +18,7 @@ function LayoutObservables(T::Type, width::Observable, height::Observable,
 
     protrusions_after_alignmode = Observable(RectSides{Float32}(0, 0, 0, 0))
     onany(protrusions, alignmode) do prot, al
-        protrusions_after_alignmode[] = if al isa Inside
-            prot
-        elseif al isa Outside
-            RectSides{Float32}(0, 0, 0, 0)
-        else
-            maprectsides() do side
-                if isnothing(getfield(al.padding, side))
-                    getfield(prot, side)
-                else
-                    0f0
-                end
-            end
-        end
+        protrusions_after_alignmode[] = aligned_protrusion(prot, al)
     end
 
     autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
@@ -43,6 +31,21 @@ end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
 
+function aligned_protrusion(prot, @nospecialize(al::AlignMode))
+    if al isa Inside
+        prot
+    elseif al isa Outside
+        RectSides{Float32}(0, 0, 0, 0)
+    else
+        maprectsides() do side
+            if isnothing(getfield(al.padding, side))
+                getfield(prot, side)
+            else
+                0f0
+            end
+        end
+    end
+end
 
 create_suggested_bboxobservable(n::Nothing) = Observable(BBox(0, 100, 0, 100))
 create_suggested_bboxobservable(tup::Tuple) = Observable(BBox(tup...))
@@ -77,52 +80,55 @@ function reportedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
 
     onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs,
             autosize, alignmode, protrusions, tellsizeobservable
-
-        wattr, hattr = sizeattrs
-        wauto, hauto = autosize
-        tellw, tellh = tellsizeobservable
-
-        wsize = computed_size(wattr, wauto, tellw)
-        hsize = computed_size(hattr, hauto, tellh)
-
-        rsizeobservable[] = if alignmode isa Inside
-            (wsize, hsize)
-        elseif alignmode isa Outside
-            (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
-             isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
-        else
-            w = if isnothing(wsize)
-                nothing
-            else
-                w = wsize
-                if !isnothing(alignmode.padding.left)
-                    w += protrusions.left + alignmode.padding.left
-                end
-                if !isnothing(alignmode.padding.right)
-                    w += protrusions.right + alignmode.padding.right
-                end
-                w
-            end
-            h = if isnothing(hsize)
-                nothing
-            else
-                h = hsize
-                if !isnothing(alignmode.padding.bottom)
-                    h += protrusions.bottom + alignmode.padding.bottom
-                end
-                if !isnothing(alignmode.padding.top)
-                    h += protrusions.top + alignmode.padding.top
-                end
-                h
-            end
-            (w, h)
-        end
+        rsizeobservable[] = _reportedsizeobservable(sizeattrs, autosize, alignmode, protrusions, tellsizeobservable)
     end
 
     # trigger first value
     sizeattrs[] = sizeattrs[]
 
     rsizeobservable
+end
+
+function _reportedsizeobservable(sizeattrs, autosize, alignmode, protrusions, tellsizeobservable)
+    wattr, hattr = sizeattrs
+    wauto, hauto = autosize
+    tellw, tellh = tellsizeobservable
+
+    wsize = computed_size(wattr, wauto, tellw)
+    hsize = computed_size(hattr, hauto, tellh)
+
+    return if alignmode isa Inside
+        (wsize, hsize)
+    elseif alignmode isa Outside
+        (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
+         isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
+    else
+        w = if isnothing(wsize)
+            nothing
+        else
+            w = wsize
+            if !isnothing(alignmode.padding.left)
+                w += protrusions.left + alignmode.padding.left
+            end
+            if !isnothing(alignmode.padding.right)
+                w += protrusions.right + alignmode.padding.right
+            end
+            w
+        end
+        h = if isnothing(hsize)
+            nothing
+        else
+            h = hsize
+            if !isnothing(alignmode.padding.bottom)
+                h += protrusions.bottom + alignmode.padding.bottom
+            end
+            if !isnothing(alignmode.padding.top)
+                h += protrusions.top + alignmode.padding.top
+            end
+            h
+        end
+        (w, h)
+    end
 end
 
 function computed_size(sizeattr, autosize, tellsize)
