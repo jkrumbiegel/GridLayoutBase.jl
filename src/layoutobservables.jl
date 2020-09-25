@@ -1,4 +1,4 @@
-function LayoutObservables(T::Type, width::Observable, height::Observable,
+function LayoutObservables{T}(width::Observable, height::Observable,
         tellwidth::Observable, tellheight::Observable, halign::Observable,
         valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
@@ -6,7 +6,7 @@ function LayoutObservables(T::Type, width::Observable, height::Observable,
         reportedsize = nothing,
         autosize = nothing,
         computedbbox = nothing,
-        gridcontent = nothing)
+        gridcontent = nothing) where T
 
     sizeobservable = sizeobservable!(width, height)
     alignment = map(tuple, halign, valign)

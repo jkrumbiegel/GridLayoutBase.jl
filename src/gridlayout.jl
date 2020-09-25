@@ -41,7 +41,7 @@ function GridLayout(nrows::Int, ncols::Int;
     halign = any_observable(halign)
     valign = any_observable(valign)
 
-    layoutobservables = layoutobservables = LayoutObservables(GridLayout, width,
+    layoutobservables = layoutobservables = LayoutObservables{GridLayout}(width,
         height, tellwidth, tellheight, halign, valign;
         suggestedbbox = bbox)
 
