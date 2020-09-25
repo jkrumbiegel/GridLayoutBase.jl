@@ -64,7 +64,7 @@ create_protrusions(p::Observable{RectSides{Float32}}) = p
 create_protrusions(p::RectSides{Float32}) = Observable(p)
 
 
-function sizeobservable!(widthattr::Observable, heightattr::Observable)
+function sizeobservable!(@nospecialize(widthattr::Observable), @nospecialize(heightattr::Observable))
     sizeattrs = Observable{Tuple{Any, Any}}((widthattr[], heightattr[]))
     onany(widthattr, heightattr) do w, h
         sizeattrs[] = (w, h)
@@ -78,8 +78,8 @@ function reportedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
     # set up rsizeobservable with correct type manually
     rsizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
 
-    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs,
-            autosize, alignmode, protrusions, tellsizeobservable
+    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs::Tuple{SizeAttribute,SizeAttribute},
+            autosize, alignmode::AlignMode, protrusions, tellsizeobservable
         rsizeobservable[] = _reportedsizeobservable(sizeattrs, autosize, alignmode, protrusions, tellsizeobservable)
     end
 
@@ -89,7 +89,7 @@ function reportedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
     rsizeobservable
 end
 
-function _reportedsizeobservable(sizeattrs, autosize, alignmode, protrusions, tellsizeobservable)
+function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,SizeAttribute}), @nospecialize(autosize::Tuple{AutoSize,AutoSize}), @nospecialize(alignmode::AlignMode), protrusions, tellsizeobservable::Tuple{Bool,Bool})
     wattr, hattr = sizeattrs
     wauto, hauto = autosize
     tellw, tellh = tellsizeobservable

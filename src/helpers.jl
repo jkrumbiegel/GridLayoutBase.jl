@@ -28,3 +28,8 @@ function swap!(layout_elements...)
         parent[span.rows, span.cols, side] = gc.content
     end
 end
+
+function zcumsum(v::AbstractVector{T}) where T
+    vpad = [[zero(T)]; v]  # inference-friendly
+    cumsum!(vpad, vpad)
+end

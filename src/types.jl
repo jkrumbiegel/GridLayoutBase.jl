@@ -183,6 +183,8 @@ mutable struct GridLayout
 end
 
 const Indexables = Union{UnitRange, Int, Colon}
+const SizeAttribute = Union{Nothing, Real, Fixed, Relative, Auto}
+const AutoSize = Union{Nothing, Float32}
 
 struct GridPosition
     layout::GridLayout

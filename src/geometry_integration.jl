@@ -33,7 +33,7 @@ Base.getindex(rowcols::RowCols, ::Bottom) = rowcols.bottoms
 Calls f over all sides (Left, Right, Top, Bottom), and creates a BBox from the result of f(side)
 """
 function eachside(f)
-    return BBox(map(f, (Left(), Right(), Bottom(), Top()))...)
+    return BBox(f(Left()), f(Right()), f(Bottom()), f(Top()))
 end
 
 """
