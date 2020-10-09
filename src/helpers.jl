@@ -1,3 +1,5 @@
+Base.eltype(::Type{RectSides{T}}) where T = T
+
 """
 Shorthand for `isnothing(optional) ? fallback : optional`
 """

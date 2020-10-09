@@ -664,8 +664,8 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
         rightal = getside(alignmode, Right())
         leftal = getside(alignmode, Left())
         width(bbox) - sumcolgaps -
-            (isnothing(leftal) ? 0 : leftprot) -
-            (isnothing(rightal) ? 0 : rightprot)
+            (isnothing(leftal) ? zero(leftprot) : leftprot) -
+            (isnothing(rightal) ? zero(rightprot) : rightprot)
     else
         error("Unknown AlignMode of type $(typeof(alignmode))")
     end
@@ -678,8 +678,8 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
         topal = getside(alignmode, Top())
         bottomal = getside(alignmode, Bottom())
         height(bbox) - sumrowgaps -
-            (isnothing(bottomal) ? 0 : bottomprot) -
-            (isnothing(topal) ? 0 : topprot)
+            (isnothing(bottomal) ? zero(bottomprot) : bottomprot) -
+            (isnothing(topal) ? zero(topprot) : topprot)
     else
         error("Unknown AlignMode of type $(typeof(alignmode))")
     end
@@ -741,7 +741,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
     elseif alignmode isa Mixed
         leftal = getside(alignmode, Left())
         left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
-            zcumsum(finalcolgaps) .+ (isnothing(leftal) ? 0.0 : leftprot)
+            zcumsum(finalcolgaps) .+ (isnothing(leftal) ? zero(leftprot) : leftprot)
     else
         error("Unknown AlignMode of type $(typeof(alignmode))")
     end
@@ -757,7 +757,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
     elseif alignmode isa Mixed
         topal = getside(alignmode, Top())
         top(bbox) .- zcumsum(rowheights[1:end-1]) .-
-            zcumsum(finalrowgaps) .- (isnothing(topal) ? 0 : topprot)
+            zcumsum(finalrowgaps) .- (isnothing(topal) ? zero(topprot) : topprot)
     else
         error("Unknown AlignMode of type $(typeof(alignmode))")
     end
