@@ -1,3 +1,5 @@
+Base.eltype(::Type{RectSides{T}}) where T = T
+
 """
 Shorthand for `isnothing(optional) ? fallback : optional`
 """
@@ -27,4 +29,9 @@ function swap!(layout_elements...)
     for (gc, parent, span, side) in zip(circshift(gridcontents, 1), parents, spans, sides)
         parent[span.rows, span.cols, side] = gc.content
     end
+end
+
+function zcumsum(v::AbstractVector{T}) where T
+    vpad = [[zero(T)]; v]  # inference-friendly
+    cumsum!(vpad, vpad)
 end

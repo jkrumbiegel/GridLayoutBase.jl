@@ -1,12 +1,12 @@
-function LayoutObservables(T::Type, width::Observable, height::Observable,
+function LayoutObservables{T}(width::Observable, height::Observable,
         tellwidth::Observable, tellheight::Observable, halign::Observable,
-        valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
+        valign::Observable, alignmode::Observable{AlignMode} = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
         protrusions = nothing,
         reportedsize = nothing,
         autosize = nothing,
         computedbbox = nothing,
-        gridcontent = nothing)
+        gridcontent = nothing) where T
 
     sizeobservable = sizeobservable!(width, height)
     alignment = map(tuple, halign, valign)
@@ -18,19 +18,7 @@ function LayoutObservables(T::Type, width::Observable, height::Observable,
 
     protrusions_after_alignmode = Observable(RectSides{Float32}(0, 0, 0, 0))
     onany(protrusions, alignmode) do prot, al
-        protrusions_after_alignmode[] = if al isa Inside
-            prot
-        elseif al isa Outside
-            RectSides{Float32}(0, 0, 0, 0)
-        else
-            maprectsides() do side
-                if isnothing(getfield(al.padding, side))
-                    getfield(prot, side)
-                else
-                    0f0
-                end
-            end
-        end
+        protrusions_after_alignmode[] = aligned_protrusion(prot, al)
     end
 
     autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
@@ -43,6 +31,21 @@ end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
 
+function aligned_protrusion(prot, @nospecialize(al::AlignMode))
+    if al isa Inside
+        prot
+    elseif al isa Outside
+        RectSides{Float32}(0, 0, 0, 0)
+    else
+        maprectsides() do side
+            if isnothing(getfield(al.padding, side))
+                getfield(prot, side)
+            else
+                0f0
+            end
+        end
+    end
+end
 
 create_suggested_bboxobservable(n::Nothing) = Observable(BBox(0, 100, 0, 100))
 create_suggested_bboxobservable(tup::Tuple) = Observable(BBox(tup...))
@@ -61,7 +64,7 @@ create_protrusions(p::Observable{RectSides{Float32}}) = p
 create_protrusions(p::RectSides{Float32}) = Observable(p)
 
 
-function sizeobservable!(widthattr::Observable, heightattr::Observable)
+function sizeobservable!(@nospecialize(widthattr::Observable), @nospecialize(heightattr::Observable))
     sizeattrs = Observable{Tuple{Any, Any}}((widthattr[], heightattr[]))
     onany(widthattr, heightattr) do w, h
         sizeattrs[] = (w, h)
@@ -75,54 +78,57 @@ function reportedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
     # set up rsizeobservable with correct type manually
     rsizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
 
-    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs,
-            autosize, alignmode, protrusions, tellsizeobservable
-
-        wattr, hattr = sizeattrs
-        wauto, hauto = autosize
-        tellw, tellh = tellsizeobservable
-
-        wsize = computed_size(wattr, wauto, tellw)
-        hsize = computed_size(hattr, hauto, tellh)
-
-        rsizeobservable[] = if alignmode isa Inside
-            (wsize, hsize)
-        elseif alignmode isa Outside
-            (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
-             isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
-        else
-            w = if isnothing(wsize)
-                nothing
-            else
-                w = wsize
-                if !isnothing(alignmode.padding.left)
-                    w += protrusions.left + alignmode.padding.left
-                end
-                if !isnothing(alignmode.padding.right)
-                    w += protrusions.right + alignmode.padding.right
-                end
-                w
-            end
-            h = if isnothing(hsize)
-                nothing
-            else
-                h = hsize
-                if !isnothing(alignmode.padding.bottom)
-                    h += protrusions.bottom + alignmode.padding.bottom
-                end
-                if !isnothing(alignmode.padding.top)
-                    h += protrusions.top + alignmode.padding.top
-                end
-                h
-            end
-            (w, h)
-        end
+    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs::Tuple{SizeAttribute,SizeAttribute},
+            autosize, alignmode::AlignMode, protrusions, tellsizeobservable
+        rsizeobservable[] = _reportedsizeobservable(sizeattrs, autosize, alignmode, protrusions, tellsizeobservable)
     end
 
     # trigger first value
     sizeattrs[] = sizeattrs[]
 
     rsizeobservable
+end
+
+function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,SizeAttribute}), @nospecialize(autosize::Tuple{AutoSize,AutoSize}), @nospecialize(alignmode::AlignMode), protrusions, tellsizeobservable::Tuple{Bool,Bool})
+    wattr, hattr = sizeattrs
+    wauto, hauto = autosize
+    tellw, tellh = tellsizeobservable
+
+    wsize = computed_size(wattr, wauto, tellw)
+    hsize = computed_size(hattr, hauto, tellh)
+
+    return if alignmode isa Inside
+        (wsize, hsize)
+    elseif alignmode isa Outside
+        (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
+         isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
+    else
+        w = if isnothing(wsize)
+            nothing
+        else
+            w = wsize
+            if !isnothing(alignmode.padding.left)
+                w += protrusions.left + alignmode.padding.left
+            end
+            if !isnothing(alignmode.padding.right)
+                w += protrusions.right + alignmode.padding.right
+            end
+            w
+        end
+        h = if isnothing(hsize)
+            nothing
+        else
+            h = hsize
+            if !isnothing(alignmode.padding.bottom)
+                h += protrusions.bottom + alignmode.padding.bottom
+            end
+            if !isnothing(alignmode.padding.top)
+                h += protrusions.top + alignmode.padding.top
+            end
+            h
+        end
+        (w, h)
+    end
 end
 
 function computed_size(sizeattr, autosize, tellsize)
@@ -164,9 +170,11 @@ function alignedbboxobservable!(
         # we only need to know here if there are relative sizes given, because
         # those can only be computed knowing the suggestedbbox
         widthattr, heightattr = sizeattrs[]
+        prot = protrusions[]
+        T = eltype(prot)
 
         cwidth, cheight = rsize
-        w_target = if isnothing(cwidth)
+        w_target = T(if isnothing(cwidth)
             @match widthattr begin
                 wa::Relative => wa.x * bw
                 wa::Nothing => bw
@@ -184,9 +192,9 @@ function alignedbboxobservable!(
             end
         else
             cwidth
-        end
+        end)::T
 
-        h_target = if isnothing(cheight)
+        h_target = T(if isnothing(cheight)
             @match heightattr begin
                 ha::Relative => ha.x * bh
                 ha::Nothing => bh
@@ -204,29 +212,31 @@ function alignedbboxobservable!(
             end
         else
             cheight
-        end
+        end)::T
 
-        inner_w, inner_h = if alignmode[] isa Inside
+        am = alignmode[]
+        inner_w, inner_h = if am isa Inside
             (w_target, h_target)
-        elseif alignmode[] isa Outside
-            (w_target - protrusions[].left - protrusions[].right - alignmode[].padding.left - alignmode[].padding.right,
-             h_target - protrusions[].top - protrusions[].bottom - alignmode[].padding.top - alignmode[].padding.bottom)
+        elseif am isa Outside
+            (w_target - prot.left - prot.right - am.padding.left - am.padding.right,
+             h_target - prot.top - prot.bottom - am.padding.top - am.padding.bottom)
         else
+            am = am::Mixed
             let
                 w = w_target
-                if !isnothing(alignmode[].padding.left)
-                    w -= protrusions[].left + alignmode[].padding.left
+                if !isnothing(am.padding.left)
+                    w -= prot.left + am.padding.left
                 end
-                if !isnothing(alignmode[].padding.right)
-                    w -= protrusions[].right + alignmode[].padding.right
+                if !isnothing(am.padding.right)
+                    w -= prot.right + am.padding.right
                 end
 
                 h = h_target
-                if !isnothing(alignmode[].padding.bottom)
-                    h -= protrusions[].bottom + alignmode[].padding.bottom
+                if !isnothing(am.padding.bottom)
+                    h -= prot.bottom + am.padding.bottom
                 end
-                if !isnothing(alignmode[].padding.top)
-                    h -= protrusions[].top + alignmode[].padding.top
+                if !isnothing(am.padding.top)
+                    h -= prot.top + am.padding.top
                 end
 
                 w, h
@@ -253,17 +263,18 @@ function alignedbboxobservable!(
             x => error("Invalid vertical alignment $x (only Real or :bottom, :center, or :top allowed).")
         end
 
-        if alignmode[] isa Inside
+        if am isa Inside
             # width and height are unaffected
-        elseif alignmode[] isa Outside
-            xshift = xshift + protrusions[].left + alignmode[].padding.left
-            yshift = yshift + protrusions[].bottom + alignmode[].padding.bottom
+        elseif am isa Outside
+            xshift = xshift + prot.left + am.padding.left
+            yshift = yshift + prot.bottom + am.padding.bottom
         else
-            if !isnothing(alignmode[].padding.left)
-                xshift += protrusions[].left + alignmode[].padding.left
+            am = am::Mixed
+            if !isnothing(am.padding.left)
+                xshift += prot.left + am.padding.left
             end
-            if !isnothing(alignmode[].padding.bottom)
-                yshift += protrusions[].bottom + alignmode[].padding.bottom
+            if !isnothing(am.padding.bottom)
+                yshift += prot.bottom + am.padding.bottom
             end
         end
 

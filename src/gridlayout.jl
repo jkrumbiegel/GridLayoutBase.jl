@@ -10,21 +10,21 @@ function GridLayout(nrows::Int, ncols::Int;
         colsizes = nothing,
         addedrowgaps = nothing,
         addedcolgaps = nothing,
-        alignmode = Inside(),
+        alignmode::AlignMode = Inside(),
         equalprotrusiongaps = (false, false),
         bbox = nothing,
-        width = Auto(),
-        height = Auto(),
-        tellwidth = true,
-        tellheight = true,
+        width::SizeAttribute = Auto(),
+        height::SizeAttribute = Auto(),
+        tellwidth::Bool = true,
+        tellheight::Bool = true,
         halign = :center,
         valign = :center,
         default_rowgap = DEFAULT_ROWGAP_GETTER[](),
         default_colgap = DEFAULT_COLGAP_GETTER[](),
         kwargs...)
 
-    default_rowgap = default_rowgap isa Number ? Fixed(default_rowgap) : default_rowgap
-    default_colgap = default_colgap isa Number ? Fixed(default_colgap) : default_colgap
+    default_rowgap::GapSize = default_rowgap isa Number ? Fixed(default_rowgap)::Fixed : default_rowgap
+    default_colgap::GapSize = default_colgap isa Number ? Fixed(default_colgap)::Fixed : default_colgap
     rowsizes = convert_contentsizes(nrows, rowsizes)
     colsizes = convert_contentsizes(ncols, colsizes)
     addedrowgaps = convert_gapsizes(nrows - 1, addedrowgaps, default_rowgap)
@@ -32,7 +32,7 @@ function GridLayout(nrows::Int, ncols::Int;
 
     needs_update = Observable(true)
 
-    content = []
+    content = GridContent[]
 
     width = any_observable(width)
     height = any_observable(height)
@@ -41,7 +41,7 @@ function GridLayout(nrows::Int, ncols::Int;
     halign = any_observable(halign)
     valign = any_observable(valign)
 
-    layoutobservables = layoutobservables = LayoutObservables(GridLayout, width,
+    layoutobservables = layoutobservables = LayoutObservables{GridLayout}(width,
         height, tellwidth, tellheight, halign, valign;
         suggestedbbox = bbox)
 
@@ -54,41 +54,44 @@ function GridLayout(nrows::Int, ncols::Int;
         align_to_bbox!(gl, cbb)
     end
 
-    on(needs_update) do u
-        w = determinedirsize(gl, Col())
-        h = determinedirsize(gl, Row())
-
-        new_autosize = (w, h)
-        new_protrusions = RectSides{Float32}(
-            protrusion(gl, Left()),
-            protrusion(gl, Right()),
-            protrusion(gl, Bottom()),
-            protrusion(gl, Top()),
-        )
-
-        if autosizeobservable(gl)[] == new_autosize &&
-                protrusionsobservable(gl)[] == new_protrusions
-
-            suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
-        else
-            # otherwise these values will not already be up to date when adding the
-            # gridlayout into the next one
-
-            # TODO: this is a double update?
-            protrusionsobservable(gl)[] = new_protrusions
-            autosizeobservable(gl)[] = new_autosize
-
-            if isnothing(gridcontent(gl))
-                suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
-            end
-        end
-
-        nothing
+    on(needs_update) do _
+        update_gl!(gl)
     end
 
     gl
 end
 
+function update_gl!(gl)
+    w = determinedirsize(gl, Col())
+    h = determinedirsize(gl, Row())
+
+    new_autosize = (w, h)
+    new_protrusions = RectSides{Float32}(
+        protrusion(gl, Left()),
+        protrusion(gl, Right()),
+        protrusion(gl, Bottom()),
+        protrusion(gl, Top()),
+    )
+
+    if autosizeobservable(gl)[] == new_autosize &&
+            protrusionsobservable(gl)[] == new_protrusions
+
+        suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
+    else
+        # otherwise these values will not already be up to date when adding the
+        # gridlayout into the next one
+
+        # TODO: this is a double update?
+        protrusionsobservable(gl)[] = new_protrusions
+        autosizeobservable(gl)[] = new_autosize
+
+        if isnothing(gridcontent(gl))
+            suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
+        end
+    end
+
+    nothing
+end
 
 function validategridlayout(gl::GridLayout)
     if gl.nrows < 1
@@ -182,10 +185,10 @@ end
 
 
 function convert_contentsizes(n, sizes)::Vector{ContentSize}
-    if isnothing(sizes)
-        [Auto() for _ in 1:n]
+    if sizes === nothing
+        ContentSize[Auto() for _ in 1:n]
     elseif sizes isa ContentSize
-        [sizes for _ in 1:n]
+        ContentSize[sizes for _ in 1:n]
     elseif sizes isa Vector{<:ContentSize}
         length(sizes) == n ? sizes : error("$(length(sizes)) sizes instead of $n")
     else
@@ -194,10 +197,10 @@ function convert_contentsizes(n, sizes)::Vector{ContentSize}
 end
 
 function convert_gapsizes(n, gaps, defaultsize)::Vector{GapSize}
-    if isnothing(gaps)
-        [defaultsize for _ in 1:n]
+    if gaps === nothing
+        GapSize[defaultsize for _ in 1:n]
     elseif gaps isa GapSize
-        [gaps for _ in 1:n]
+        GapSize[gaps for _ in 1:n]
     elseif gaps isa Vector{<:GapSize}
         length(gaps) == n ? gaps : error("$(length(gaps)) gaps instead of $n")
     else
@@ -596,24 +599,25 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
 
     # compute the actual bbox for the content given that there might be outside
     # padding that needs to be removed
-    bbox = if gl.alignmode isa Outside
-        pad = gl.alignmode.padding
+    alignmode = gl.alignmode
+    bbox = if alignmode isa Outside
+        pad = alignmode.padding
         BBox(
             left(suggestedbbox) + pad.left,
             right(suggestedbbox) - pad.right,
             bottom(suggestedbbox) + pad.bottom,
             top(suggestedbbox) - pad.top)
-    elseif gl.alignmode isa Inside
+    elseif alignmode isa Inside
         suggestedbbox
-    elseif gl.alignmode isa Mixed
-        pad = gl.alignmode.padding
+    elseif alignmode isa Mixed
+        pad = alignmode.padding
         BBox(
             left(suggestedbbox) + ifnothing(pad.left, 0f0),
             right(suggestedbbox) - ifnothing(pad.right, 0f0),
             bottom(suggestedbbox) + ifnothing(pad.bottom, 0f0),
             top(suggestedbbox) - ifnothing(pad.top, 0f0))
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode))")
+        error("Unknown AlignMode of type $(typeof(alignmode))")
     end
 
     # first determine how big the protrusions on each side of all columns and rows are
@@ -652,32 +656,32 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
     sumrowgaps = (gl.nrows <= 1) ? 0.0 : sum(rowgaps)
 
     # compute what space remains for the inner parts of the plots
-    remaininghorizontalspace = if gl.alignmode isa Inside
+    remaininghorizontalspace = if alignmode isa Inside
         width(bbox) - sumcolgaps
-    elseif gl.alignmode isa Outside
+    elseif alignmode isa Outside
         width(bbox) - sumcolgaps - leftprot - rightprot
-    elseif gl.alignmode isa Mixed
-        rightal = getside(gl.alignmode, Right())
-        leftal = getside(gl.alignmode, Left())
+    elseif alignmode isa Mixed
+        rightal = getside(alignmode, Right())
+        leftal = getside(alignmode, Left())
         width(bbox) - sumcolgaps -
-            (isnothing(leftal) ? 0 : leftprot) -
-            (isnothing(rightal) ? 0 : rightprot)
+            (isnothing(leftal) ? zero(leftprot) : leftprot) -
+            (isnothing(rightal) ? zero(rightprot) : rightprot)
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode))")
+        error("Unknown AlignMode of type $(typeof(alignmode))")
     end
 
-    remainingverticalspace = if gl.alignmode isa Inside
+    remainingverticalspace = if alignmode isa Inside
         height(bbox) - sumrowgaps
-    elseif gl.alignmode isa Outside
+    elseif alignmode isa Outside
         height(bbox) - sumrowgaps - topprot - bottomprot
-    elseif gl.alignmode isa Mixed
-        topal = getside(gl.alignmode, Top())
-        bottomal = getside(gl.alignmode, Bottom())
+    elseif alignmode isa Mixed
+        topal = getside(alignmode, Top())
+        bottomal = getside(alignmode, Bottom())
         height(bbox) - sumrowgaps -
-            (isnothing(bottomal) ? 0 : bottomprot) -
-            (isnothing(topal) ? 0 : topprot)
+            (isnothing(bottomal) ? zero(bottomprot) : bottomprot) -
+            (isnothing(topal) ? zero(topprot) : topprot)
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode))")
+        error("Unknown AlignMode of type $(typeof(alignmode))")
     end
 
     # compute how much gap to add, in case e.g. labels are too close together
@@ -722,40 +726,40 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
     # bigger or smaller than the bounding box it occupies)
 
     gridwidth = sum(colwidths) + sum(finalcolgaps) +
-        (gl.alignmode isa Outside ? (leftprot + rightprot) : 0.0)
+        (alignmode isa Outside ? (leftprot + rightprot) : 0.0)
     gridheight = sum(rowheights) + sum(finalrowgaps) +
-        (gl.alignmode isa Outside ? (topprot + bottomprot) : 0.0)
+        (alignmode isa Outside ? (topprot + bottomprot) : 0.0)
 
 
     # compute the x values for all left and right column boundaries
-    xleftcols = if gl.alignmode isa Inside
-        left(bbox) .+ cumsum([0; colwidths[1:end-1]]) .+
-            cumsum([0; finalcolgaps])
-    elseif gl.alignmode isa Outside
-        left(bbox) .+ cumsum([0; colwidths[1:end-1]]) .+
-            cumsum([0; finalcolgaps]) .+ leftprot
-    elseif gl.alignmode isa Mixed
-        leftal = getside(gl.alignmode, Left())
-        left(bbox) .+ cumsum([0; colwidths[1:end-1]]) .+
-            cumsum([0; finalcolgaps]) .+ (isnothing(leftal) ? 0 : leftprot)
+    xleftcols = if alignmode isa Inside
+        left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+            zcumsum(finalcolgaps)
+    elseif alignmode isa Outside
+        left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+            zcumsum(finalcolgaps) .+ leftprot
+    elseif alignmode isa Mixed
+        leftal = getside(alignmode, Left())
+        left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+            zcumsum(finalcolgaps) .+ (isnothing(leftal) ? zero(leftprot) : leftprot)
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode))")
+        error("Unknown AlignMode of type $(typeof(alignmode))")
     end
     xrightcols = xleftcols .+ colwidths
 
     # compute the y values for all top and bottom row boundaries
-    ytoprows = if gl.alignmode isa Inside
-        top(bbox) .- cumsum([0; rowheights[1:end-1]]) .-
-            cumsum([0; finalrowgaps])
-    elseif gl.alignmode isa Outside
-        top(bbox) .- cumsum([0; rowheights[1:end-1]]) .-
-            cumsum([0; finalrowgaps]) .- topprot
-    elseif gl.alignmode isa Mixed
-        topal = getside(gl.alignmode, Top())
-        top(bbox) .- cumsum([0; rowheights[1:end-1]]) .-
-            cumsum([0; finalrowgaps]) .- (isnothing(topal) ? 0 : topprot)
+    ytoprows = if alignmode isa Inside
+        top(bbox) .- zcumsum(rowheights[1:end-1]) .-
+            zcumsum(finalrowgaps)
+    elseif alignmode isa Outside
+        top(bbox) .- zcumsum(rowheights[1:end-1]) .-
+            zcumsum(finalrowgaps) .- topprot
+    elseif alignmode isa Mixed
+        topal = getside(alignmode, Top())
+        top(bbox) .- zcumsum(rowheights[1:end-1]) .-
+            zcumsum(finalrowgaps) .- (isnothing(topal) ? zero(topprot) : topprot)
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode))")
+        error("Unknown AlignMode of type $(typeof(alignmode))")
     end
     ybottomrows = ytoprows .- rowheights
 
@@ -906,6 +910,11 @@ function determinedirsize(idir, gl, dir::GridDir)
     nothing
 end
 
+# a function that iterates over those sizes that belong to a type T
+# while enumerating all indices, so that i can be used to index colwidths / rowheights
+# and determinedcols / determinedrows
+filterenum(f, T::Type, iter) = foreach(f, ((i, value) for (i, value) in enumerate(iter) if value isa T))
+
 
 function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)
     # the space for columns and for rows is divided depending on the sizes
@@ -927,12 +936,6 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)
 
     determinedcols = zeros(Bool, gl.ncols)
     determinedrows = zeros(Bool, gl.nrows)
-
-    # a function that iterates over those sizes that belong to a type T
-    # while enumerating all indices, so that i can be used to index colwidths / rowheights
-    # and determinedcols / determinedrows
-    filterenum(f, T::Type, iter) = foreach(f, ((i, value) for (i, value) in enumerate(iter) if value isa T))
-
 
     # first fixed sizes
     filterenum(Fixed, gl.colsizes) do (i, fixed)
@@ -1246,7 +1249,7 @@ nrows(g::GridLayout) = g.nrows
 Base.size(g::GridLayout) = (nrows(g), ncols(g))
 
 Base.in(span1::Span, span2::Span) = span1.rows.start >= span2.rows.start &&
-    span1.rows.stop <= span2.rows.stop && 
+    span1.rows.stop <= span2.rows.stop &&
     span1.cols.start >= span2.cols.start &&
     span1.cols.stop <= span2.cols.stop
 

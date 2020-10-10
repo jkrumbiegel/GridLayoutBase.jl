@@ -5,6 +5,7 @@ version = "0.3.7"
 
 [deps]
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 Match = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
 Observables = "510215fc-4207-5dde-b226-833fc4488ee2"
 
