@@ -2,15 +2,15 @@ GridLayout(; kwargs...) = GridLayout(1, 1; kwargs...)
 
 # GridLayout(scene::Scene, args...; kwargs...) = GridLayout(args...; bbox = lift(x -> BBox(x), pixelarea(scene)), parentscene = scene, kwargs...)
 
-any_observable(x::Observable) = x
-any_observable(x) = Observable{Any}(x)
+observablify(x::Observable) = x
+observablify(x, type=Any) = Observable{type}(x)
 
 function GridLayout(nrows::Int, ncols::Int;
         rowsizes = nothing,
         colsizes = nothing,
         addedrowgaps = nothing,
         addedcolgaps = nothing,
-        alignmode::AlignMode = Inside(),
+        alignmode = Inside(),
         equalprotrusiongaps = (false, false),
         bbox = nothing,
         width::SizeAttribute = Auto(),
@@ -34,12 +34,13 @@ function GridLayout(nrows::Int, ncols::Int;
 
     content = GridContent[]
 
-    width = any_observable(width)
-    height = any_observable(height)
-    tellwidth = any_observable(tellwidth)
-    tellheight = any_observable(tellheight)
-    halign = any_observable(halign)
-    valign = any_observable(valign)
+    alignmode = observablify(alignmode, AlignMode)
+    width = observablify(width)
+    height = observablify(height)
+    tellwidth = observablify(tellwidth)
+    tellheight = observablify(tellheight)
+    halign = observablify(halign)
+    valign = observablify(valign)
 
     layoutobservables = layoutobservables = LayoutObservables{GridLayout}(width,
         height, tellwidth, tellheight, halign, valign;
@@ -599,7 +600,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
 
     # compute the actual bbox for the content given that there might be outside
     # padding that needs to be removed
-    alignmode = gl.alignmode
+    alignmode = gl.alignmode[]
     bbox = if alignmode isa Outside
         pad = alignmode.padding
         BBox(
@@ -856,17 +857,17 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
     end
 
     inner_size_combined = sum_dirsizes + inner_gapsizes + addeddirgaps
-    return if gl.alignmode isa Inside
+    return if gl.alignmode[] isa Inside
         inner_size_combined
-    elseif gl.alignmode isa Outside
+    elseif gl.alignmode[] isa Outside
         paddings = if gdir isa Row
-            gl.alignmode.padding.top + gl.alignmode.padding.bottom
+            gl.alignmode[].padding.top + gl.alignmode[].padding.bottom
         else
-            gl.alignmode.padding.left + gl.alignmode.padding.right
+            gl.alignmode[].padding.left + gl.alignmode[].padding.right
         end
         inner_size_combined + dirgapsstart[1] + dirgapsstop[end] + paddings
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode))")
+        error("Unknown AlignMode of type $(typeof(gl.alignmode[]))")
     end
 end
 

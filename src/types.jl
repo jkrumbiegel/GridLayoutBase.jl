@@ -151,7 +151,7 @@ mutable struct GridLayout
     colsizes::Vector{ContentSize}
     addedrowgaps::Vector{GapSize}
     addedcolgaps::Vector{GapSize}
-    alignmode::AlignMode
+    alignmode::Observable{AlignMode}
     equalprotrusiongaps::Tuple{Bool, Bool}
     needs_update::Observable{Bool}
     block_updates::Bool

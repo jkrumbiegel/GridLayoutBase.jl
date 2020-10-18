@@ -1,6 +1,6 @@
 function LayoutObservables{T}(width::Observable, height::Observable,
         tellwidth::Observable, tellheight::Observable, halign::Observable,
-        valign::Observable, alignmode::Observable{AlignMode} = Observable{AlignMode}(Inside());
+        valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
         protrusions = nothing,
         reportedsize = nothing,

@@ -88,19 +88,19 @@ end
 
 function protrusion(gl::GridLayout, side::Side)
     # when we align with the outside there is by definition no protrusion
-    if gl.alignmode isa Outside
+    if gl.alignmode[] isa Outside
         return 0.0
-    elseif gl.alignmode isa Inside
+    elseif gl.alignmode[] isa Inside
         inside_protrusion(gl, side)
-    elseif gl.alignmode isa Mixed
-        if isnothing(getside(gl.alignmode, side))
+    elseif gl.alignmode[] isa Mixed
+        if isnothing(getside(gl.alignmode[], side))
             inside_protrusion(gl, side)
         else
             # Outside alignment
             0.0
         end
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode))")
+        error("Unknown AlignMode of type $(typeof(gl.alignmode[]))")
     end
 end
 
