@@ -37,7 +37,7 @@ export grid!, hbox!, vbox!
 export swap!
 export protrusionsobservable, suggestedbboxobservable, reportedsizeobservable, autosizeobservable, computedbboxobservable, gridcontent
 export ncols, nrows
-export contents
+export contents, content
 
 if Base.VERSION >= v"1.4.2"
     include("precompile.jl")

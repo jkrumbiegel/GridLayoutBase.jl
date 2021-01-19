@@ -1245,6 +1245,12 @@ function Base.setindex!(gp::GridPosition, element)
     gp.layout[gp.span.rows, gp.span.cols, gp.side] = element
 end
 
+function Base.setindex!(gp::GridPosition, element, rows, cols, side = Inner())
+    layout = get_layout_at!(gp, createmissing = true)
+    layout[rows, cols, side] = element
+    element
+end
+
 ncols(g::GridLayout) = g.ncols
 nrows(g::GridLayout) = g.nrows
 Base.size(g::GridLayout) = (nrows(g), ncols(g))
@@ -1286,5 +1292,60 @@ their containing `GridContent`s.
 function contents(g::GridLayout)
     map(g.content) do gc
         gc.content
+    end
+end
+
+
+function Base.getindex(gp::Union{GridPosition, GridSubposition}, rows, cols, side = Inner())
+    GridSubposition(gp, rows, cols, side)
+end
+
+function Base.setindex!(parent::GridSubposition, obj,
+    rows, cols, side = GridLayoutBase.Inner())
+    layout = get_layout_at!(parent, createmissing = true)
+    layout[rows, cols, side] = obj
+    obj
+end
+
+function Base.setindex!(parent::GridSubposition, obj)
+    layout = get_layout_at!(parent.parent, createmissing = true)
+    layout[parent.rows, parent.cols, parent.side] = obj
+    obj
+end
+
+function get_layout_at!(gp::GridPosition; createmissing = false)
+    c = contents(gp, exact = true)
+    layouts = filter(x -> x isa GridLayoutBase.GridLayout, c)
+    if isempty(layouts)
+        if createmissing
+            return gp[] = GridLayoutBase.GridLayout()
+        else
+            error("No layout found but `createmissing` is false.")
+        end
+    elseif length(layouts) == 1
+        return only(layouts)
+    else
+        error("Found more than zero or one GridLayouts at $gp")
+    end
+end
+
+function get_layout_at!(gsp::GridSubposition; createmissing = false)
+    layout = get_layout_at!(gsp.parent; createmissing = createmissing)
+    gp = layout[gsp.rows, gsp.cols, gsp.side]
+    get_layout_at!(gp, createmissing = createmissing)
+end
+
+
+function contents(g::GridSubposition; exact = false)
+    layout = get_layout_at!(g.parent, createmissing = false)
+    contents(layout[g.rows, g.cols, g.side], exact = exact)
+end
+
+function content(g::Union{GridPosition,GridSubposition})
+    cs = contents(g, exact = true)
+    if length(cs) == 1
+        return cs[1]
+    else
+        error("There is not exactly one object at the given GridPosition")
     end
 end

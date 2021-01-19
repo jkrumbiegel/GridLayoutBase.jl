@@ -1,4 +1,5 @@
 using GridLayoutBase
+using GridLayoutBase: GridSubposition
 using Test
 using Observables
 
@@ -634,4 +635,21 @@ end
 @testset "integer rect2 suggestedbbox" begin
     layout = GridLayout(bbox = Observable(GridLayoutBase.GeometryBasics.Rect(0, 10, 20, 30)))
     @test suggestedbboxobservable(layout)[] == GridLayoutBase.GeometryBasics.FRect2D(0, 10, 20, 30)
+end
+
+@testset "GridSubpositions" begin
+    l = GridLayout()
+    gp = l[1, 1]
+    @test gp isa GridPosition
+    gsp = gp[1, 1]
+    @test gsp isa GridSubposition
+    @test isempty(contents(gp))
+    r = gsp[] = DebugRect()
+    @test content(gp) isa GridLayout
+    @test content(gsp) == r
+
+    r2 = l[1, 1][1, 2] = DebugRect()
+    @test content(l[1, 1][1, 2]) == r2
+    r3 = l[1, 1][1, 3][1, 1] = DebugRect()
+    @test content(l[1, 1][1, 3][1, 1]) == r3
 end
