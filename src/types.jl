@@ -192,6 +192,12 @@ struct GridPosition
     side::Side
 end
 
+struct GridSubposition
+    parent::Union{GridPosition, GridSubposition}
+    rows
+    cols
+    side::Side
+end
 
 struct GridLayoutSpec
     content::Vector{Pair{Tuple{Indexables, Indexables, Side}, Any}}
