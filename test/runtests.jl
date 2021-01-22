@@ -90,6 +90,31 @@ end
     dr.rightprot[] = 100
     @test GridLayoutBase.protrusion(layout, Right()) == 100
     @test computedbboxobservable(dr)[] == BBox(100, 1000, 0, 800)
+
+    layout.alignmode[] = Mixed(
+        left = Protrusion(50),
+        right = Protrusion(60),
+        bottom = Protrusion(70),
+        top = Protrusion(80),
+    )
+
+    # set layout to forced protrusion alignment
+    @test GridLayoutBase.protrusion(layout, Left()) == 50
+    @test GridLayoutBase.protrusion(layout, Right()) == 60
+    @test GridLayoutBase.protrusion(layout, Bottom()) == 70
+    @test GridLayoutBase.protrusion(layout, Top()) == 80
+    # bb of dr only depends on its protrusions now
+    @test computedbboxobservable(dr)[] == BBox(100, 1000, 0, 800)
+
+    # force different protrusions for dr
+    dr.alignmode[] = Mixed(
+        left = Protrusion(50),
+        right = Protrusion(60),
+        bottom = Protrusion(70),
+        top = Protrusion(80),
+    )
+    # bb should follow
+    @test computedbboxobservable(dr)[] == BBox(50, 940, 70, 920)
 end
 
 @testset "assigning content to protrusions" begin

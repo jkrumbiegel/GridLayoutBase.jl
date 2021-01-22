@@ -74,15 +74,28 @@ Outside(padding::Real) = Outside(RectSides{Float32}(padding, padding, padding, p
 Outside(left::Real, right::Real, bottom::Real, top::Real) =
     Outside(RectSides{Float32}(left, right, bottom, top))
 
-"AlignMode that is Inside where padding is Nothing and Outside where it is Real."
-struct Mixed <: AlignMode
-    padding::RectSides{Union{Nothing, Float32}}
+"""
+    Protrusion(p::Float32)
+
+Can be used within a `Mixed` alignmode to override a protrusion manually.
+"""
+struct Protrusion
+    p::Float32
 end
+
+"""
+AlignMode that is Inside where padding is Nothing, Outside where it is Real, and
+overrides the protrusion with a fixed value where it is a `Protrusion`.
+"""
+struct Mixed <: AlignMode
+    sides::RectSides{Union{Nothing, Float32, Protrusion}}
+end
+
 function Mixed(; left = nothing, right = nothing, bottom = nothing, top = nothing)
-    paddings = map((left, right, bottom, top)) do side
-        isnothing(side) ? side : Float32(side)
+    sides = map((left, right, bottom, top)) do side
+        (side === nothing || side isa Protrusion) ? side : Float32(side)
     end
-    Mixed(RectSides{Union{Nothing, Float32}}(paddings...))
+    Mixed(RectSides{Union{Nothing, Float32, Protrusion}}(sides...))
 end
 
 abstract type ContentSize end
