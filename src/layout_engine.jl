@@ -69,10 +69,10 @@ function protrusion(gc::GridContent, side::Side)
     ifnothing(prot, 0.0)
 end
 
-getside(m::Mixed, ::Left) = m.padding.left
-getside(m::Mixed, ::Right) = m.padding.right
-getside(m::Mixed, ::Top) = m.padding.top
-getside(m::Mixed, ::Bottom) = m.padding.bottom
+getside(m::Mixed, ::Left) = m.sides.left
+getside(m::Mixed, ::Right) = m.sides.right
+getside(m::Mixed, ::Top) = m.sides.top
+getside(m::Mixed, ::Bottom) = m.sides.bottom
 
 function inside_protrusion(gl::GridLayout, side::Side)
     prot = 0.0
@@ -93,8 +93,11 @@ function protrusion(gl::GridLayout, side::Side)
     elseif gl.alignmode[] isa Inside
         inside_protrusion(gl, side)
     elseif gl.alignmode[] isa Mixed
-        if isnothing(getside(gl.alignmode[], side))
+        si = getside(gl.alignmode[], side)
+        if isnothing(si)
             inside_protrusion(gl, side)
+        elseif si isa Protrusion
+            si.p
         else
             # Outside alignment
             0.0

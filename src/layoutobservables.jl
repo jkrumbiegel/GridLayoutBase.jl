@@ -36,10 +36,15 @@ function aligned_protrusion(prot, @nospecialize(al::AlignMode))
         prot
     elseif al isa Outside
         RectSides{Float32}(0, 0, 0, 0)
-    else
+    elseif al isa Mixed
         maprectsides() do side
-            if isnothing(getfield(al.padding, side))
+            # normal inside mode
+            if isnothing(getfield(al.sides, side))
                 getfield(prot, side)
+            # protrusion override
+            elseif getfield(al.sides, side) isa Protrusion
+                getfield(al.sides, side).p
+            # outside mode
             else
                 0f0
             end
@@ -224,19 +229,21 @@ function alignedbboxobservable!(
             am = am::Mixed
             let
                 w = w_target
-                if !isnothing(am.padding.left)
-                    w -= prot.left + am.padding.left
+                # subtract if outside padding is used via a Float32 value
+                # Protrusion and `nothing` are protrusion modes 
+                if am.sides.left isa Float32
+                    w -= prot.left + am.sides.left
                 end
-                if !isnothing(am.padding.right)
-                    w -= prot.right + am.padding.right
+                if am.sides.right isa Float32
+                    w -= prot.right + am.sides.right
                 end
 
                 h = h_target
-                if !isnothing(am.padding.bottom)
-                    h -= prot.bottom + am.padding.bottom
+                if am.sides.bottom isa Float32
+                    h -= prot.bottom + am.sides.bottom
                 end
-                if !isnothing(am.padding.top)
-                    h -= prot.top + am.padding.top
+                if am.sides.top isa Float32
+                    h -= prot.top + am.sides.top
                 end
 
                 w, h
@@ -270,11 +277,11 @@ function alignedbboxobservable!(
             yshift = yshift + prot.bottom + am.padding.bottom
         else
             am = am::Mixed
-            if !isnothing(am.padding.left)
-                xshift += prot.left + am.padding.left
+            if am.sides.left isa Float32
+                xshift += prot.left + am.sides.left
             end
-            if !isnothing(am.padding.bottom)
-                yshift += prot.bottom + am.padding.bottom
+            if am.sides.bottom isa Float32
+                yshift += prot.bottom + am.sides.bottom
             end
         end
 
