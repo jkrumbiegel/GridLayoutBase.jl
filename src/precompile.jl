@@ -2,61 +2,72 @@ using InteractiveUtils
 
 const Emptykwargs = Base.Iterators.Pairs{Union{}, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}
 
+macro warnpcfail(ex::Expr)
+    modl = __module__
+    file = __source__.file === nothing ? "?" : String(__source__.file)
+    line = __source__.line
+    quote
+        $(esc(ex)) || @warn """precompile directive
+     $($(Expr(:quote, ex)))
+ failed. Please report an issue in $($modl) (after checking for duplicates) or remove this directive.""" _file=$file _line=$line
+    end
+end
+
 function _precompile_()
     ccall(:jl_generating_output, Cint, ()) == 1 || return nothing
-    @assert precompile(BBox, (Float32, Float32, Float64, Float64))
+    @warnpcfail precompile(BBox, (Float32, Float32, Float64, Float64))
 
-    @assert precompile(GridLayout, (Int, Int))
-    @assert precompile(GridLayout, (GridLayoutSpec,))
-    @assert precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox,), Tuple{Observable{IRect2D}}}, Type{GridLayout}))
-    @assert precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox,), Tuple{FRect2D}}, Type{GridLayout}))
+    @warnpcfail precompile(GridLayout, (Int, Int))
+    @warnpcfail precompile(GridLayout, (GridLayoutSpec,))
+    @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox,), Tuple{Observable{IRect2D}}}, Type{GridLayout}))
+    @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox,), Tuple{FRect2D}}, Type{GridLayout}))
     # Also precompile `GridLayout(bbox = bbox, alignmode = al)` and the keyword body method
     fbody = isdefined(Base, :bodyfunction) ? Base.bodyfunction(which(GridLayout, (Int, Int))) : nothing
     for Al in (Inside, Outside, Mixed)
-        @assert precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{FRect2D, Al}}, Type{GridLayout}))
-        @assert precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{Observable{FRect2D}, Al}}, Type{GridLayout}))
-        @assert precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{NTuple{4,Int}, Al}}, Type{GridLayout}))
+        @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{FRect2D, Al}}, Type{GridLayout}))
+        @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{Observable{FRect2D}, Al}}, Type{GridLayout}))
+        @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{NTuple{4,Int}, Al}}, Type{GridLayout}))
         if fbody !== nothing
-            @assert precompile(fbody, (Nothing, Nothing, Nothing, Nothing, Al, Tuple{Bool, Bool}, FRect2D, Auto, Auto, Bool, Bool, Symbol, Symbol, Float64, Float64, Emptykwargs, Type{GridLayout}, Int, Int))
+            @warnpcfail precompile(fbody, (Nothing, Nothing, Nothing, Nothing, Al, Tuple{Bool, Bool}, FRect2D, Auto, Auto, Bool, Bool, Symbol, Symbol, Float64, Float64, Emptykwargs, Type{GridLayout}, Int, Int))
         end
     end
-    @assert precompile(Core.kwfunc(GridLayout), (NamedTuple{(:colsizes, :rowsizes), Tuple{Fixed, Relative}}, Type{GridLayout}, Int, Int))
-    @assert precompile(Core.kwfunc(GridLayout), (NamedTuple{(:addedcolgaps,), Tuple{Vector{Fixed}}}, Type{GridLayout}, Int, Int))
+    @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:colsizes, :rowsizes), Tuple{Fixed, Relative}}, Type{GridLayout}, Int, Int))
+    @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:addedcolgaps,), Tuple{Vector{Fixed}}}, Type{GridLayout}, Int, Int))
 
-    @assert precompile(Core.kwfunc(Mixed), (NamedTuple{(:left, :top), Tuple{Int, Int}}, Type{Mixed}))
+    @warnpcfail precompile(Core.kwfunc(Mixed), (NamedTuple{(:left, :top), Tuple{Int, Int}}, Type{Mixed}))
     for T in (Int, Float32)
-        @assert precompile(Outside, (T,))
-        @assert precompile(Outside, (T,T,T,T))
+        @warnpcfail precompile(Outside, (T,))
+        @warnpcfail precompile(Outside, (T,T,T,T))
     end
-    @assert precompile(align_to_bbox!, (GridLayout, FRect2D))
-    @assert precompile(update_gl!, (GridLayout,))
+    @warnpcfail precompile(align_to_bbox!, (GridLayout, FRect2D))
+    @warnpcfail precompile(update_gl!, (GridLayout,))
     for I in subtypes(Indexables), J in subtypes(Indexables)
-        @assert precompile(setindex!, (GridLayout, UnitRange{Int}, I, J))
-        @assert precompile(setindex!, (GridLayout, Any, I, J))
+        @warnpcfail precompile(setindex!, (GridLayout, UnitRange{Int}, I, J))
+        @warnpcfail precompile(setindex!, (GridLayout, Any, I, J))
     end
-    @assert precompile(insertrows!, (GridLayout, Int, Int))
-    @assert precompile(insertcols!, (GridLayout, Int, Int))
-    @assert precompile(gridnest!, (GridLayout, UnitRange{Int}, UnitRange{Int}))
-    @assert precompile(add_to_gridlayout!, (GridLayout, GridContent{GridLayout, GridLayout}))
-    @assert precompile(connect_layoutobservables!, (GridContent{GridLayout, GridLayout},))
-    @assert precompile(trim!, (GridLayout,))
-    @assert precompile(sizeobservable!, (Observable{Any}, Observable{Any}))
-    @assert precompile(_reportedsizeobservable, (Tuple{SizeAttribute,SizeAttribute}, Tuple{AutoSize,AutoSize}, AlignMode, RectSides{Float32}, Tuple{Bool,Bool}))
+    @warnpcfail precompile(insertrows!, (GridLayout, Int, Int))
+    @warnpcfail precompile(insertcols!, (GridLayout, Int, Int))
+    @warnpcfail precompile(gridnest!, (GridLayout, UnitRange{Int}, UnitRange{Int}))
+    @warnpcfail precompile(add_to_gridlayout!, (GridLayout, GridContent{GridLayout, GridLayout}))
+    @warnpcfail precompile(connect_layoutobservables!, (GridContent{GridLayout, GridLayout},))
+    @warnpcfail precompile(trim!, (GridLayout,))
+    @warnpcfail precompile(sizeobservable!, (Observable{Any}, Observable{Any}))
+    @warnpcfail precompile(_reportedsizeobservable, (Tuple{SizeAttribute,SizeAttribute}, Tuple{AutoSize,AutoSize}, AlignMode, RectSides{Float32}, Tuple{Bool,Bool}))
     for T in subtypes(Side)
-        @assert precompile(bbox_for_solving_from_side, (RowCols{Vector{Float64}}, FRect2D, RowCols{Int}, T))
+        @warnpcfail precompile(bbox_for_solving_from_side, (RowCols{Vector{Float64}}, FRect2D, RowCols{Int}, T))
     end
     for S in (Left, Right, Top, Bottom)
-        @assert precompile(protrusion, (GridContent{GridLayout,GridLayout}, S))
+        @warnpcfail precompile(protrusion, (GridContent{GridLayout,GridLayout}, S))
     end
-    @assert precompile(suggestedbboxobservable, (GridLayout,))
+    @warnpcfail precompile(suggestedbboxobservable, (GridLayout,))
     for VC in (Vector{Auto}, Vector{GapSize}, Vector{Fixed}, Vector{Relative}, Vector{ContentSize})
-        @assert precompile(convert_contentsizes, (Int, VC))
-        @assert precompile(==, (VC, VC))
+        @warnpcfail precompile(convert_contentsizes, (Int, VC))
+        @warnpcfail precompile(==, (VC, VC))
     end
-    @assert precompile(contents, (GridLayout,))
-    @assert precompile(filterenum, (Function, Type, Vector{ContentSize}))
-    @assert precompile(zcumsum, (Vector{Float64},))
+    @warnpcfail precompile(contents, (GridLayout,))
+    @warnpcfail precompile(filterenum, (Function, Type, Vector{ContentSize}))
+    @warnpcfail precompile(zcumsum, (Vector{Float64},))
 
     # These don't work completely but they have partial success
-    @assert precompile(repr, (MIME{Symbol("text/plain")}, GridLayout))
+    @warnpcfail precompile(repr, (MIME{Symbol("text/plain")}, GridLayout))
 end
