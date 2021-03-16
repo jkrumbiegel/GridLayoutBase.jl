@@ -1,6 +1,6 @@
+authors = ["Julius Krumbiegel"]
 name = "GridLayoutBase"
 uuid = "3955a311-db13-416c-9275-1d80ed98e5e9"
-authors = ["Julius Krumbiegel"]
 version = "0.5.2"
 
 [deps]
@@ -12,7 +12,7 @@ Observables = "510215fc-4207-5dde-b226-833fc4488ee2"
 [compat]
 GeometryBasics = "0.2, 0.3"
 Match = "^1"
-Observables = "^0.2, 0.3"
+Observables = "0.3, 0.4"
 julia = "1"
 
 [extras]
