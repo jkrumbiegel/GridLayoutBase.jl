@@ -1,3 +1,23 @@
+halign2shift(align::Number) = Float32(align)
+function halign2shift(align::Symbol)
+    align == :left && return 0.0f0
+    align == :center && return 0.5f0
+    align == :right && return 1.0f0
+    error("Invalid horizontal alignment $align (only Real or :left, :center, or :right allowed).")
+end
+
+valign2shift(align::Number) = Float32(align)
+function valign2shift(align::Symbol)
+    align == :bottom && return 0.0f0
+    align == :center && return 0.5f0
+    align == :top && return 1.0f0
+    error("Invalid vertical alignment $align (only Real or :bottom, :center, or :top allowed).")
+end
+
+function align_shift_tuple(halign::Union{Number, Symbol}, valign::Union{Number, Symbol})
+    return (halign2shift(halign), valign2shift(valign))
+end
+
 function LayoutObservables{T}(width::Observable, height::Observable,
         tellwidth::Observable, tellheight::Observable, halign::Observable,
         valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
@@ -9,7 +29,7 @@ function LayoutObservables{T}(width::Observable, height::Observable,
         gridcontent = nothing) where T
 
     sizeobservable = sizeobservable!(width, height)
-    alignment = map(tuple, halign, valign)
+    alignment = map(align_shift_tuple, halign, valign)
 
     suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
     protrusions = create_protrusions(protrusions)
@@ -158,7 +178,7 @@ end
 function alignedbboxobservable!(
     suggestedbbox::Observable{FRect2D},
     reportedsize::Observable{NTuple{2, Optional{Float32}}},
-    alignment::Observable,
+    alignment::Observable{NTuple{2, Float32}},
     sizeattrs::Observable,
     autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
     alignmode, protrusions)
@@ -230,7 +250,7 @@ function alignedbboxobservable!(
             let
                 w = w_target
                 # subtract if outside padding is used via a Float32 value
-                # Protrusion and `nothing` are protrusion modes 
+                # Protrusion and `nothing` are protrusion modes
                 if am.sides.left isa Float32
                     w -= prot.left + am.sides.left
                 end
@@ -254,21 +274,7 @@ function alignedbboxobservable!(
         rw = bw - w_target
         rh = bh - h_target
 
-        xshift = @match al[1] begin
-            :left => 0.0f0
-            :center => 0.5f0 * rw
-            :right => rw
-            x::Real => x * rw
-            x => error("Invalid horizontal alignment $x (only Real or :left, :center, or :right allowed).")
-        end
-
-        yshift = @match al[2] begin
-            :bottom => 0.0f0
-            :center => 0.5f0 * rh
-            :top => rh
-            x::Real => x * rh
-            x => error("Invalid vertical alignment $x (only Real or :bottom, :center, or :top allowed).")
-        end
+        xshift, yshift = al .* (rw, rh)
 
         if am isa Inside
             # width and height are unaffected
