@@ -178,7 +178,7 @@ end
 function alignedbboxobservable!(
     suggestedbbox::Observable{FRect2D},
     reportedsize::Observable{NTuple{2, Optional{Float32}}},
-    alignment::Observable{NTuple{2, Float32}},
+    alignment::Observable,
     sizeattrs::Observable,
     autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
     alignmode, protrusions)
