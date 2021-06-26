@@ -157,7 +157,8 @@ mutable struct LayoutObservables{T, G} # G again GridLayout
 end
 
 mutable struct GridLayout
-    parent
+    parent # this parent is supposed to be any kind of object where it's beneficial
+    # to access it through the assigned GridLayout, like a Figure in Makie
     content::Vector{GridContent}
     nrows::Int
     ncols::Int
