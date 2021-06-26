@@ -57,7 +57,6 @@ function GridLayout(nrows::Int, ncols::Int;
 end
 
 function update!(gl::GridLayout)
-    println("update $(hash(gl))")
     gl.block_updates && return
 
     w = determinedirsize(gl, Col())
@@ -167,7 +166,6 @@ function add_to_gridlayout!(g::GridLayout, gc::GridContent)
         content.parent = g
     end
 
-    println("add to update")
     update!(g)
 end
 
