@@ -30,8 +30,6 @@ function GridLayout(nrows::Int, ncols::Int;
     addedrowgaps = convert_gapsizes(nrows - 1, addedrowgaps, default_rowgap)
     addedcolgaps = convert_gapsizes(ncols - 1, addedcolgaps, default_colgap)
 
-    needs_update = Observable(true)
-
     content = GridContent[]
 
     alignmode = observablify(alignmode, AlignMode)
@@ -48,21 +46,17 @@ function GridLayout(nrows::Int, ncols::Int;
 
     gl = GridLayout(
         content, nrows, ncols, rowsizes, colsizes, addedrowgaps,
-        addedcolgaps, alignmode, equalprotrusiongaps, needs_update, layoutobservables,
+        addedcolgaps, alignmode, equalprotrusiongaps, layoutobservables,
         width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
 
     on(computedbboxobservable(gl)) do cbb
         align_to_bbox!(gl, cbb)
     end
 
-    on(needs_update) do _
-        update_gl!(gl)
-    end
-
     gl
 end
 
-function update_gl!(gl)
+function update!(gl)
     w = determinedirsize(gl, Col())
     h = determinedirsize(gl, Row())
 
@@ -91,7 +85,7 @@ function update_gl!(gl)
         end
     end
 
-    nothing
+    return
 end
 
 function validategridlayout(gl::GridLayout)
@@ -120,7 +114,7 @@ function with_updates_suspended(f::Function, gl::GridLayout)
     gl.block_updates = true
     f()
     gl.block_updates = false
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function connect_layoutobservables!(gc::GridContent)
@@ -128,12 +122,18 @@ function connect_layoutobservables!(gc::GridContent)
     disconnect_layoutobservables!(gc::GridContent)
 
     gc.protrusions_handle = on(protrusionsobservable(gc.content)) do p
-        gc.needs_update[] = true
+        update!(gc)
     end
     gc.reportedsize_handle = on(reportedsizeobservable(gc.content)) do c
-        gc.needs_update[] = true
+        update!(gc)
     end
 end
+
+update!(gc::GridContent) = update!(gc.parent)
+function update!(::Nothing)
+end
+
+
 
 function disconnect_layoutobservables!(gc::GridContent)
     if !isnothing(gc.protrusions_handle)
@@ -156,12 +156,7 @@ function add_to_gridlayout!(g::GridLayout, gc::GridContent)
     # let the gridcontent know that it's inside a gridlayout
     gc.parent = g
 
-    on(gc.needs_update) do update
-        g.needs_update[] = true
-    end
-
-    # trigger relayout
-    g.needs_update[] = true
+    update!(g)
 end
 
 
@@ -178,10 +173,7 @@ function remove_from_gridlayout!(gc::GridContent)
     deleteat!(gc.parent.content, i)
 
     gc.parent = nothing
-
-    # remove all listeners from needs_update because they could be pointing
-    # to previous parents if we're re-nesting layout objects
-    empty!(gc.needs_update.listeners)
+    return
 end
 
 
@@ -386,7 +378,7 @@ function deleterow!(gl::GridLayout, irow::Int)
     deleteat!(gl.rowsizes, irow)
     deleteat!(gl.addedrowgaps, irow == 1 ? 1 : irow - 1)
     gl.nrows -= 1
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function deletecol!(gl::GridLayout, icol::Int)
@@ -426,7 +418,7 @@ function deletecol!(gl::GridLayout, icol::Int)
     deleteat!(gl.colsizes, icol)
     deleteat!(gl.addedcolgaps, icol == 1 ? 1 : icol - 1)
     gl.ncols -= 1
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function Base.isempty(gl::GridLayout, dir::GridDir, i::Int)
@@ -535,7 +527,7 @@ function colsize!(gl::GridLayout, i::Int, s::ContentSize)
         error("Can't set size of invalid column $i.")
     end
     gl.colsizes[i] = s
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
@@ -545,7 +537,7 @@ function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
         error("Can't set size of invalid row $i.")
     end
     gl.rowsizes[i] = s
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 rowsize!(gl::GridLayout, i::Int, s::Real) = rowsize!(gl, i, Fixed(s))
@@ -555,19 +547,19 @@ function colgap!(gl::GridLayout, i::Int, s::GapSize)
         error("Can't set size of invalid column gap $i.")
     end
     gl.addedcolgaps[i] = s
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 colgap!(gl::GridLayout, i::Int, s::Real) = colgap!(gl, i, Fixed(s))
 
 function colgap!(gl::GridLayout, s::GapSize)
     gl.addedcolgaps .= Ref(s)
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function colgap!(gl::GridLayout, r::Real)
     gl.addedcolgaps .= Ref(Fixed(r))
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function rowgap!(gl::GridLayout, i::Int, s::GapSize)
@@ -575,19 +567,19 @@ function rowgap!(gl::GridLayout, i::Int, s::GapSize)
         error("Can't set size of invalid row gap $i.")
     end
     gl.addedrowgaps[i] = s
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 rowgap!(gl::GridLayout, i::Int, s::Real) = rowgap!(gl, i, Fixed(s))
 
 function rowgap!(gl::GridLayout, s::GapSize)
     gl.addedrowgaps .= Ref(s)
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function rowgap!(gl::GridLayout, r::Real)
     gl.addedrowgaps .= Ref(Fixed(r))
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 """
@@ -1187,16 +1179,17 @@ function Base.setindex!(g::GridLayout, content_array::AbstractArray, rows::Index
 end
 
 function GridContent(content::T, span::Span, side::Side) where T
-    needs_update = Observable(false)
-    # connect the correct observables
-    protrusions_handle = on(protrusionsobservable(content)) do p
-        needs_update[] = true
+    gc = GridContent{GridLayout, T}(nothing, content, span, side,
+        nothing, nothing)
+
+    gc.protrusions_handle = on(protrusionsobservable(content)) do p
+        update!(gc)
     end
-    reportedsize_handle = on(reportedsizeobservable(content)) do c
-        needs_update[] = true
+    gc.reportedsize_handle = on(reportedsizeobservable(content)) do c
+        update!(gc)
     end
-    GridContent{GridLayout, T}(nothing, content, span, side, needs_update,
-        protrusions_handle, reportedsize_handle)
+    
+    gc
 end
 
 function add_content!(g::GridLayout, content, rows, cols, side::Side)
