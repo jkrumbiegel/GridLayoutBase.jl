@@ -707,3 +707,36 @@ end
     @test GridLayoutBase.top_parent_grid(g2) === g
     @test GridLayoutBase.top_parent_grid(g3) === g
 end
+
+@testset "Number of updates" begin
+    g = GridLayout()
+    n = Ref(0)
+    on(g.layoutobservables.suggestedbbox) do _
+        n[] += 1
+    end
+
+    g2 = GridLayout()
+    g[1, 1] = g2
+    @test n[] == 1
+
+    m = Ref(0)
+    on(g2.layoutobservables.suggestedbbox) do _
+        m[] += 1
+    end
+    for i in 1:10
+        g2[1, i] = GridLayout()
+    end
+    # one update for each gridlayout
+    @test m[] == 10
+    # g shouldn't have changed
+    @test n[] == 1
+    with_updates_suspended(g2) do
+        for i in 1:10
+            g2[1, i] = GridLayout()
+        end
+    end
+    # only one update should have happened at the end
+    @test m[] == 11
+    # still nothing for g
+    @test n[] == 1
+end
