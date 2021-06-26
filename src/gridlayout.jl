@@ -1,11 +1,10 @@
 GridLayout(; kwargs...) = GridLayout(1, 1; kwargs...)
 
-# GridLayout(scene::Scene, args...; kwargs...) = GridLayout(args...; bbox = lift(x -> BBox(x), pixelarea(scene)), parentscene = scene, kwargs...)
-
 observablify(x::Observable) = x
 observablify(x, type=Any) = Observable{type}(x)
 
 function GridLayout(nrows::Int, ncols::Int;
+        parent = nothing,
         rowsizes = nothing,
         colsizes = nothing,
         addedrowgaps = nothing,
@@ -45,6 +44,7 @@ function GridLayout(nrows::Int, ncols::Int;
         suggestedbbox = bbox)
 
     gl = GridLayout(
+        parent,
         content, nrows, ncols, rowsizes, colsizes, addedrowgaps,
         addedcolgaps, alignmode, equalprotrusiongaps, layoutobservables,
         width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
@@ -155,13 +155,22 @@ function add_to_gridlayout!(g::GridLayout, gc::GridContent)
 
     # let the gridcontent know that it's inside a gridlayout
     gc.parent = g
+    # change the parent if the gridcontent contains a gridlayout
+    content = gc.content
+    if content isa GridLayout
+        content.parent = g
+    end
 
     update!(g)
 end
 
 
 function remove_from_gridlayout!(gc::GridContent)
+    content = gc.content
     if isnothing(gc.parent)
+        if content isa GridLayout
+            content.parent = nothing
+        end
         return
     end
 
@@ -173,6 +182,13 @@ function remove_from_gridlayout!(gc::GridContent)
     deleteat!(gc.parent.content, i)
 
     gc.parent = nothing
+
+    # set the parent of a gridlayout content to nothing separately
+    # this is mostly for one toplevel parent like a Figure in Makie
+    if content isa GridLayout
+        content.parent = nothing
+    end
+
     return
 end
 
@@ -1340,5 +1356,25 @@ function content(g::Union{GridPosition,GridSubposition})
         return cs[1]
     else
         error("There is not exactly one object at the given GridPosition")
+    end
+end
+
+
+function parent(g::GridLayout)
+    g.parent
+end
+
+function top_parent(g::GridLayout)
+    top_parent(parent(g))
+end
+
+top_parent(x) = x
+
+function top_parent_grid(g::GridLayout)
+    p = parent(g)
+    if p isa GridLayout
+        top_parent_grid(p)
+    else
+        g
     end
 end

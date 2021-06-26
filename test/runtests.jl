@@ -678,3 +678,32 @@ end
     r3 = l[1, 1][1, 3][1, 1] = DebugRect()
     @test content(l[1, 1][1, 3][1, 1]) == r3
 end
+
+@testset "Parents" begin
+    g = GridLayout()
+    @test GridLayoutBase.parent(g) === nothing
+    @test GridLayoutBase.top_parent(g) === nothing
+    g2 = GridLayout()
+    @test GridLayoutBase.parent(g2) === nothing
+    g[1, 1] = g2
+    @test GridLayoutBase.parent(g2) === g
+    @test GridLayoutBase.top_parent(g2) === nothing
+    @test GridLayoutBase.top_parent_grid(g2) === g
+
+    g3 = GridLayout()
+    @test GridLayoutBase.parent(g3) === nothing
+    g2[1, 1] = g3
+    @test GridLayoutBase.parent(g3) === g2
+    @test GridLayoutBase.top_parent(g3) === nothing
+    @test GridLayoutBase.top_parent_grid(g3) === g
+
+    # make some arbitrary parent object with an id
+    p = Dict()
+    g.parent = p
+    @test GridLayoutBase.parent(g) === p
+    @test GridLayoutBase.top_parent(g) === p
+    @test GridLayoutBase.top_parent(g2) === p
+    @test GridLayoutBase.top_parent(g3) === p
+    @test GridLayoutBase.top_parent_grid(g2) === g
+    @test GridLayoutBase.top_parent_grid(g3) === g
+end
