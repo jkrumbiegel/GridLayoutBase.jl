@@ -71,7 +71,7 @@ function update!(gl)
     if autosizeobservable(gl)[] == new_autosize &&
             protrusionsobservable(gl)[] == new_protrusions
 
-        suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
+        notify(suggestedbboxobservable(gl))
     else
         # otherwise these values will not already be up to date when adding the
         # gridlayout into the next one
@@ -81,7 +81,7 @@ function update!(gl)
         autosizeobservable(gl)[] = new_autosize
 
         if isnothing(gridcontent(gl))
-            suggestedbboxobservable(gl)[] = suggestedbboxobservable(gl)[]
+            notify(suggestedbboxobservable(gl))
         end
     end
 

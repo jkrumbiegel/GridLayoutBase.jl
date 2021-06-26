@@ -109,7 +109,7 @@ function reportedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
     end
 
     # trigger first value
-    sizeattrs[] = sizeattrs[]
+    notify(sizeattrs)
 
     rsizeobservable
 end
