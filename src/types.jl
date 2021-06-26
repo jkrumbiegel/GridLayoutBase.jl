@@ -157,6 +157,8 @@ mutable struct LayoutObservables{T, G} # G again GridLayout
 end
 
 mutable struct GridLayout
+    parent # this parent is supposed to be any kind of object where it's beneficial
+    # to access it through the assigned GridLayout, like a Figure in Makie
     content::Vector{GridContent}
     nrows::Int
     ncols::Int
@@ -180,11 +182,12 @@ mutable struct GridLayout
     _update_func_handle::Optional{Function} # stores a reference to the result of on(obs)
 
     function GridLayout(
+        parent,
         content, nrows, ncols, rowsizes, colsizes,
         addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps, needs_update,
         layoutobservables, width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
 
-        gl = new(content, nrows, ncols, rowsizes, colsizes,
+        gl = new(parent, content, nrows, ncols, rowsizes, colsizes,
             addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps,
             needs_update, false, layoutobservables, width, height, tellwidth, tellheight,
             halign, valign, default_rowgap, default_colgap, nothing)
