@@ -56,7 +56,10 @@ function GridLayout(nrows::Int, ncols::Int;
     gl
 end
 
-function update!(gl)
+function update!(gl::GridLayout)
+    println("update $(hash(gl))")
+    gl.block_updates && return
+
     w = determinedirsize(gl, Col())
     h = determinedirsize(gl, Row())
 
@@ -110,11 +113,15 @@ function validategridlayout(gl::GridLayout)
     end
 end
 
-function with_updates_suspended(f::Function, gl::GridLayout)
+function with_updates_suspended(f::Function, gl::GridLayout; update = true)
+    prev_block_value = gl.block_updates
     gl.block_updates = true
     f()
-    gl.block_updates = false
-    update!(gl)
+    gl.block_updates = prev_block_value
+    if update
+        update!(gl)
+    end
+    return
 end
 
 function connect_layoutobservables!(gc::GridContent)
@@ -147,7 +154,6 @@ function disconnect_layoutobservables!(gc::GridContent)
 end
 
 function add_to_gridlayout!(g::GridLayout, gc::GridContent)
-
     # to be safe
     remove_from_gridlayout!(gc)
 
@@ -161,6 +167,7 @@ function add_to_gridlayout!(g::GridLayout, gc::GridContent)
         content.parent = g
     end
 
+    println("add to update")
     update!(g)
 end
 
@@ -217,31 +224,31 @@ function convert_gapsizes(n, gaps, defaultsize)::Vector{GapSize}
     end
 end
 
-function appendrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=nothing)
+function appendrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=nothing, update = true)
 
     rowsizes = convert_contentsizes(n, rowsizes)
     addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
 
-    with_updates_suspended(gl) do
+    with_updates_suspended(gl, update = update) do
         gl.nrows += n
         append!(gl.rowsizes, rowsizes)
         append!(gl.addedrowgaps, addedrowgaps)
     end
 end
 
-function appendcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing)
+function appendcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing, update = true)
 
     colsizes = convert_contentsizes(n, colsizes)
     addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
 
-    with_updates_suspended(gl) do
+    with_updates_suspended(gl, update = update) do
         gl.ncols += n
         append!(gl.colsizes, colsizes)
         append!(gl.addedcolgaps, addedcolgaps)
     end
 end
 
-function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=nothing)
+function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=nothing, update = true)
 
     rowsizes = convert_contentsizes(n, rowsizes)
     addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
@@ -252,14 +259,14 @@ function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=not
         gc.span = newspan
     end
 
-    with_updates_suspended(gl) do
+    with_updates_suspended(gl, update = update) do
         gl.nrows += n
         prepend!(gl.rowsizes, rowsizes)
         prepend!(gl.addedrowgaps, addedrowgaps)
     end
 end
 
-function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing)
+function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing, update = true)
 
     colsizes = convert_contentsizes(n, colsizes)
     addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
@@ -270,7 +277,7 @@ function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=not
         gc.span = newspan
     end
 
-    with_updates_suspended(gl) do
+    with_updates_suspended(gl, update = update) do
         gl.ncols += n
         prepend!(gl.colsizes, colsizes)
         prepend!(gl.addedcolgaps, addedcolgaps)
@@ -1209,7 +1216,8 @@ function GridContent(content::T, span::Span, side::Side) where T
 end
 
 function add_content!(g::GridLayout, content, rows, cols, side::Side)
-    rows, cols = adjust_rows_cols!(g, rows, cols)
+    # update = false because update is called in add_to_gridlayout! anyway
+    rows, cols = adjust_rows_cols!(g, rows, cols; update = false)
 
     gc = if !isnothing(gridcontent(content))
         # take the existing gridcontent, remove it from its gridlayout if it has one,

@@ -185,28 +185,28 @@ function to_ranges(g::GridLayout, rows::Indexables, cols::Indexables)
     rows, cols
 end
 
-function adjust_rows_cols!(g::GridLayout, rows, cols)
+function adjust_rows_cols!(g::GridLayout, rows, cols; update = true)
     rows, cols = to_ranges(g, rows, cols)
 
     if rows.start < 1
         n = 1 - rows.start
-        prependrows!(g, n)
+        prependrows!(g, n, update = update)
         # adjust rows for the newly prepended ones
         rows = rows .+ n
     end
     if rows.stop > g.nrows
         n = rows.stop - g.nrows
-        appendrows!(g, n)
+        appendrows!(g, n, update = update)
     end
     if cols.start < 1
         n = 1 - cols.start
-        prependcols!(g, n)
+        prependcols!(g, n, update = update)
         # adjust cols for the newly prepended ones
         cols = cols .+ n
     end
     if cols.stop > g.ncols
         n = cols.stop - g.ncols
-        appendcols!(g, n)
+        appendcols!(g, n, update = update)
     end
 
     rows, cols
