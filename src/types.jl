@@ -157,6 +157,7 @@ mutable struct LayoutObservables{T, G} # G again GridLayout
 end
 
 mutable struct GridLayout
+    parent
     content::Vector{GridContent}
     nrows::Int
     ncols::Int
@@ -180,11 +181,12 @@ mutable struct GridLayout
     _update_func_handle::Optional{Function} # stores a reference to the result of on(obs)
 
     function GridLayout(
+        parent,
         content, nrows, ncols, rowsizes, colsizes,
         addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps, needs_update,
         layoutobservables, width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
 
-        gl = new(content, nrows, ncols, rowsizes, colsizes,
+        gl = new(parent, content, nrows, ncols, rowsizes, colsizes,
             addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps,
             needs_update, false, layoutobservables, width, height, tellwidth, tellheight,
             halign, valign, default_rowgap, default_colgap, nothing)

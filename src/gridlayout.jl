@@ -1,11 +1,10 @@
 GridLayout(; kwargs...) = GridLayout(1, 1; kwargs...)
 
-# GridLayout(scene::Scene, args...; kwargs...) = GridLayout(args...; bbox = lift(x -> BBox(x), pixelarea(scene)), parentscene = scene, kwargs...)
-
 observablify(x::Observable) = x
 observablify(x, type=Any) = Observable{type}(x)
 
 function GridLayout(nrows::Int, ncols::Int;
+        parent = nothing,
         rowsizes = nothing,
         colsizes = nothing,
         addedrowgaps = nothing,
@@ -47,6 +46,7 @@ function GridLayout(nrows::Int, ncols::Int;
         suggestedbbox = bbox)
 
     gl = GridLayout(
+        parent,
         content, nrows, ncols, rowsizes, colsizes, addedrowgaps,
         addedcolgaps, alignmode, equalprotrusiongaps, needs_update, layoutobservables,
         width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
