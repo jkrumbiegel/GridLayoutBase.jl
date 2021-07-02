@@ -55,6 +55,7 @@ mutable struct GridContent{G, T} # G should be GridLayout but can't be used befo
     content::T
     span::Span
     side::Side
+    needs_update::Observable{Bool}
     protrusions_handle::Optional{Function}
     reportedsize_handle::Optional{Function}
 end
@@ -167,6 +168,7 @@ mutable struct GridLayout
     addedcolgaps::Vector{GapSize}
     alignmode::Observable{AlignMode}
     equalprotrusiongaps::Tuple{Bool, Bool}
+    needs_update::Observable{Bool}
     block_updates::Bool
     layoutobservables::LayoutObservables
     width::Observable
@@ -182,12 +184,12 @@ mutable struct GridLayout
     function GridLayout(
         parent,
         content, nrows, ncols, rowsizes, colsizes,
-        addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps,
+        addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps, needs_update,
         layoutobservables, width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
 
         gl = new(parent, content, nrows, ncols, rowsizes, colsizes,
             addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps,
-            false, layoutobservables, width, height, tellwidth, tellheight,
+            needs_update, false, layoutobservables, width, height, tellwidth, tellheight,
             halign, valign, default_rowgap, default_colgap, nothing)
 
         validategridlayout(gl)
