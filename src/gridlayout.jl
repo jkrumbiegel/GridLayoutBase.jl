@@ -56,7 +56,7 @@ function GridLayout(nrows::Int, ncols::Int;
     end
 
     on(needs_update) do _
-        update_gl!(gl)
+        update!(gl)
     end
 
     gl
