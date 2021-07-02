@@ -40,7 +40,7 @@ function _precompile_()
         @warnpcfail precompile(Outside, (T,T,T,T))
     end
     @warnpcfail precompile(align_to_bbox!, (GridLayout, FRect2D))
-    @warnpcfail precompile(update!, (GridLayout,))
+    @warnpcfail precompile(update_gl!, (GridLayout,))
     for I in subtypes(Indexables), J in subtypes(Indexables)
         @warnpcfail precompile(setindex!, (GridLayout, UnitRange{Int}, I, J))
         @warnpcfail precompile(setindex!, (GridLayout, Any, I, J))
