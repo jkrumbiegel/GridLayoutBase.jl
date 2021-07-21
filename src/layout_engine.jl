@@ -107,7 +107,7 @@ function protrusion(gl::GridLayout, side::Side)
     end
 end
 
-function bbox_for_solving_from_side(maxgrid::RowCols, bbox_cell::FRect2D, idx_rect::RowCols, side::Side)
+function bbox_for_solving_from_side(maxgrid::RowCols, bbox_cell::Rect2f, idx_rect::RowCols, side::Side)
     pl = maxgrid.lefts[idx_rect.lefts]
     pr = maxgrid.rights[idx_rect.rights]
     pt = maxgrid.tops[idx_rect.tops]

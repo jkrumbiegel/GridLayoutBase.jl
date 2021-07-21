@@ -670,7 +670,7 @@ end
 
 @testset "integer rect2 suggestedbbox" begin
     layout = GridLayout(bbox = Observable(GridLayoutBase.GeometryBasics.Rect(0, 10, 20, 30)))
-    @test suggestedbboxobservable(layout)[] == GridLayoutBase.GeometryBasics.FRect2D(0, 10, 20, 30)
+    @test suggestedbboxobservable(layout)[] == GridLayoutBase.GeometryBasics.Rect2f(0, 10, 20, 30)
 end
 
 @testset "GridSubpositions" begin

@@ -74,12 +74,12 @@ end
 
 create_suggested_bboxobservable(n::Nothing) = Observable(BBox(0, 100, 0, 100))
 create_suggested_bboxobservable(tup::Tuple) = Observable(BBox(tup...))
-create_suggested_bboxobservable(bbox::Rect{2}) = Observable(FRect2D(bbox))
-create_suggested_bboxobservable(observable::Observable{FRect2D}) = observable
+create_suggested_bboxobservable(bbox::Rect{2}) = Observable(Rect2f(bbox))
+create_suggested_bboxobservable(observable::Observable{Rect2f}) = observable
 function create_suggested_bboxobservable(observable::Observable{<:Rect{2}})
-    bbox = Observable(FRect2D(observable[]))
+    bbox = Observable(Rect2f(observable[]))
     on(observable) do o
-        bbox[] = FRect2D(o)
+        bbox[] = Rect2f(o)
     end
     bbox
 end
@@ -186,7 +186,7 @@ end
 
 
 function alignedbboxobservable!(
-    suggestedbbox::Observable{FRect2D},
+    suggestedbbox::Observable{Rect2f},
     reportedsize::Observable{NTuple{2, Optional{Float32}}},
     alignment::Observable,
     sizeattrs::Observable,
