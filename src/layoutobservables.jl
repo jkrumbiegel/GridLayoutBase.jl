@@ -119,42 +119,35 @@ function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,Si
     wauto, hauto = autosize
     tellw, tellh = tellsizeobservable
 
-    wsize = computed_size(wattr, wauto, tellw)
-    hsize = computed_size(hattr, hauto, tellh)
+    wsize::Optional{Float32} = computed_size(wattr, wauto, tellw)
+    hsize::Optional{Float32} = computed_size(hattr, hauto, tellh)
 
-    return if alignmode isa Inside
-        (wsize, hsize)
-    elseif alignmode isa Outside
-        (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
-         isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
-    else
-        w = if isnothing(wsize)
-            nothing
-        else
-            w = wsize
-            if !isnothing(alignmode.padding.left)
-                w += protrusions.left + alignmode.padding.left
-            end
-            if !isnothing(alignmode.padding.right)
-                w += protrusions.right + alignmode.padding.right
-            end
-            w
-        end
-        h = if isnothing(hsize)
-            nothing
-        else
-            h = hsize
-            if !isnothing(alignmode.padding.bottom)
-                h += protrusions.bottom + alignmode.padding.bottom
-            end
-            if !isnothing(alignmode.padding.top)
-                h += protrusions.top + alignmode.padding.top
-            end
-            h
-        end
-        (w, h)
-    end
+    w = compute_reportedsize(wsize, alignmode, protrusions, Col())
+    h = compute_reportedsize(hsize, alignmode, protrusions, Row())
+    (w, h)
 end
+
+compute_reportedsize(::Nothing, _, _, _) = nothing
+compute_reportedsize(s::Float32, ::Inside, _, _) = s
+compute_reportedsize(s::Float32, al::Outside, prot, ::Col) = s + prot.left + prot.right + al.padding.left + al.padding.right
+compute_reportedsize(s::Float32, al::Outside, prot, ::Row) = s + prot.top + prot.bottom + al.padding.top + al.padding.bottom
+function compute_reportedsize(s::Float32, al::Mixed, prot, ::Col)
+    l = mixedprotrusion_outside(al.sides.left, prot.left)
+    r = mixedprotrusion_outside(al.sides.right, prot.right)
+    s + l + r
+end
+function compute_reportedsize(s::Float32, al::Mixed, prot, ::Row)
+    b = mixedprotrusion_outside(al.sides.bottom, prot.bottom)
+    t = mixedprotrusion_outside(al.sides.top, prot.top)
+    s + b + t
+end
+
+mixedprotrusion_outside(sidevalue::Nothing, protrusion) = 0f0
+mixedprotrusion_outside(sidevalue::Real, protrusion) = sidevalue + protrusion
+mixedprotrusion_outside(sidevalue::Protrusion, protrusion) = sidevalue.p
+
+
+
 
 function computed_size(sizeattr, autosize, tellsize)
 

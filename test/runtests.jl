@@ -34,6 +34,7 @@ end
     layout = GridLayout(bbox = bbox, alignmode = Outside(100, 200, 50, 150))
     dr = layout[1, 1] = DebugRect()
 
+    @test computedbboxobservable(layout)[] == bbox[]
     @test computedbboxobservable(dr)[] == BBox(100, 800, 50, 850)
 
     dr.topprot[] = 100
@@ -115,6 +116,23 @@ end
     )
     # bb should follow
     @test computedbboxobservable(dr)[] == BBox(50, 940, 70, 920)
+end
+
+@testset "reportedsize with alignmodes" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    layout = GridLayout(bbox = bbox, alignmode = Inside())
+    layout[1, 1] = DebugRect(width = 200, height = 300)
+    layout[1, 1, Left()] = DebugRect(width = 10)
+    layout[1, 1, Right()] = DebugRect(width = 20)
+    layout[1, 1, Top()] = DebugRect(height = 30)
+    layout[1, 1, Bottom()] = DebugRect(height = 40)
+    @test reportedsizeobservable(layout)[] == (200, 300)
+    layout.alignmode[] = Outside()
+    @test_broken reportedsizeobservable(layout)[] == (230, 370)
+    layout.alignmode[] = Outside(30)
+    @test_broken reportedsizeobservable(layout)[] == (290, 430)
+    layout.alignmode[] = Mixed(bottom = 0)
+    @test_broken reportedsizeobservable(layout)[] == (230, 340)
 end
 
 @testset "assigning content to protrusions" begin
