@@ -127,16 +127,20 @@ function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,Si
     elseif alignmode isa Outside
         (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
          isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
-    else
+    elseif alignmode isa Mixed
         w = if isnothing(wsize)
             nothing
         else
             w = wsize
-            if !isnothing(alignmode.padding.left)
-                w += protrusions.left + alignmode.padding.left
+            if alignmode.sides.left isa Float32
+                w += protrusions.left + alignmode.sides.left
+            elseif alignmode.sides.left isa Protrusion
+                w += alignmode.sides.left.p
             end
-            if !isnothing(alignmode.padding.right)
-                w += protrusions.right + alignmode.padding.right
+            if alignmode.sides.right isa Float32
+                w += protrusions.right + alignmode.sides.right
+            elseif alignmode.sides.right isa Protrusion
+                w += alignmode.sides.right.p
             end
             w
         end
@@ -144,15 +148,21 @@ function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,Si
             nothing
         else
             h = hsize
-            if !isnothing(alignmode.padding.bottom)
-                h += protrusions.bottom + alignmode.padding.bottom
+            if alignmode.sides.bottom isa Float32
+                h += protrusions.bottom + alignmode.sides.bottom
+            elseif alignmode.sides.bottom isa Protrusion
+                h += alignmode.sides.bottom.p
             end
-            if !isnothing(alignmode.padding.top)
-                h += protrusions.top + alignmode.padding.top
+            if alignmode.sides.top isa Float32
+                h += protrusions.top + alignmode.sides.top
+            elseif alignmode.sides.top isa Protrusion
+                h += alignmode.sides.top.p
             end
             h
         end
         (w, h)
+    else
+        error("Unknown alignmode $alignmode")
     end
 end
 
