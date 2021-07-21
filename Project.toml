@@ -1,7 +1,7 @@
 authors = ["Julius Krumbiegel"]
 name = "GridLayoutBase"
 uuid = "3955a311-db13-416c-9275-1d80ed98e5e9"
-version = "0.5.6"
+version = "0.5.7"
 
 [deps]
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
