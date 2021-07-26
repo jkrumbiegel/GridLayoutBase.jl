@@ -615,7 +615,7 @@ into a given bounding box. This means that the protrusions of all objects inside
 the grid are not taken into account. This is needed if the grid is itself placed
 inside another grid.
 """
-function align_to_bbox!(gl::GridLayout, suggestedbbox::FRect2D)
+function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
 
     # compute the actual bbox for the content given that there might be outside
     # padding that needs to be removed

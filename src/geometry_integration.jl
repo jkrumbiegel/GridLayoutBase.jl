@@ -10,7 +10,7 @@ height(rect::Rect{2}) = top(rect) - bottom(rect)
 function BBox(left::Number, right::Number, bottom::Number, top::Number)
     mini = (left, bottom)
     maxi = (right, top)
-    return FRect2D(mini, maxi .- mini)
+    return Rect2f(mini, maxi .- mini)
 end
 
 
@@ -39,13 +39,13 @@ end
 """
 mapsides(
        f, first::Union{Rect{2}, RowCols}, rest::Union{Rect{2}, RowCols}...
-   )::FRect2D
+   )::Rect2f
 Maps f over all sides of the rectangle like arguments.
 e.g.
 ```
 mapsides(BBox(left, right, bottom, top)) do side::Side, side_val::Number
     return ...
-end::FRect2D
+end::Rect2f
 ```
 """
 function mapsides(

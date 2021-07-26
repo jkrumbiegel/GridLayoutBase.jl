@@ -19,16 +19,16 @@ function _precompile_()
 
     @warnpcfail precompile(GridLayout, (Int, Int))
     @warnpcfail precompile(GridLayout, (GridLayoutSpec,))
-    @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox,), Tuple{Observable{IRect2D}}}, Type{GridLayout}))
-    @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox,), Tuple{FRect2D}}, Type{GridLayout}))
+    @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox,), Tuple{Observable{Rect2i}}}, Type{GridLayout}))
+    @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox,), Tuple{Rect2f}}, Type{GridLayout}))
     # Also precompile `GridLayout(bbox = bbox, alignmode = al)` and the keyword body method
     fbody = isdefined(Base, :bodyfunction) ? Base.bodyfunction(which(GridLayout, (Int, Int))) : nothing
     for Al in (Inside, Outside, Mixed)
-        @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{FRect2D, Al}}, Type{GridLayout}))
-        @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{Observable{FRect2D}, Al}}, Type{GridLayout}))
+        @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{Rect2f, Al}}, Type{GridLayout}))
+        @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{Observable{Rect2f}, Al}}, Type{GridLayout}))
         @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{NTuple{4,Int}, Al}}, Type{GridLayout}))
         if fbody !== nothing
-            @warnpcfail precompile(fbody, (Nothing, Nothing, Nothing, Nothing, Nothing, Al, Tuple{Bool, Bool}, FRect2D, Auto, Auto, Bool, Bool, Symbol, Symbol, Float64, Float64, Emptykwargs, Type{GridLayout}, Int, Int))
+            @warnpcfail precompile(fbody, (Nothing, Nothing, Nothing, Nothing, Nothing, Al, Tuple{Bool, Bool}, Rect2f, Auto, Auto, Bool, Bool, Symbol, Symbol, Float64, Float64, Emptykwargs, Type{GridLayout}, Int, Int))
         end
     end
     @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:colsizes, :rowsizes), Tuple{Fixed, Relative}}, Type{GridLayout}, Int, Int))
@@ -39,7 +39,7 @@ function _precompile_()
         @warnpcfail precompile(Outside, (T,))
         @warnpcfail precompile(Outside, (T,T,T,T))
     end
-    @warnpcfail precompile(align_to_bbox!, (GridLayout, FRect2D))
+    @warnpcfail precompile(align_to_bbox!, (GridLayout, Rect2f))
     @warnpcfail precompile(update!, (GridLayout,))
     for I in subtypes(Indexables), J in subtypes(Indexables)
         @warnpcfail precompile(setindex!, (GridLayout, UnitRange{Int}, I, J))
@@ -54,7 +54,7 @@ function _precompile_()
     @warnpcfail precompile(sizeobservable!, (Observable{Any}, Observable{Any}))
     @warnpcfail precompile(_reportedsizeobservable, (Tuple{SizeAttribute,SizeAttribute}, Tuple{AutoSize,AutoSize}, AlignMode, RectSides{Float32}, Tuple{Bool,Bool}))
     for T in subtypes(Side)
-        @warnpcfail precompile(bbox_for_solving_from_side, (RowCols{Vector{Float64}}, FRect2D, RowCols{Int}, T))
+        @warnpcfail precompile(bbox_for_solving_from_side, (RowCols{Vector{Float64}}, Rect2f, RowCols{Int}, T))
     end
     for S in (Left, Right, Top, Bottom)
         @warnpcfail precompile(protrusion, (GridContent{GridLayout,GridLayout}, S))
