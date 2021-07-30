@@ -14,65 +14,42 @@ end
 
 # These functions tell whether an object in a grid touches the left, top, etc. border
 # of the grid. This means that it is relevant for the grid's own protrusion on that side.
-ismostin(gc::GridContent, grid, ::Left) = gc.span.cols.start == 1
-ismostin(gc::GridContent, grid, ::Right) = gc.span.cols.stop == grid.ncols
-ismostin(gc::GridContent, grid, ::Bottom) = gc.span.rows.stop == grid.nrows
-ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == 1
+ismostin(gc::GridContent, grid, side::Side) = side == Left ? (gc.span.cols.start == 1) :
+                                              side == Right ? (gc.span.cols.stop == grid.ncols) :
+                                              side == Bottom ? (gc.span.rows.stop == grid.nrows) :
+                                              side == Top ? (gc.span.rows.start == 1) : throw_side(side)
 
 
 function protrusion(x::T, side::Side) where T
     protrusions = protrusionsobservable(x)
-    @match side begin
-        si::Left => protrusions[].left
-        si::Right => protrusions[].right
-        si::Bottom => protrusions[].bottom
-        si::Top => protrusions[].top
-        si => error("Can't get a protrusion value for side $(typeof(si)), only
-            Left, Right, Bottom, or Top.")
-    end
+    return side == Left ? protrusions[].left :
+           side == Right ? protrusions[].right :
+           side == Bottom ? protrusions[].bottom :
+           side == Top ? protrusions[].top :
+           error("Can't get a protrusion value for side $side, only Left, Right, Bottom, or Top.")
 end
 
 function protrusion(gc::GridContent, side::Side)
-    prot = @match gc.side begin
-        gcside::Inner => protrusion(gc.content, side)
-        # gcside::Outer => BBox(l - pl, r + pr, b - pb, t + pt)
-        gcside::Union{Left, Right} => @match side begin
-            si::typeof(gcside) => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside::Union{Top, Bottom} => @match side begin
-            si::typeof(gcside) => determinedirsize(gc.content, Row(), gc.side)
-            si => 0.0
-        end
-        gcside::TopLeft => @match side begin
-            si::Top => determinedirsize(gc.content, Row(), gc.side)
-            si::Left => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside::TopRight => @match side begin
-            si::Top => determinedirsize(gc.content, Row(), gc.side)
-            si::Right => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside::BottomLeft => @match side begin
-            si::Bottom => determinedirsize(gc.content, Row(), gc.side)
-            si::Left => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside::BottomRight => @match side begin
-            si::Bottom => determinedirsize(gc.content, Row(), gc.side)
-            si::Right => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside => error("Invalid side $gcside")
-    end
+    gcside = gc.side
+    prot = gcside == Inner ? protrusion(gc.content, side) :
+           # gcside == Outer ? BBox(l - pl, r + pr, b - pb, t + pt) :
+           gcside ∈ (Left, Right) ? (side == gcside ? determinedirsize(gc.content, Col, gcside) : 0.0) :
+           gcside ∈ (Top, Bottom) ? (side == gcside ? determinedirsize(gc.content, Row, gcside) : 0.0) :
+           gcside == TopLeft ? (side ∈ (Top, Left) ? determinedirsize(gc.content, GridDir(side), gcside) : 0.0) :
+           gcside == TopRight ? (side ∈ (Top, Right) ? determinedirsize(gc.content, GridDir(side), gcside) : 0.0) :
+           gcside == BottomLeft ? (side ∈ (Bottom, Left) ? determinedirsize(gc.content, GridDir(side), gcside) : 0.0) :
+           gcside == BottomRight ? (side ∈ (Bottom, Right) ? determinedirsize(gc.content, GridDir(side), gcside) : 0.0) :
+           throw_side(gcside)
     ifnothing(prot, 0.0)
 end
 
-getside(m::Mixed, ::Left) = m.sides.left
-getside(m::Mixed, ::Right) = m.sides.right
-getside(m::Mixed, ::Top) = m.sides.top
-getside(m::Mixed, ::Bottom) = m.sides.bottom
+function getside(m::Mixed, side::Side)
+    msides = m.sides
+    return side == Left ? msides.left :
+           side == Right ? msides.right :
+           side == Top ? msides.top :
+           side == Bottom ? msides.bottom : throw_side(side)
+end
 
 function inside_protrusion(gl::GridLayout, side::Side)
     prot = 0.0
@@ -118,29 +95,23 @@ function bbox_for_solving_from_side(maxgrid::RowCols, bbox_cell::Rect2f, idx_rec
     b = bottom(bbox_cell)
     t = top(bbox_cell)
 
-    @match side begin
-        s::Inner => bbox_cell
-        s::Outer => BBox(l - pl, r + pr, b - pb, t + pt)
-        s::Left => BBox(l - pl, l, b, t)
-        s::Top => BBox(l, r, t, t + pt)
-        s::Right => BBox(r, r + pr, b, t)
-        s::Bottom => BBox(l, r, b - pb, b)
-        s::TopLeft => BBox(l - pl, l, t, t + pt)
-        s::TopRight => BBox(r, r + pr, t, t + pt)
-        s::BottomRight => BBox(r, r + pr, b - pb, b)
-        s::BottomLeft => BBox(l - pl, l, b - pb, b)
-        s => error("Invalid side $s")
-    end
+    return side == Inner ? bbox_cell :
+           side == Outer ? BBox(l - pl, r + pr, b - pb, t + pt) :
+           side == Left ? BBox(l - pl, l, b, t) :
+           side == Top ? BBox(l, r, t, t + pt) :
+           side == Right ? BBox(r, r + pr, b, t) :
+           side == Bottom ? BBox(l, r, b - pb, b) :
+           side == TopLeft ? BBox(l - pl, l, t, t + pt) :
+           side == TopRight ? BBox(r, r + pr, t, t + pt) :
+           side == BottomRight ? BBox(r, r + pr, b - pb, b) :
+           side == BottomLeft ? BBox(l - pl, l, b - pb, b) : throw_side(side)
 end
 
-startside(c::Col) = Left()
-stopside(c::Col) = Right()
-startside(r::Row) = Top()
-stopside(r::Row) = Bottom()
+startside(rc::GridDir) = rc == Row ? Top : Left
+stopside(rc::GridDir) = rc == Row ? Bottom : Right
 
 
-getspan(gc::GridContent, dir::Col) = gc.span.cols
-getspan(gc::GridContent, dir::Row) = gc.span.rows
+getspan(gc::GridContent, dir::GridDir) = dir == Col ? gc.span.cols : gc.span.rows
 
 
 
@@ -151,23 +122,15 @@ means that the protrusion layout reports its width but not its protrusions. `Lef
 means that the layout reports only its full width but not its height, because
 an element placed in the left protrusion loses its ability to influence height.
 """
-function determinedirsize(content, gdir::GridDir, side::Side)
-    reportedsize = reportedsizeobservable(content)
-    if gdir isa Row
-        @match side begin
-            # TODO: is reportedsize the correct thing to return? or plus protrusions depending on the side
-            si::Union{Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight} =>
-                ifnothing(reportedsize[][2], nothing)
-            si::Union{Left, Right} => nothing
-            si => error("$side not implemented")
-        end
+determinedirsize(content, gdir::GridDir, side::Side) = _determinedirsize(reportedsizeobservable(content), gdir, side)
+@noinline function _determinedirsize(reportedsize, gdir::GridDir, side::Side)
+    if gdir == Row
+        # TODO: is reportedsize the correct thing to return? or plus protrusions depending on the side
+        side ∈ (Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight) ? reportedsize[][2] :
+        side ∈ (Left, Right) ? nothing : throw_side(side)
     else
-        @match side begin
-            si::Union{Inner, Left, Right, TopLeft, TopRight, BottomLeft, BottomRight} =>
-                ifnothing(reportedsize[][1], nothing)
-            si::Union{Top, Bottom} => nothing
-            si => error("$side not implemented")
-        end
+        side ∈ (Inner, Left, Right, TopLeft, TopRight, BottomLeft, BottomRight) ? reportedsize[][1] :
+        side ∈ (Top, Bottom) ? nothing : throw_side(side)
     end
 end
 
@@ -185,7 +148,7 @@ function to_ranges(g::GridLayout, rows::Indexables, cols::Indexables)
     rows, cols
 end
 
-function adjust_rows_cols!(g::GridLayout, rows, cols; update = true)
+function adjust_rows_cols!(g::GridLayout, rows::Indexables, cols::Indexables; update = true)
     rows, cols = to_ranges(g, rows, cols)
 
     if rows.start < 1

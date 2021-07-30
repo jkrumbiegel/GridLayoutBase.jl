@@ -12,8 +12,8 @@ function GridLayout(spec::GridLayoutSpec)
 end
 
 const PosTuple = Tuple{Indexables, Indexables, Side}
-to_valid_pos(pos::Tuple{Indexables, Indexables}) = (pos[1], pos[2], Inner())
-to_valid_pos(pos::Tuple{Indexables, Indexables, Side}) = pos
+to_valid_pos(pos::Tuple{Indexables, Indexables}) = (pos[1], pos[2], Inner)
+to_valid_pos(pos::PosTuple) = pos
 
 function GridLayoutSpec(content::Vector{<:Pair}; kwargs...)
     spec_content = Pair{PosTuple, Any}[Pair{PosTuple, Any}(to_valid_pos(pos), c) for (pos, c) in content]

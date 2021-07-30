@@ -18,7 +18,7 @@ function align_shift_tuple(halign::Union{Number, Symbol}, valign::Union{Number, 
     return (halign2shift(halign), valign2shift(valign))
 end
 
-function LayoutObservables{T}(width::Observable, height::Observable,
+function LayoutObservables{G}(width::Observable, height::Observable,
         tellwidth::Observable, tellheight::Observable, halign::Observable,
         valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
@@ -26,13 +26,13 @@ function LayoutObservables{T}(width::Observable, height::Observable,
         reportedsize = nothing,
         autosize = nothing,
         computedbbox = nothing,
-        gridcontent = nothing) where T
-
+        gridcontent = nothing) where G
+    @nospecialize
     sizeobservable = sizeobservable!(width, height)
     alignment = map(align_shift_tuple, halign, valign)
 
-    suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
-    protrusions = create_protrusions(protrusions)
+    suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)::Observable{Rect2f}
+    protrusions = create_protrusions(protrusions)::Observable{RectSides{Float32}}
 
     tellsizeobservable = map(tuple, tellwidth, tellheight)
 
@@ -46,7 +46,7 @@ function LayoutObservables{T}(width::Observable, height::Observable,
     finalbbox = alignedbboxobservable!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
-    LayoutObservables{T, GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, nothing)
+    LayoutObservables{G}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, nothing)
 end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
@@ -90,7 +90,7 @@ create_protrusions(p::RectSides{Float32}) = Observable(p)
 
 
 function sizeobservable!(@nospecialize(widthattr::Observable), @nospecialize(heightattr::Observable))
-    sizeattrs = Observable{Tuple{Any, Any}}((widthattr[], heightattr[]))
+    sizeattrs = Observable{Tuple{SizeAttribute, SizeAttribute}}((widthattr[], heightattr[]))
     onany(widthattr, heightattr) do w, h
         sizeattrs[] = (w, h)
     end
@@ -103,8 +103,8 @@ function reportedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTupl
     # set up rsizeobservable with correct type manually
     rsizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
 
-    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs::Tuple{SizeAttribute,SizeAttribute},
-            autosize, alignmode::AlignMode, protrusions, tellsizeobservable
+    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs,
+            autosize, alignmode, protrusions, tellsizeobservable
         rsizeobservable[] = _reportedsizeobservable(sizeattrs, autosize, alignmode, protrusions, tellsizeobservable)
     end
 

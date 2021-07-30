@@ -7,32 +7,21 @@ struct RectSides{T}
     top::T
 end
 
-abstract type Side end
+@enum Side Left Right Top Bottom #= protrusion content: =# TopLeft TopRight BottomLeft BottomRight Inner Outer
+throw_side(side) = throw(ArgumentError("side $side not supported"))
 
-struct Left <: Side end
-struct Right <: Side end
-struct Top <: Side end
-struct Bottom <: Side end
-# for protrusion content:
-struct TopLeft <: Side end
-struct TopRight <: Side end
-struct BottomLeft <: Side end
-struct BottomRight <: Side end
 
-struct Inner <: Side end
-struct Outer <: Side end
+@enum GridDir Col Row
+GridDir(side::Side) = side ∈ (Top, Bottom) ? Row :
+                      side ∈ (Left, Right) ? Col : throw_side(side)
 
-abstract type GridDir end
-struct Col <: GridDir end
-struct Row <: GridDir end
-
-struct RowCols{T <: Union{Number, Vector{Float64}}}
+struct RowCols{T <: Union{Int, Vector{Float64}}}
     lefts::T
     rights::T
     tops::T
     bottoms::T
 end
-
+RowCols(left::Real, right::Real, top::Real, bottom::Real) = RowCols{Int}(left, right, top, bottom)
 
 """
     struct Span
@@ -41,18 +30,18 @@ Used to specify space that is occupied in a grid. Like 1:1|1:1 for the first squ
 or 2:3|1:4 for a rect over the 2nd and 3rd row and the first four columns.
 """
 struct Span
-    rows::UnitRange{Int64}
-    cols::UnitRange{Int64}
+    rows::UnitRange{Int}
+    cols::UnitRange{Int}
 end
 
 """
-    mutable struct GridContent{G, T}
+    mutable struct GridContent{G}
 
 Wraps content elements of a `GridLayout`. It keeps track of the `parent`, the `content` and its position in the grid via `span` and `side`.
 """
-mutable struct GridContent{G, T} # G should be GridLayout but can't be used before definition
+mutable struct GridContent{G} # G should be GridLayout but can't be used before definition
     parent::Optional{G}
-    content::T
+    content                   # deliberately untyped (diverse)
     span::Span
     side::Side
     needs_update::Observable{Bool}
@@ -133,8 +122,17 @@ struct Aspect <: ContentSize
     ratio::Float64
 end
 
+const Indexables = Union{UnitRange{Int}, Int, Colon}
+const SizeAttribute = Union{Nothing, Float32, Fixed, Relative, Auto}
+const AutoSize = Union{Nothing, Float32}
+const AlignAttribute = Union{Float32, Symbol}
+
+Base.convert(::Type{SizeAttribute}, val::Real) = convert(Float32, val)
+Base.convert(::Type{AlignAttribute}, val::Real) = convert(Float32, val)
+Base.convert(::Type{AlignAttribute}, val::AbstractString) = Symbol(val)
+
 """
-    mutable struct LayoutObservables{T, G}
+    mutable struct LayoutObservables{G}
 
 `T` is the same type parameter of contained `GridContent`, `G` is `GridLayout` which is defined only after `LayoutObservables`.
 
@@ -145,21 +143,21 @@ A collection of `Observable`s and an optional `GridContent` that are needed to i
 - `reportedsize::Observable{NTuple{2, Optional{Float32}}}`: The width and height that the element computes for itself if possible (else `nothing`).
 - `autosize::Observable{NTuple{2, Optional{Float32}}}`: The width and height that the element reports to its parent `GridLayout`. If the element doesn't want to cause the parent to adjust to its size, autosize can hide the reportedsize from it by being set to `nothing`.
 - `computedbbox::Observable{Rect2f}`: The bounding box that the element computes for itself after it has received a suggestedbbox.
-- `gridcontent::Optional{GridContent{G, T}}`: A reference of a `GridContent` if the element is currently placed in a `GridLayout`. This can be used to retrieve the parent layout, remove the element from it or change its position, and assign it to a different layout.
+- `gridcontent::Optional{GridContent{G}}`: A reference of a `GridContent` if the element is currently placed in a `GridLayout`. This can be used to retrieve the parent layout, remove the element from it or change its position, and assign it to a different layout.
 """
-mutable struct LayoutObservables{T, G} # G again GridLayout
+mutable struct LayoutObservables{G} # G again GridLayout
     suggestedbbox::Observable{Rect2f}
     protrusions::Observable{RectSides{Float32}}
     reportedsize::Observable{NTuple{2, Optional{Float32}}}
     autosize::Observable{NTuple{2, Optional{Float32}}}
     computedbbox::Observable{Rect2f}
-    gridcontent::Optional{GridContent{G, T}} # the connecting link to the gridlayout
+    gridcontent::Optional{GridContent{G}} # the connecting link to the gridlayout
 end
 
 mutable struct GridLayout
     parent # this parent is supposed to be any kind of object where it's beneficial
     # to access it through the assigned GridLayout, like a Figure in Makie
-    content::Vector{GridContent}
+    content::Vector{GridContent{GridLayout}}
     nrows::Int
     ncols::Int
     rowsizes::Vector{ContentSize}
@@ -170,13 +168,13 @@ mutable struct GridLayout
     equalprotrusiongaps::Tuple{Bool, Bool}
     needs_update::Observable{Bool}
     block_updates::Bool
-    layoutobservables::LayoutObservables
-    width::Observable
-    height::Observable
-    tellwidth::Observable
-    tellheight::Observable
-    halign::Observable
-    valign::Observable
+    layoutobservables::LayoutObservables{GridLayout}
+    width::Observable{SizeAttribute}
+    height::Observable{SizeAttribute}
+    tellwidth::Observable{Bool}
+    tellheight::Observable{Bool}
+    halign::Observable{AlignAttribute}
+    valign::Observable{AlignAttribute}
     default_rowgap::GapSize
     default_colgap::GapSize
     _update_func_handle::Optional{Function} # stores a reference to the result of on(obs)
@@ -197,10 +195,6 @@ mutable struct GridLayout
         gl
     end
 end
-
-const Indexables = Union{UnitRange, Int, Colon}
-const SizeAttribute = Union{Nothing, Real, Fixed, Relative, Auto}
-const AutoSize = Union{Nothing, Float32}
 
 struct GridPosition
     layout::GridLayout

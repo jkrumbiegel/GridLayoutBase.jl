@@ -1,7 +1,9 @@
-GridLayout(; kwargs...) = GridLayout(1, 1; kwargs...)
+GridLayout(; @nospecialize(kwargs...)) = GridLayout(1, 1; kwargs...)
 
 observablify(x::Observable) = x
-observablify(x, type=Any) = Observable{type}(x)
+observablify(x) = Observable(x)
+struct Observablify{T} end
+Observablify{T}(x) where T = convert(Observable{T}, x)::Observable{T}
 
 function GridLayout(nrows::Int, ncols::Int;
         parent = nothing,
@@ -9,37 +11,38 @@ function GridLayout(nrows::Int, ncols::Int;
         colsizes = nothing,
         addedrowgaps = nothing,
         addedcolgaps = nothing,
-        alignmode = Inside(),
+        alignmode::AlignMode = Inside(),
         equalprotrusiongaps = (false, false),
         bbox = nothing,
         width::SizeAttribute = Auto(),
         height::SizeAttribute = Auto(),
         tellwidth::Bool = true,
         tellheight::Bool = true,
-        halign = :center,
-        valign = :center,
-        default_rowgap = DEFAULT_ROWGAP_GETTER[](),
-        default_colgap = DEFAULT_COLGAP_GETTER[](),
+        halign::AlignAttribute = :center,
+        valign::AlignAttribute = :center,
+        default_rowgap = DEFAULT_ROWGAP_GETTER[]()::Float64,
+        default_colgap = DEFAULT_COLGAP_GETTER[]()::Float64,
         kwargs...)
+    @nospecialize
 
-    default_rowgap::GapSize = default_rowgap isa Number ? Fixed(default_rowgap)::Fixed : default_rowgap
-    default_colgap::GapSize = default_colgap isa Number ? Fixed(default_colgap)::Fixed : default_colgap
-    rowsizes = convert_contentsizes(nrows, rowsizes)
-    colsizes = convert_contentsizes(ncols, colsizes)
-    addedrowgaps = convert_gapsizes(nrows - 1, addedrowgaps, default_rowgap)
-    addedcolgaps = convert_gapsizes(ncols - 1, addedcolgaps, default_colgap)
+    default_rowgap = (default_rowgap isa Number ? Fixed(default_rowgap) : default_rowgap)::GapSize
+    default_colgap = (default_colgap isa Number ? Fixed(default_colgap) : default_colgap)::GapSize
+    rowsizes = convert_contentsizes(nrows, rowsizes)::Vector{ContentSize}
+    colsizes = convert_contentsizes(ncols, colsizes)::Vector{ContentSize}
+    addedrowgaps = convert_gapsizes(nrows - 1, addedrowgaps, default_rowgap)::Vector{GapSize}
+    addedcolgaps = convert_gapsizes(ncols - 1, addedcolgaps, default_colgap)::Vector{GapSize}
 
     needs_update = Observable(true)
 
-    content = GridContent[]
+    content = GridContent{GridLayout}[]
 
-    alignmode = observablify(alignmode, AlignMode)
-    width = observablify(width)
-    height = observablify(height)
-    tellwidth = observablify(tellwidth)
-    tellheight = observablify(tellheight)
-    halign = observablify(halign)
-    valign = observablify(valign)
+    alignmode = Observablify{AlignMode}(alignmode)
+    width = Observablify{SizeAttribute}(width)
+    height = Observablify{SizeAttribute}(height)
+    tellwidth = Observable(tellwidth)
+    tellheight = Observable(tellheight)
+    halign = Observable{AlignAttribute}(halign)
+    valign = Observable{AlignAttribute}(valign)
 
     layoutobservables = layoutobservables = LayoutObservables{GridLayout}(width,
         height, tellwidth, tellheight, halign, valign;
@@ -65,15 +68,15 @@ end
 function update!(gl::GridLayout)
     gl.block_updates && return
 
-    w = determinedirsize(gl, Col())
-    h = determinedirsize(gl, Row())
+    w = determinedirsize(gl, Col)
+    h = determinedirsize(gl, Row)
 
     new_autosize = (w, h)
     new_protrusions = RectSides{Float32}(
-        protrusion(gl, Left()),
-        protrusion(gl, Right()),
-        protrusion(gl, Bottom()),
-        protrusion(gl, Top()),
+        protrusion(gl, Left),
+        protrusion(gl, Right),
+        protrusion(gl, Bottom),
+        protrusion(gl, Top),
     )
 
     if autosizeobservable(gl)[] == new_autosize &&
@@ -204,7 +207,7 @@ function remove_from_gridlayout!(gc::GridContent)
 end
 
 
-function convert_contentsizes(n, sizes)::Vector{ContentSize}
+function convert_contentsizes(n, @nospecialize(sizes))::Vector{ContentSize}
     if sizes === nothing
         ContentSize[Auto() for _ in 1:n]
     elseif sizes isa ContentSize
@@ -450,7 +453,7 @@ end
 
 function Base.isempty(gl::GridLayout, dir::GridDir, i::Int)
     !any(gl.content) do c
-        span = dir isa Row ? c.span.rows : c.span.cols
+        span = dir == Row ? c.span.rows : c.span.cols
         i in span
     end
 end
@@ -458,7 +461,7 @@ end
 function trim!(gl::GridLayout)
     irow = 1
     while irow <= gl.nrows && gl.nrows > 1
-        if isempty(gl, Row(), irow)
+        if isempty(gl, Row, irow)
             deleterow!(gl, irow)
         else
             irow += 1
@@ -467,7 +470,7 @@ function trim!(gl::GridLayout)
 
     icol = 1
     while icol <= gl.ncols && gl.ncols > 1
-        if isempty(gl, Col(), icol)
+        if isempty(gl, Col, icol)
             deletecol!(gl, icol)
         else
             icol += 1
@@ -681,8 +684,8 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
     elseif alignmode isa Outside
         width(bbox) - sumcolgaps - leftprot - rightprot
     elseif alignmode isa Mixed
-        rightal = getside(alignmode, Right())
-        leftal = getside(alignmode, Left())
+        rightal = getside(alignmode, Right)
+        leftal = getside(alignmode, Left)
         width(bbox) - sumcolgaps -
             (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot) -
             (isnothing(rightal) ? zero(rightprot) : isa(rightal, Protrusion) ? rightal.p : rightprot)
@@ -695,8 +698,8 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
     elseif alignmode isa Outside
         height(bbox) - sumrowgaps - topprot - bottomprot
     elseif alignmode isa Mixed
-        topal = getside(alignmode, Top())
-        bottomal = getside(alignmode, Bottom())
+        topal = getside(alignmode, Top)
+        bottomal = getside(alignmode, Bottom)
         height(bbox) - sumrowgaps -
             (isnothing(bottomal) ? zero(bottomprot) : isa(bottomal, Protrusion) ? bottomal.p : bottomprot) -
             (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
@@ -759,7 +762,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
         left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ leftprot
     elseif alignmode isa Mixed
-        leftal = getside(alignmode, Left())
+        leftal = getside(alignmode, Left)
         left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot)
     else
@@ -775,7 +778,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
         top(bbox) .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps) .- topprot
     elseif alignmode isa Mixed
-        topal = getside(alignmode, Top())
+        topal = getside(alignmode, Top)
         top(bbox) .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps) .- (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
     else
@@ -809,8 +812,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
 end
 
 
-dirlength(gl::GridLayout, c::Col) = gl.ncols
-dirlength(gl::GridLayout, r::Row) = gl.nrows
+dirlength(gl::GridLayout, rc::GridDir) = rc == Col ? gl.ncols : gl.nrows
 
 function dirgaps(gl::GridLayout, dir::GridDir)
     starts = zeros(Float32, dirlength(gl, dir))
@@ -825,8 +827,7 @@ function dirgaps(gl::GridLayout, dir::GridDir)
     starts, stops
 end
 
-dirsizes(gl::GridLayout, c::Col) = gl.colsizes
-dirsizes(gl::GridLayout, r::Row) = gl.rowsizes
+dirsizes(gl::GridLayout, rc::GridDir) = rc == Col ? gl.colsizes : gl.rowsizes
 
 """
 Determine the size of a grid layout along one of its dimensions.
@@ -853,7 +854,7 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
 
     dirgapsstart, dirgapsstop = dirgaps(gl, gdir)
 
-    forceequalprotrusiongaps = gl.equalprotrusiongaps[gdir isa Row ? 1 : 2]
+    forceequalprotrusiongaps = gl.equalprotrusiongaps[gdir == Row ? 1 : 2]
 
     dirgapsizes = if forceequalprotrusiongaps
         innergaps = dirgapsstart[2:end] .+ dirgapsstop[1:end-1]
@@ -865,7 +866,7 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
 
     inner_gapsizes = dirlength(gl, gdir) > 1 ? sum(dirgapsizes) : 0
 
-    addeddirgapsizes = gdir isa Row ? gl.addedrowgaps : gl.addedcolgaps
+    addeddirgapsizes = gdir == Row ? gl.addedrowgaps : gl.addedcolgaps
 
     addeddirgaps = dirlength(gl, gdir) == 1 ? 0 : sum(addeddirgapsizes) do c
         if c isa Fixed
@@ -879,7 +880,7 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
     return if gl.alignmode[] isa Inside
         inner_size_combined
     elseif gl.alignmode[] isa Outside
-        paddings = if gdir isa Row
+        paddings = if gdir == Row
             gl.alignmode[].padding.top + gl.alignmode[].padding.bottom
         else
             gl.alignmode[].padding.left + gl.alignmode[].padding.right
@@ -916,7 +917,7 @@ function determinedirsize(idir, gl, dir::GridDir)
 
             # content has to be placed with Inner side, otherwise it's protrusion
             # content
-            is_inner = c.side isa Inner
+            is_inner = c.side == Inner
 
             if singlespanned && is_inner
                 s = determinedirsize(c.content, dir, c.side)
@@ -979,14 +980,14 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)
 
     # then determinable auto sizes
     filterenum(Auto, gl.colsizes) do (i, auto)
-        size = determinedirsize(i, gl, Col())
+        size = determinedirsize(i, gl, Col)
         if !isnothing(size)
             colwidths[i] = size
             determinedcols[i] = true
         end
     end
     filterenum(Auto, gl.rowsizes) do (i, auto)
-        size = determinedirsize(i, gl, Row())
+        size = determinedirsize(i, gl, Row)
         if !isnothing(size)
             rowheights[i] = size
             determinedrows[i] = true
@@ -1134,8 +1135,8 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)
     colwidths, rowheights
 end
 
-function Base.setindex!(g::GridLayout, content, rows::Indexables, cols::Indexables, side::Side = Inner())
-    add_content!(g, content, rows, cols, side)
+function Base.setindex!(g::GridLayout, @nospecialize(content), rows::Indexables, cols::Indexables, side::Side = Inner)
+    add_content!(g, Base.inferencebarrier(content), rows, cols, side)
     content
 end
 
@@ -1145,7 +1146,7 @@ function Base.setindex!(g::GridLayout, content_array::AbstractArray{T, 2}) where
     g[rowrange, colrange] = content_array
 end
 
-function Base.setindex!(g::GridLayout, content_array::AbstractArray{T, 1}) where T
+function Base.setindex!(g::GridLayout, content_array::AbstractVector)
     error("""
         You can only assign a one-dimensional content AbstractArray if you also specify the direction in the layout.
         Valid options are :h for horizontal and :v for vertical.
@@ -1154,7 +1155,7 @@ function Base.setindex!(g::GridLayout, content_array::AbstractArray{T, 1}) where
     """)
 end
 
-function Base.setindex!(g::GridLayout, content_array::AbstractArray{T, 1}, h_or_v::Symbol) where T
+function Base.setindex!(g::GridLayout, content_array::AbstractVector, h_or_v::Symbol)
     if h_or_v == :h
         g[1, 1:length(content_array)] = content_array
     elseif h_or_v == :v
@@ -1205,7 +1206,7 @@ function Base.setindex!(g::GridLayout, content_array::AbstractArray, rows::Index
     content_array
 end
 
-function GridContent(content::T, span::Span, side::Side) where T
+function GridContent{G}(@nospecialize(content), span::Span, side::Side) where G
     needs_update = Observable(false)
     # connect the correct observables
     protrusions_handle = on(protrusionsobservable(content)) do p
@@ -1214,25 +1215,25 @@ function GridContent(content::T, span::Span, side::Side) where T
     reportedsize_handle = on(reportedsizeobservable(content)) do c
         needs_update[] = true
     end
-    GridContent{GridLayout, T}(nothing, content, span, side, needs_update,
+    GridContent{G}(nothing, content, span, side, needs_update,
         protrusions_handle, reportedsize_handle)
 end
 
-function add_content!(g::GridLayout, content, rows, cols, side::Side)
+function add_content!(g::GridLayout, @nospecialize(content), rows::Indexables, cols::Indexables, side::Side)
     # update = false because update is called in add_to_gridlayout! anyway
     rows, cols = adjust_rows_cols!(g, rows, cols; update = false)
 
-    gc = if !isnothing(gridcontent(content))
+    gridc = gridcontent(content)
+    gc = if !isnothing(gridc)
         # take the existing gridcontent, remove it from its gridlayout if it has one,
         # and modify it with the new span and side
-        gridc = gridcontent(content)
         remove_from_gridlayout!(gridc)
         gridc.span = Span(rows, cols)
         gridc.side = side
         gridc
     else
         # make a new one if none existed
-        GridContent(content, Span(rows, cols), side)
+        GridContent{GridLayout}(content, Span(rows, cols), side)
     end
 
     layoutobservables(content).gridcontent = gc
@@ -1252,12 +1253,12 @@ function Base.lastindex(g::GridLayout, d)
     end
 end
 
-function GridPosition(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner())
+function GridPosition(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner)
     span = Span(to_ranges(g, rows, cols)...)
     GridPosition(g, span, side)
 end
 
-function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner())
+function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner)
     GridPosition(g, rows, cols, side)
 end
 
@@ -1265,7 +1266,7 @@ function Base.setindex!(gp::GridPosition, element)
     gp.layout[gp.span.rows, gp.span.cols, gp.side] = element
 end
 
-function Base.setindex!(gp::GridPosition, element, rows, cols, side = Inner())
+function Base.setindex!(gp::GridPosition, element, rows, cols, side = Inner)
     layout = get_layout_at!(gp, createmissing = true)
     layout[rows, cols, side] = element
     element
@@ -1316,12 +1317,12 @@ function contents(g::GridLayout)
 end
 
 
-function Base.getindex(gp::Union{GridPosition, GridSubposition}, rows, cols, side = Inner())
+function Base.getindex(gp::Union{GridPosition, GridSubposition}, rows, cols, side = Inner)
     GridSubposition(gp, rows, cols, side)
 end
 
 function Base.setindex!(parent::GridSubposition, obj,
-    rows, cols, side = GridLayoutBase.Inner())
+    rows, cols, side = GridLayoutBase.Inner)
     layout = get_layout_at!(parent, createmissing = true)
     layout[rows, cols, side] = obj
     obj

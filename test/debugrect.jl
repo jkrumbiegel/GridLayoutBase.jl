@@ -1,21 +1,19 @@
 mutable struct DebugRect
-    layoutobservables::GridLayoutBase.LayoutObservables
-    width::Observable
-    height::Observable
-    tellwidth::Observable
-    tellheight::Observable
-    halign::Observable
-    valign::Observable
-    leftprot::Observable
-    rightprot::Observable
-    bottomprot::Observable
-    topprot::Observable
-    alignmode::Observable
+    layoutobservables::GridLayoutBase.LayoutObservables{GridLayout}
+    width::Observable{GridLayoutBase.SizeAttribute}
+    height::Observable{GridLayoutBase.SizeAttribute}
+    tellwidth::Observable{Bool}
+    tellheight::Observable{Bool}
+    halign::Observable{GridLayoutBase.AlignAttribute}
+    valign::Observable{GridLayoutBase.AlignAttribute}
+    leftprot::Observable{Float32}
+    rightprot::Observable{Float32}
+    bottomprot::Observable{Float32}
+    topprot::Observable{Float32}
+    alignmode::Observable{GridLayoutBase.AlignMode}
 end
 
-
-observablify(x::Observable) = x
-observablify(x, type=Any) = Observable{type}(x)
+using GridLayoutBase: observablify, Observablify
 
 function DebugRect(; bbox = nothing, width=nothing, height=nothing,
     tellwidth = true, tellheight = true, halign=:center,
@@ -28,17 +26,17 @@ function DebugRect(; bbox = nothing, width=nothing, height=nothing,
     tellheight = observablify(tellheight)
     halign = observablify(halign)
     valign = observablify(valign)
-    topprot = observablify(topprot, Float32)
-    leftprot = observablify(leftprot, Float32)
-    rightprot = observablify(rightprot, Float32)
-    bottomprot = observablify(bottomprot, Float32)
-    alignmode = observablify(alignmode)
+    topprot = Observablify{Float32}(topprot)
+    leftprot = Observablify{Float32}(leftprot)
+    rightprot = Observablify{Float32}(rightprot)
+    bottomprot = Observablify{Float32}(bottomprot)
+    alignmode = Observablify{GridLayoutBase.AlignMode}(alignmode)
 
     protrusions::Observable{GridLayoutBase.RectSides{Float32}} = map(leftprot, rightprot, bottomprot, topprot) do l, r, b, t
         GridLayoutBase.RectSides{Float32}(l, r, b, t)
     end
 
-    layoutobservables = GridLayoutBase.LayoutObservables{DebugRect}(width,
+    layoutobservables = GridLayoutBase.LayoutObservables{GridLayout}(width,
         height, tellwidth, tellheight, halign, valign, alignmode;
         suggestedbbox = bbox, protrusions = protrusions)
 
