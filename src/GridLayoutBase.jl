@@ -43,9 +43,8 @@ export protrusionsobservable, suggestedbboxobservable, reportedsizeobservable, a
 export ncols, nrows
 export contents, content
 
-# if Base.VERSION >= v"1.4.2"
-#     include("precompile.jl")
-#     _precompile_()
-# end
+if Base.VERSION >= v"1.4.2" && ccall(:jl_generating_output, Cint, ()) == 1
+    include("precompile.jl")
+end
 
 end
