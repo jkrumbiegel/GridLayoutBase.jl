@@ -1343,7 +1343,7 @@ function get_layout_at!(gp::GridPosition; createmissing = false)
             error("No layout found but `createmissing` is false.")
         end
     elseif length(layouts) == 1
-        return only(layouts)
+        return first(layouts)
     else
         error("Found more than zero or one GridLayouts at $gp")
     end
