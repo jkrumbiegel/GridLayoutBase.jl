@@ -615,7 +615,7 @@ into a given bounding box. This means that the protrusions of all objects inside
 the grid are not taken into account. This is needed if the grid is itself placed
 inside another grid.
 """
-function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
+function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
 
     # compute the actual bbox for the content given that there might be outside
     # padding that needs to be removed
@@ -783,16 +783,54 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
     end
     ybottomrows = ytoprows .- rowheights
 
-    # now we can solve the content thats inside the grid because we know where each
-    # column and row is placed, how wide it is, etc.
-    # note that what we did at the top was determine the protrusions of all grid content,
-    # but we know the protrusions before we know how much space each plot actually has
-    # because the protrusions should be static (like tick labels etc don't change size with the plot)
+    xmax = xrightcols[end]
+    ymin = ybottomrows[end]
+    bbox_xmax = right(bbox)
+    bbox_ymin = bottom(bbox)
+
+    hal = if gl.halign[] == :left
+        0f0
+    elseif gl.halign[] == :right
+        1.0f0
+    elseif gl.halign[] == :center
+        0.5f0
+    else
+        Float32(gl.halign[])
+    end
+
+    xleftcols .+= hal * (bbox_xmax - xmax)
+    xrightcols .+= hal * (bbox_xmax - xmax)
+
+    val = if gl.valign[] == :top
+        0f0
+    elseif gl.valign[] == :bottom
+        1.0f0
+    elseif gl.valign[] == :center
+        0.5f0
+    else
+        Float32(gl.valign[])
+    end
+
+    ytoprows .+= val * (bbox_ymin - ymin)
+    ybottomrows .+= val * (bbox_ymin - ymin)
 
     gridboxes = RowCols(
         xleftcols, xrightcols,
         ytoprows, ybottomrows
     )
+
+    maxgrid, gridboxes
+end
+
+function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
+
+    maxgrid, gridboxes = compute_rowcols(gl, suggestedbbox)
+
+    # now we can solve the content thats inside the grid because we know where each
+    # column and row is placed, how wide it is, etc.
+    # note that what we did at the top was determine the protrusions of all grid content,
+    # but we know the protrusions before we know how much space each plot actually has
+    # because the protrusions should be static (like tick labels etc don't change size with the plot)
 
     for c in gl.content
         idx_rect = side_indices(c)
@@ -807,7 +845,6 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
 
     nothing
 end
-
 
 dirlength(gl::GridLayout, c::Col) = gl.ncols
 dirlength(gl::GridLayout, r::Row) = gl.nrows
