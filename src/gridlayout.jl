@@ -746,21 +746,71 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     # bigger or smaller than the bounding box it occupies)
 
     gridwidth = sum(colwidths) + sum(finalcolgaps) +
-        (alignmode isa Outside ? (leftprot + rightprot) : 0.0)
+        if alignmode isa Outside
+            leftprot + rightprot
+        elseif alignmode isa Mixed
+            rightal = getside(alignmode, Right())
+            leftal = getside(alignmode, Left())
+            r = if rightal === nothing
+                0
+            elseif rightal isa Protrusion
+                rightal.p
+            elseif rightal isa Real
+                rightal
+            end
+            l = if leftal === nothing
+                0
+            elseif leftal isa Protrusion
+                leftal.p
+            elseif leftal isa Real
+                leftal
+            end
+            r + l
+        else
+            0.0
+        end
+        
     gridheight = sum(rowheights) + sum(finalrowgaps) +
-        (alignmode isa Outside ? (topprot + bottomprot) : 0.0)
+        if alignmode isa Outside
+            topprot + bottomprot
+        elseif alignmode isa Mixed
+            bottomal = getside(alignmode, Bottom())
+            topal = getside(alignmode, Top())
+            b = if bottomal === nothing
+                0
+            elseif bottomal isa Protrusion
+                bottomal.p
+            elseif bottomal isa Real
+                bottomal
+            end
+            t = if topal === nothing
+                0
+            elseif topal isa Protrusion
+                topal.p
+            elseif topal isa Real
+                topal
+            end
+            b + t
+        else
+            0.0
+        end
 
+    hal = halign2shift(gl.halign[])
+    xadjustment = hal * (width(bbox) - gridwidth)
+
+    val = 1 - valign2shift(gl.valign[])
+    yadjustment = val * (height(bbox) - gridheight)
 
     # compute the x values for all left and right column boundaries
     xleftcols = if alignmode isa Inside
-        left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+        xadjustment .+ left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps)
     elseif alignmode isa Outside
-        left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+        xadjustment .+ left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ leftprot
     elseif alignmode isa Mixed
         leftal = getside(alignmode, Left())
-        left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+        xadjustment .+ left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot)
     else
         error("Unknown AlignMode of type $(typeof(alignmode))")
@@ -769,50 +819,37 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
 
     # compute the y values for all top and bottom row boundaries
     ytoprows = if alignmode isa Inside
-        top(bbox) .- zcumsum(rowheights[1:end-1]) .-
+        top(bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps)
     elseif alignmode isa Outside
-        top(bbox) .- zcumsum(rowheights[1:end-1]) .-
+        top(bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps) .- topprot
     elseif alignmode isa Mixed
         topal = getside(alignmode, Top())
-        top(bbox) .- zcumsum(rowheights[1:end-1]) .-
+        top(bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps) .- (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
     else
         error("Unknown AlignMode of type $(typeof(alignmode))")
     end
     ybottomrows = ytoprows .- rowheights
 
-    xmax = xrightcols[end]
-    ymin = ybottomrows[end]
-    bbox_xmax = right(bbox)
-    bbox_ymin = bottom(bbox)
+    # xmax = xrightcols[end]
+    # ymin = ybottomrows[end]
+    # bbox_xmax = right(bbox)
+    # bbox_ymin = bottom(bbox)
 
-    hal = if gl.halign[] == :left
-        0f0
-    elseif gl.halign[] == :right
-        1.0f0
-    elseif gl.halign[] == :center
-        0.5f0
-    else
-        Float32(gl.halign[])
-    end
+    
 
-    xleftcols .+= hal * (bbox_xmax - xmax)
-    xrightcols .+= hal * (bbox_xmax - xmax)
+    # # TODO: this still misses different Inside / Outside protrusion adjustment
+    # xadjustment = hal * (bbox_xmax - rightprot - xmax)
+    # xleftcols .+= xadjustment
+    # xrightcols .+= xadjustment
 
-    val = if gl.valign[] == :top
-        0f0
-    elseif gl.valign[] == :bottom
-        1.0f0
-    elseif gl.valign[] == :center
-        0.5f0
-    else
-        Float32(gl.valign[])
-    end
+    
 
-    ytoprows .+= val * (bbox_ymin - ymin)
-    ybottomrows .+= val * (bbox_ymin - ymin)
+    # yadjustment = val * (bbox_ymin + bottomprot - ymin)
+    # ytoprows .+= yadjustment
+    # ybottomrows .+= yadjustment
 
     gridboxes = RowCols(
         xleftcols, xrightcols,
