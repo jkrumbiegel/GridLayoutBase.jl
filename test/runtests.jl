@@ -47,8 +47,7 @@ end
     @test computedbboxobservable(dr)[] == BBox(200, 700, 150, 750)
 end
 
-# @testset "GridLayout Inside AlignMode" begin
-begin
+@testset "GridLayout Inside AlignMode" begin
     bbox = BBox(0, 1000, 0, 1000)
     layout = GridLayout(bbox = bbox, alignmode = Inside())
     dr = layout[1, 1] = DebugRect()
