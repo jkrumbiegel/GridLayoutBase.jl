@@ -609,6 +609,29 @@ function rowgap!(gl::GridLayout, r::Real)
     gl.needs_update[] = true
 end
 
+
+function _compute_content_bbox(suggestedbbox, alignmode::Outside)
+    pad = alignmode.padding
+    BBox(
+        left(suggestedbbox) + pad.left,
+        right(suggestedbbox) - pad.right,
+        bottom(suggestedbbox) + pad.bottom,
+        top(suggestedbbox) - pad.top)
+end
+
+function _compute_content_bbox(suggestedbbox, ::Inside)
+    suggestedbbox
+end
+
+function _compute_content_bbox(suggestedbbox, alignmode::Mixed)
+    sides = alignmode.sides
+    BBox(
+        left(suggestedbbox) + (sides.left isa Float32 ? sides.left : 0f0),
+        right(suggestedbbox) - (sides.right isa Float32 ? sides.right : 0f0),
+        bottom(suggestedbbox) + (sides.bottom isa Float32 ? sides.bottom : 0f0),
+        top(suggestedbbox) - (sides.top isa Float32 ? sides.top : 0f0))
+end
+
 """
 This function solves a grid layout such that the "important lines" fit exactly
 into a given bounding box. This means that the protrusions of all objects inside
@@ -620,26 +643,8 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     # compute the actual bbox for the content given that there might be outside
     # padding that needs to be removed
     alignmode = gl.alignmode[]
-    bbox = if alignmode isa Outside
-        pad = alignmode.padding
-        BBox(
-            left(suggestedbbox) + pad.left,
-            right(suggestedbbox) - pad.right,
-            bottom(suggestedbbox) + pad.bottom,
-            top(suggestedbbox) - pad.top)
-    elseif alignmode isa Inside
-        suggestedbbox
-    elseif alignmode isa Mixed
-        sides = alignmode.sides
-        BBox(
-            left(suggestedbbox) + (sides.left isa Float32 ? sides.left : 0f0),
-            right(suggestedbbox) - (sides.right isa Float32 ? sides.right : 0f0),
-            bottom(suggestedbbox) + (sides.bottom isa Float32 ? sides.bottom : 0f0),
-            top(suggestedbbox) - (sides.top isa Float32 ? sides.top : 0f0))
-    else
-        error("Unknown AlignMode of type $(typeof(alignmode))")
-    end
-
+    content_bbox = _compute_content_bbox(suggestedbbox, alignmode)
+    
     # first determine how big the protrusions on each side of all columns and rows are
     maxgrid = RowCols(gl.ncols, gl.nrows)
     # go through all the layout objects placed in the grid
@@ -677,13 +682,13 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
 
     # compute what space remains for the inner parts of the plots
     remaininghorizontalspace = if alignmode isa Inside
-        width(bbox) - sumcolgaps
+        width(content_bbox) - sumcolgaps
     elseif alignmode isa Outside
-        width(bbox) - sumcolgaps - leftprot - rightprot
+        width(content_bbox) - sumcolgaps - leftprot - rightprot
     elseif alignmode isa Mixed
         rightal = getside(alignmode, Right())
         leftal = getside(alignmode, Left())
-        width(bbox) - sumcolgaps -
+        width(content_bbox) - sumcolgaps -
             (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot) -
             (isnothing(rightal) ? zero(rightprot) : isa(rightal, Protrusion) ? rightal.p : rightprot)
     else
@@ -691,13 +696,13 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     end
 
     remainingverticalspace = if alignmode isa Inside
-        height(bbox) - sumrowgaps
+        height(content_bbox) - sumrowgaps
     elseif alignmode isa Outside
-        height(bbox) - sumrowgaps - topprot - bottomprot
+        height(content_bbox) - sumrowgaps - topprot - bottomprot
     elseif alignmode isa Mixed
         topal = getside(alignmode, Top())
         bottomal = getside(alignmode, Bottom())
-        height(bbox) - sumrowgaps -
+        height(content_bbox) - sumrowgaps -
             (isnothing(bottomal) ? zero(bottomprot) : isa(bottomal, Protrusion) ? bottomal.p : bottomprot) -
             (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
     else
@@ -795,21 +800,21 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
             0.0
         end
     hal = halign2shift(gl.halign[])
-    xadjustment = hal * (width(bbox) - gridwidth)
+    xadjustment = hal * (width(content_bbox) - gridwidth)
 
     val = 1 - valign2shift(gl.valign[])
-    yadjustment = val * (height(bbox) - gridheight)
+    yadjustment = val * (height(content_bbox) - gridheight)
 
     # compute the x values for all left and right column boundaries
     xleftcols = if alignmode isa Inside
-        xadjustment .+ left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+        xadjustment .+ left(content_bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps)
     elseif alignmode isa Outside
-        xadjustment .+ left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+        xadjustment .+ left(content_bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ leftprot
     elseif alignmode isa Mixed
         leftal = getside(alignmode, Left())
-        xadjustment .+ left(bbox) .+ zcumsum(colwidths[1:end-1]) .+
+        xadjustment .+ left(content_bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot)
     else
         error("Unknown AlignMode of type $(typeof(alignmode))")
@@ -818,14 +823,14 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
 
     # compute the y values for all top and bottom row boundaries
     ytoprows = if alignmode isa Inside
-        top(bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
+        top(content_bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps)
     elseif alignmode isa Outside
-        top(bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
+        top(content_bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps) .- topprot
     elseif alignmode isa Mixed
         topal = getside(alignmode, Top())
-        top(bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
+        top(content_bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps) .- (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
     else
         error("Unknown AlignMode of type $(typeof(alignmode))")
