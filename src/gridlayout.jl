@@ -756,20 +756,20 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
             elseif rightal isa Protrusion
                 rightal.p
             elseif rightal isa Real
-                rightal
+                rightprot
             end
             l = if leftal === nothing
                 0
             elseif leftal isa Protrusion
                 leftal.p
             elseif leftal isa Real
-                leftal
+                leftprot
             end
             r + l
         else
             0.0
         end
-        
+
     gridheight = sum(rowheights) + sum(finalrowgaps) +
         if alignmode isa Outside
             topprot + bottomprot
@@ -781,20 +781,19 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
             elseif bottomal isa Protrusion
                 bottomal.p
             elseif bottomal isa Real
-                bottomal
+                bottomprot
             end
             t = if topal === nothing
                 0
             elseif topal isa Protrusion
                 topal.p
             elseif topal isa Real
-                topal
+                topprot
             end
             b + t
         else
             0.0
         end
-
     hal = halign2shift(gl.halign[])
     xadjustment = hal * (width(bbox) - gridwidth)
 
@@ -832,24 +831,6 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
         error("Unknown AlignMode of type $(typeof(alignmode))")
     end
     ybottomrows = ytoprows .- rowheights
-
-    # xmax = xrightcols[end]
-    # ymin = ybottomrows[end]
-    # bbox_xmax = right(bbox)
-    # bbox_ymin = bottom(bbox)
-
-    
-
-    # # TODO: this still misses different Inside / Outside protrusion adjustment
-    # xadjustment = hal * (bbox_xmax - rightprot - xmax)
-    # xleftcols .+= xadjustment
-    # xrightcols .+= xadjustment
-
-    
-
-    # yadjustment = val * (bbox_ymin + bottomprot - ymin)
-    # ytoprows .+= yadjustment
-    # ybottomrows .+= yadjustment
 
     gridboxes = RowCols(
         xleftcols, xrightcols,
