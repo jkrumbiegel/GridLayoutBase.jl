@@ -632,6 +632,18 @@ function _compute_content_bbox(suggestedbbox, alignmode::Mixed)
         top(suggestedbbox) - (sides.top isa Float32 ? sides.top : 0f0))
 end
 
+function _compute_maxgrid(gl)
+    maxgrid = RowCols(gl.ncols, gl.nrows)
+    # go through all the layout objects placed in the grid
+    for c in gl.content
+        idx_rect = side_indices(c)
+        mapsides(idx_rect, maxgrid) do side, idx, grid
+            grid[idx] = max(grid[idx], protrusion(c, side))
+        end
+    end
+    maxgrid
+end
+
 """
 This function solves a grid layout such that the "important lines" fit exactly
 into a given bounding box. This means that the protrusions of all objects inside
@@ -646,14 +658,7 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     content_bbox = _compute_content_bbox(suggestedbbox, alignmode)
     
     # first determine how big the protrusions on each side of all columns and rows are
-    maxgrid = RowCols(gl.ncols, gl.nrows)
-    # go through all the layout objects placed in the grid
-    for c in gl.content
-        idx_rect = side_indices(c)
-        mapsides(idx_rect, maxgrid) do side, idx, grid
-            grid[idx] = max(grid[idx], protrusion(c, side))
-        end
-    end
+    maxgrid = _compute_maxgrid(gl)
 
     # for the outside alignmode
     topprot = maxgrid.tops[1]
