@@ -644,6 +644,43 @@ function _compute_maxgrid(gl)
     maxgrid
 end
 
+function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Inside)
+    width(content_bbox) - sumcolgaps
+end
+
+function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Outside)
+
+    width(content_bbox) - sumcolgaps - leftprot - rightprot
+end
+
+function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Mixed)
+
+    rightal = getside(alignmode, Right())
+    leftal = getside(alignmode, Left())
+    width(content_bbox) - sumcolgaps -
+        (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot) -
+        (isnothing(rightal) ? zero(rightprot) : isa(rightal, Protrusion) ? rightal.p : rightprot)
+end
+
+function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Inside)
+
+    height(content_bbox) - sumrowgaps
+end
+
+function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Outside)
+
+    height(content_bbox) - sumrowgaps - topprot - bottomprot
+end
+
+function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Mixed)
+
+    topal = getside(alignmode, Top())
+    bottomal = getside(alignmode, Bottom())
+    height(content_bbox) - sumrowgaps -
+        (isnothing(bottomal) ? zero(bottomprot) : isa(bottomal, Protrusion) ? bottomal.p : bottomprot) -
+        (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
+end
+
 """
 This function solves a grid layout such that the "important lines" fit exactly
 into a given bounding box. This means that the protrusions of all objects inside
@@ -686,33 +723,9 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     sumrowgaps = (gl.nrows <= 1) ? 0.0 : sum(rowgaps)
 
     # compute what space remains for the inner parts of the plots
-    remaininghorizontalspace = if alignmode isa Inside
-        width(content_bbox) - sumcolgaps
-    elseif alignmode isa Outside
-        width(content_bbox) - sumcolgaps - leftprot - rightprot
-    elseif alignmode isa Mixed
-        rightal = getside(alignmode, Right())
-        leftal = getside(alignmode, Left())
-        width(content_bbox) - sumcolgaps -
-            (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot) -
-            (isnothing(rightal) ? zero(rightprot) : isa(rightal, Protrusion) ? rightal.p : rightprot)
-    else
-        error("Unknown AlignMode of type $(typeof(alignmode))")
-    end
+    remaininghorizontalspace = _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode)
 
-    remainingverticalspace = if alignmode isa Inside
-        height(content_bbox) - sumrowgaps
-    elseif alignmode isa Outside
-        height(content_bbox) - sumrowgaps - topprot - bottomprot
-    elseif alignmode isa Mixed
-        topal = getside(alignmode, Top())
-        bottomal = getside(alignmode, Bottom())
-        height(content_bbox) - sumrowgaps -
-            (isnothing(bottomal) ? zero(bottomprot) : isa(bottomal, Protrusion) ? bottomal.p : bottomprot) -
-            (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
-    else
-        error("Unknown AlignMode of type $(typeof(alignmode))")
-    end
+    remainingverticalspace = _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode)
 
     # compute how much gap to add, in case e.g. labels are too close together
     # this is given as a fraction of the space used for the inner parts of the plots
