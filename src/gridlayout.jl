@@ -644,16 +644,16 @@ function _compute_maxgrid(gl)
     maxgrid
 end
 
-function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Inside)
+function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Inside)::Float32
     width(content_bbox) - sumcolgaps
 end
 
-function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Outside)
+function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Outside)::Float32
 
     width(content_bbox) - sumcolgaps - leftprot - rightprot
 end
 
-function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Mixed)
+function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Mixed)::Float32
 
     rightal = getside(alignmode, Right())
     leftal = getside(alignmode, Left())
@@ -662,17 +662,17 @@ function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot,
         (isnothing(rightal) ? zero(rightprot) : isa(rightal, Protrusion) ? rightal.p : rightprot)
 end
 
-function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Inside)
+function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Inside)::Float32
 
     height(content_bbox) - sumrowgaps
 end
 
-function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Outside)
+function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Outside)::Float32
 
     height(content_bbox) - sumrowgaps - topprot - bottomprot
 end
 
-function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Mixed)
+function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Mixed)::Float32
 
     topal = getside(alignmode, Top())
     bottomal = getside(alignmode, Bottom())
@@ -710,17 +710,17 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     # determine the biggest gap
     # using the biggest gap size for all gaps will make the layout more even
     if gl.equalprotrusiongaps[2]
-        colgaps = ones(gl.ncols - 1) .* (gl.ncols <= 1 ? 0.0 : maximum(colgaps))
+        colgaps = gl.ncols <= 1 ? [0f0] : fill(maximum(colgaps), gl.ncols - 1)
     end
     if gl.equalprotrusiongaps[1]
-        rowgaps = ones(gl.nrows - 1) .* (gl.nrows <= 1 ? 0.0 : maximum(rowgaps))
+        rowgaps = gl.nrows <= 1 ? [0f0] : fill(maximum(rowgaps), gl.nrows - 1)
     end
 
     # determine the vertical and horizontal space needed just for the gaps
     # again, the gaps are what the protrusions stick into, so they are not actually "empty"
     # depending on what sticks out of the plots
-    sumcolgaps = (gl.ncols <= 1) ? 0.0 : sum(colgaps)
-    sumrowgaps = (gl.nrows <= 1) ? 0.0 : sum(rowgaps)
+    sumcolgaps = (gl.ncols <= 1) ? 0f0 : sum(colgaps)
+    sumrowgaps = (gl.nrows <= 1) ? 0f0 : sum(rowgaps)
 
     # compute what space remains for the inner parts of the plots
     remaininghorizontalspace = _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode)
@@ -731,34 +731,34 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     # this is given as a fraction of the space used for the inner parts of the plots
     # so far, but maybe this should just be an absolute pixel value so it doesn't change
     # when resizing the window
-    addedcolgaps = map(gl.addedcolgaps) do cg
+    addedcolgaps::Vector{Float32} = map(gl.addedcolgaps) do cg
         if cg isa Fixed
             return cg.x
         elseif cg isa Relative
             return cg.x * remaininghorizontalspace
         else
-            return 0.0 # for float type inference
+            return 0f0 # for float type inference
         end
     end
-    addedrowgaps = map(gl.addedrowgaps) do rg
+    addedrowgaps::Vector{Float32} = map(gl.addedrowgaps) do rg
         if rg isa Fixed
             return rg.x
         elseif rg isa Relative
             return rg.x * remainingverticalspace
         else
-            return 0.0 # for float type inference
+            return 0f0 # for float type inference
         end
     end
 
     # compute the actual space available for the rows and columns (plots without protrusions)
-    spaceforcolumns = remaininghorizontalspace - ((gl.ncols <= 1) ? 0.0 : sum(addedcolgaps))
-    spaceforrows = remainingverticalspace - ((gl.nrows <= 1) ? 0.0 : sum(addedrowgaps))
+    spaceforcolumns = remaininghorizontalspace - ((gl.ncols <= 1) ? 0f0 : sum(addedcolgaps))
+    spaceforrows = remainingverticalspace - ((gl.nrows <= 1) ? 0f0 : sum(addedrowgaps))
 
     colwidths, rowheights = compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)
 
     # don't allow smaller widths than 1 px even if it breaks the layout (better than weird glitches)
-    colwidths = max.(colwidths, ones(length(colwidths)))
-    rowheights = max.(rowheights, ones(length(rowheights)))
+    colwidths = max.(colwidths, 1f0)
+    rowheights = max.(rowheights, 1f0)
 
     # this is the vertical / horizontal space between the inner lines of all plots
     finalcolgaps = colgaps .+ addedcolgaps
@@ -775,22 +775,23 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
             rightal = getside(alignmode, Right())
             leftal = getside(alignmode, Left())
             r = if rightal === nothing
-                0
+                0f0
             elseif rightal isa Protrusion
                 rightal.p
             elseif rightal isa Real
                 rightprot
             end
             l = if leftal === nothing
-                0
+                0f0
             elseif leftal isa Protrusion
                 leftal.p
             elseif leftal isa Real
                 leftprot
+                leftprot
             end
             r + l
         else
-            0.0
+            0f0
         end
 
     gridheight = sum(rowheights) + sum(finalrowgaps) +
@@ -800,22 +801,22 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
             bottomal = getside(alignmode, Bottom())
             topal = getside(alignmode, Top())
             b = if bottomal === nothing
-                0
+                0f0
             elseif bottomal isa Protrusion
                 bottomal.p
             elseif bottomal isa Real
-                bottomprot
+                Float32(bottomprot)
             end
             t = if topal === nothing
-                0
+                0f0
             elseif topal isa Protrusion
                 topal.p
             elseif topal isa Real
-                topprot
+                Float32(topprot)
             end
             b + t
         else
-            0.0
+            0f0
         end
     hal = halign2shift(gl.halign[])
     xadjustment = hal * (width(content_bbox) - gridwidth)
@@ -829,6 +830,7 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
             zcumsum(finalcolgaps)
     elseif alignmode isa Outside
         xadjustment .+ left(content_bbox) .+ zcumsum(colwidths[1:end-1]) .+
+            zcumsum(finalcolgaps) .+ leftprot
             zcumsum(finalcolgaps) .+ leftprot
     elseif alignmode isa Mixed
         leftal = getside(alignmode, Left())
@@ -1014,7 +1016,7 @@ end
 filterenum(f, T::Type, iter) = foreach(f, ((i, value) for (i, value) in enumerate(iter) if value isa T))
 
 
-function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)
+function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{Float32}, Vector{Float32}}
     # the space for columns and for rows is divided depending on the sizes
     # stored in the grid layout
 
