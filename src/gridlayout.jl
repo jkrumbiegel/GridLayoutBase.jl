@@ -831,7 +831,6 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     elseif alignmode isa Outside
         xadjustment .+ left(content_bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ leftprot
-            zcumsum(finalcolgaps) .+ leftprot
     elseif alignmode isa Mixed
         leftal = getside(alignmode, Left())
         xadjustment .+ left(content_bbox) .+ zcumsum(colwidths[1:end-1]) .+
