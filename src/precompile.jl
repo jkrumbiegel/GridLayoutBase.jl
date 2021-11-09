@@ -54,7 +54,7 @@ function _precompile_()
     @warnpcfail precompile(sizeobservable!, (Observable{Any}, Observable{Any}))
     @warnpcfail precompile(_reportedsizeobservable, (Tuple{SizeAttribute,SizeAttribute}, Tuple{AutoSize,AutoSize}, AlignMode, RectSides{Float32}, Tuple{Bool,Bool}))
     for T in subtypes(Side)
-        @warnpcfail precompile(bbox_for_solving_from_side, (RowCols{Vector{Float64}}, Rect2f, RowCols{Int}, T))
+        @warnpcfail precompile(bbox_for_solving_from_side, (RowCols{Vector{Float32}}, Rect2f, RowCols{Int}, T))
     end
     for S in (Left, Right, Top, Bottom)
         @warnpcfail precompile(protrusion, (GridContent{GridLayout,GridLayout}, S))
