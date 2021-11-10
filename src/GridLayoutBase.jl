@@ -2,7 +2,6 @@ module GridLayoutBase
 
 using GeometryBasics
 using Observables
-using Match
 
 const DEFAULT_COLGAP = Ref{Any}(20.0)
 const DEFAULT_ROWGAP = Ref{Any}(20.0)
