@@ -172,13 +172,18 @@ function computed_size(sizeattr, autosize, tellsize)
         return nothing
     end
 
-    ms = @match sizeattr begin
-        sa::Nothing => nothing
-        sa::Real => sa
-        sa::Fixed => sa.x
-        sa::Relative => nothing
-        sa::Auto => autosize
-        sa => error("""
+    if sizeattr === nothing
+        nothing
+    elseif sizeattr isa Real
+        Float32(sizeattr)
+    elseif sizeattr isa Fixed
+        sizeattr.x
+    elseif sizeattr isa Relative
+        nothing
+    elseif sizeattr isa Auto
+        autosize
+    else
+        error("""
             Invalid size attribute $sizeattr.
             Can only be Nothing, Fixed, Relative, Auto or Real""")
     end
@@ -210,40 +215,50 @@ function alignedbboxobservable!(
 
         cwidth, cheight = rsize
         w_target = T(if isnothing(cwidth)
-            @match widthattr begin
-                wa::Relative => wa.x * bw
-                wa::Nothing => bw
-                wa::Auto => if isnothing(autosizeobservable[][1])
-                        # we have no autowidth available anyway
-                        # take suggested width
-                        bw
-                    else
-                        # use the width that was auto-computed
-                        autosizeobservable[][1]
-                    end
-                wa::Fixed => wa.x
-                wa::Real => wa
-                wa => error("Unknown width attribute $wa")
+            if widthattr isa Relative
+                widthattr.x * bw
+            elseif widthattr isa Nothing
+                bw
+            elseif widthattr isa Auto
+                if isnothing(autosizeobservable[][1])
+                    # we have no autowidth available anyway
+                    # take suggested width
+                    bw
+                else
+                    # use the width that was auto-computed
+                    autosizeobservable[][1]
+                end
+            elseif widthattr isa Fixed
+                widthattr.x
+            elseif widthattr isa Real
+                Float32(widthattr)
+            else
+                error("Unknown width attribute $widthattr")
             end
         else
             cwidth
         end)::T
 
         h_target = T(if isnothing(cheight)
-            @match heightattr begin
-                ha::Relative => ha.x * bh
-                ha::Nothing => bh
-                ha::Auto => if isnothing(autosizeobservable[][2])
-                        # we have no autoheight available anyway
-                        # take suggested height
-                        bh
-                    else
-                        # use the height that was auto-computed
-                        autosizeobservable[][2]
-                    end
-                ha::Fixed => ha.x
-                ha::Real => ha
-                ha => error("Unknown height attribute $ha")
+            if heightattr isa Relative
+                heightattr.x * bh
+            elseif heightattr isa Nothing
+                bh
+            elseif heightattr isa Auto
+                if isnothing(autosizeobservable[][2])
+                    # we have no autoheight available anyway
+                    # take suggested height
+                    bh
+                else
+                    # use the height that was auto-computed
+                    autosizeobservable[][2]
+                end
+            elseif heightattr isa Fixed
+                heightattr.x
+            elseif heightattr isa Real
+                Float32(heightattr)
+            else
+                error("Unknown height attribute $heightattr")
             end
         else
             cheight
