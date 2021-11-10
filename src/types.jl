@@ -26,7 +26,7 @@ abstract type GridDir end
 struct Col <: GridDir end
 struct Row <: GridDir end
 
-struct RowCols{T <: Union{Number, Vector{Float64}}}
+struct RowCols{T <: Union{Number, Vector{Float32}}}
     lefts::T
     rights::T
     tops::T
@@ -116,21 +116,21 @@ The `ratio` is ignored if `Auto` is used as an element size.
 """
 struct Auto <: ContentSize
     trydetermine::Bool # false for determinable size content that should be ignored
-    ratio::Float64 # float ratio in case it's not determinable
+    ratio::Float32 # float ratio in case it's not determinable
 
     Auto(trydetermine::Bool = true, ratio::Real = 1.0) = new(trydetermine, ratio)
 end
 Auto(ratio::Real) = Auto(true, ratio)
 
 struct Fixed <: GapSize
-    x::Float64
+    x::Float32
 end
 struct Relative <: GapSize
-    x::Float64
+    x::Float32
 end
 struct Aspect <: ContentSize
     index::Int
-    ratio::Float64
+    ratio::Float32
 end
 
 """

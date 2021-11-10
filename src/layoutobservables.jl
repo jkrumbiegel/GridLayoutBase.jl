@@ -1,13 +1,13 @@
-halign2shift(align::Number) = Float32(align)
-function halign2shift(align::Symbol)
+halign2shift(align::Number)::Float32 = Float32(align)
+function halign2shift(align::Symbol)::Float32
     align == :left && return 0.0f0
     align == :center && return 0.5f0
     align == :right && return 1.0f0
     error("Invalid horizontal alignment $align (only Real or :left, :center, or :right allowed).")
 end
 
-valign2shift(align::Number) = Float32(align)
-function valign2shift(align::Symbol)
+valign2shift(align::Number)::Float32 = Float32(align)
+function valign2shift(align::Symbol)::Float32
     align == :bottom && return 0.0f0
     align == :center && return 0.5f0
     align == :top && return 1.0f0

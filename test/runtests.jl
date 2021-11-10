@@ -6,7 +6,8 @@ using Observables
 include("debugrect.jl")
 
 
-@testset "GridLayout Zero Outside AlignMode" begin
+# @testset "GridLayout Zero Outside AlignMode" begin
+begin
     bbox = BBox(0, 1000, 0, 1000)
     layout = GridLayout(bbox = bbox, alignmode = Outside(0))
     dr = layout[1, 1] = DebugRect()
@@ -751,3 +752,45 @@ end
     # still nothing for g
     @test n[] == 1
 end
+
+@testset "GridLayout alignment when solved size mismatches suggested bbox" begin
+    let
+        bbox = BBox(0, 2000, 0, 1000)
+        outer = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
+        dr1 = outer[1, 1] = DebugRect()
+        dr2 = outer[1, 2] = DebugRect()
+        colsize!(outer, 2, 500)
+        colsize!(outer, 1, Aspect(1, 1))
+        colgap!(outer, 0)
+        @test computedbboxobservable(dr1)[] == BBox(250, 1250, 0, 1000)
+        @test computedbboxobservable(dr2)[] == BBox(1250, 1750, 0, 1000)
+
+        outer.halign[] = :left
+        @test computedbboxobservable(dr1)[] == BBox(0, 1000, 0, 1000)
+        @test computedbboxobservable(dr2)[] == BBox(1000, 1500, 0, 1000)
+
+        outer.halign[] = :right
+        @test computedbboxobservable(dr1)[] == BBox(500, 1500, 0, 1000)
+        @test computedbboxobservable(dr2)[] == BBox(1500, 2000, 0, 1000)
+    end
+    let
+        bbox = BBox(0, 1000, 0, 2000)
+        outer = GridLayout(bbox = bbox, alignmode = Outside(0), valign = :center)
+        dr1 = outer[1, 1] = DebugRect()
+        dr2 = outer[2, 1] = DebugRect()
+        rowsize!(outer, 2, 500)
+        rowsize!(outer, 1, Aspect(1, 1))
+        rowgap!(outer, 0)
+        @test computedbboxobservable(dr1)[] == BBox(0, 1000, 750, 1750)
+        @test computedbboxobservable(dr2)[] == BBox(0, 1000, 250, 750)
+
+        outer.valign[] = :top
+        @test computedbboxobservable(dr1)[] == BBox(0, 1000, 1000, 2000)
+        @test computedbboxobservable(dr2)[] == BBox(0, 1000, 500, 1000)
+
+        outer.valign[] = :bottom
+        @test computedbboxobservable(dr1)[] == BBox(0, 1000, 500, 1500)
+        @test computedbboxobservable(dr2)[] == BBox(0, 1000, 0, 500)
+    end
+end
+

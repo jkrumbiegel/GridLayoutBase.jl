@@ -16,10 +16,10 @@ end
 
 function RowCols(ncols::Int, nrows::Int)
     return RowCols(
-        zeros(ncols),
-        zeros(ncols),
-        zeros(nrows),
-        zeros(nrows)
+        zeros(Float32, ncols),
+        zeros(Float32, ncols),
+        zeros(Float32, nrows),
+        zeros(Float32, nrows)
     )
 end
 
