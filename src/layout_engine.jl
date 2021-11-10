@@ -22,50 +22,72 @@ ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == 1
 
 function protrusion(x::T, side::Side) where T
     protrusions = protrusionsobservable(x)
-    @match side begin
-        si::Left => protrusions[].left
-        si::Right => protrusions[].right
-        si::Bottom => protrusions[].bottom
-        si::Top => protrusions[].top
-        si => error("Can't get a protrusion value for side $(typeof(si)), only
-            Left, Right, Bottom, or Top.")
+    if side isa Left
+        protrusions[].left
+    elseif side isa Right
+        protrusions[].right
+    elseif side isa Bottom
+        protrusions[].bottom
+    elseif side isa Top
+        protrusions[].top
+    else
+        error("Can't get a protrusion value for side $(typeof(side)), only
+        Left, Right, Bottom, or Top.")
     end
 end
 
 function protrusion(gc::GridContent, side::Side)
-    prot = @match gc.side begin
-        gcside::Inner => protrusion(gc.content, side)
-        # gcside::Outer => BBox(l - pl, r + pr, b - pb, t + pt)
-        gcside::Union{Left, Right} => @match side begin
-            si::typeof(gcside) => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
+    prot = 
+        if gc.side isa Inner
+            protrusion(gc.content, side)
+        # elseif gc.side isa Outer; BBox(l - pl, r + pr, b - pb, t + pt)
+        elseif gc.side isa Union{Left, Right}
+            if side isa typeof(gc.side)
+                determinedirsize(gc.content, Col(), gc.side)
+            else
+                0.0
+            end
+        elseif gc.side isa Union{Top, Bottom}
+            if side isa typeof(gc.side)
+                determinedirsize(gc.content, Row(), gc.side)
+            else
+                0.0
+            end
+        elseif gc.side isa TopLeft
+            if side isa Top
+                determinedirsize(gc.content, Row(), gc.side)
+            elseif side isa Left
+                determinedirsize(gc.content, Col(), gc.side)
+            else
+                0.0
+            end
+        elseif gc.side isa TopRight
+            if side isa Top
+                determinedirsize(gc.content, Row(), gc.side)
+            elseif side isa Right
+                determinedirsize(gc.content, Col(), gc.side)
+            else
+                0.0
+            end
+        elseif gc.side isa BottomLeft
+            if side isa Bottom
+                determinedirsize(gc.content, Row(), gc.side)
+            elseif side isa Left
+                determinedirsize(gc.content, Col(), gc.side)
+            else
+                0.0
+            end
+        elseif gc.side isa BottomRight
+            if side isa Bottom
+                determinedirsize(gc.content, Row(), gc.side)
+            elseif side isa Right
+                determinedirsize(gc.content, Col(), gc.side)
+            else
+                0.0
+            end
+        else
+            error("Invalid side $(gc.side)")
         end
-        gcside::Union{Top, Bottom} => @match side begin
-            si::typeof(gcside) => determinedirsize(gc.content, Row(), gc.side)
-            si => 0.0
-        end
-        gcside::TopLeft => @match side begin
-            si::Top => determinedirsize(gc.content, Row(), gc.side)
-            si::Left => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside::TopRight => @match side begin
-            si::Top => determinedirsize(gc.content, Row(), gc.side)
-            si::Right => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside::BottomLeft => @match side begin
-            si::Bottom => determinedirsize(gc.content, Row(), gc.side)
-            si::Left => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside::BottomRight => @match side begin
-            si::Bottom => determinedirsize(gc.content, Row(), gc.side)
-            si::Right => determinedirsize(gc.content, Col(), gc.side)
-            si => 0.0
-        end
-        gcside => error("Invalid side $gcside")
-    end
     ifnothing(prot, 0.0)
 end
 
@@ -118,18 +140,28 @@ function bbox_for_solving_from_side(maxgrid::RowCols, bbox_cell::Rect2f, idx_rec
     b = bottom(bbox_cell)
     t = top(bbox_cell)
 
-    @match side begin
-        s::Inner => bbox_cell
-        s::Outer => BBox(l - pl, r + pr, b - pb, t + pt)
-        s::Left => BBox(l - pl, l, b, t)
-        s::Top => BBox(l, r, t, t + pt)
-        s::Right => BBox(r, r + pr, b, t)
-        s::Bottom => BBox(l, r, b - pb, b)
-        s::TopLeft => BBox(l - pl, l, t, t + pt)
-        s::TopRight => BBox(r, r + pr, t, t + pt)
-        s::BottomRight => BBox(r, r + pr, b - pb, b)
-        s::BottomLeft => BBox(l - pl, l, b - pb, b)
-        s => error("Invalid side $s")
+    if side isa Inner
+        bbox_cell
+    elseif side isa Outer
+        BBox(l - pl, r + pr, b - pb, t + pt)
+    elseif side isa Left
+        BBox(l - pl, l, b, t)
+    elseif side isa Top
+        BBox(l, r, t, t + pt)
+    elseif side isa Right
+        BBox(r, r + pr, b, t)
+    elseif side isa Bottom
+        BBox(l, r, b - pb, b)
+    elseif side isa TopLeft
+        BBox(l - pl, l, t, t + pt)
+    elseif side isa TopRight
+        BBox(r, r + pr, t, t + pt)
+    elseif side isa BottomRight
+        BBox(r, r + pr, b - pb, b)
+    elseif side isa BottomLeft
+        BBox(l - pl, l, b - pb, b)
+    else
+        error("Invalid side $side")
     end
 end
 
@@ -154,19 +186,21 @@ an element placed in the left protrusion loses its ability to influence height.
 function determinedirsize(content, gdir::GridDir, side::Side)
     reportedsize = reportedsizeobservable(content)
     if gdir isa Row
-        @match side begin
+        if side isa Union{Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight}
             # TODO: is reportedsize the correct thing to return? or plus protrusions depending on the side
-            si::Union{Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight} =>
-                ifnothing(reportedsize[][2], nothing)
-            si::Union{Left, Right} => nothing
-            si => error("$side not implemented")
+            ifnothing(reportedsize[][2], nothing)
+        elseif side isa Union{Left, Right}
+            nothing
+        else
+            error("$side not implemented")
         end
     else
-        @match side begin
-            si::Union{Inner, Left, Right, TopLeft, TopRight, BottomLeft, BottomRight} =>
-                ifnothing(reportedsize[][1], nothing)
-            si::Union{Top, Bottom} => nothing
-            si => error("$side not implemented")
+        if side isa Union{Inner, Left, Right, TopLeft, TopRight, BottomLeft, BottomRight}
+            ifnothing(reportedsize[][1], nothing)
+        elseif side isa Union{Top, Bottom}
+            nothing
+        else
+            error("$side not implemented")
         end
     end
 end
