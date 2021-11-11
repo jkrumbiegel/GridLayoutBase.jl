@@ -37,6 +37,7 @@ export swap!
 export protrusionsobservable, suggestedbboxobservable, reportedsizeobservable, autosizeobservable, computedbboxobservable, gridcontent
 export ncols, nrows
 export contents, content
+export tight_bbox
 
 if Base.VERSION >= v"1.4.2"
     include("precompile.jl")

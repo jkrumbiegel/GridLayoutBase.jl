@@ -794,3 +794,33 @@ end
     end
 end
 
+@testset "tight_bbox" begin
+    bbox = BBox(0, 2000, 0, 1000)
+
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
+    dr1 = gl[1, 1] = DebugRect()
+    dr2 = gl[1, 2] = DebugRect()
+    colsize!(gl, 2, 500)
+    colsize!(gl, 1, Aspect(1, 1))
+    colgap!(gl, 0)
+
+    @test tight_bbox(gl) == BBox(250, 1750, 0, 1000)
+    gl.alignmode[] = Outside(0, 100, 0, 200)
+    # inner height now 800, so colwidth 1 also 800, plus 500 = 1300, plus padding 1400
+    # but shifted because of unequal padding
+    @test tight_bbox(gl) == BBox(300, 1700, 0, 1000)
+
+    dr1.topprot[] = 100
+    dr1.leftprot[] = 50
+    # inner height now 700, so colwidth 1 also 700, plus 500 = 1200, plus padding + leftprot = 1350
+    @test tight_bbox(gl) == BBox(325, 1675, 0, 1000)
+
+    gl.alignmode[] = Inside()
+    # padding and protrusions are gone, so height is again 1000
+    @test tight_bbox(gl) == BBox(250, 1750, 0, 1000)
+
+    gl.alignmode[] = Mixed()
+    # not implemented yet
+    @test_throws ErrorException tight_bbox(gl)
+end
+

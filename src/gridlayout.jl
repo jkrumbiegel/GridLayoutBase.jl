@@ -864,6 +864,40 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     maxgrid, gridboxes
 end
 
+"""
+    tight_bbox(gl::GridLayout)
+
+Compute the boundingbox that would be the fitting `suggestedbbox`
+for the current contents of the `GridLayout`. If a `GridLayout` contains
+fixed-size content or aspect-constrained columns, for example, it is
+likely that the solved size of the `GridLayout` differs from its
+`suggestedbbox`. With the result of `tight_bbox` the `suggestedbbox`
+can be adjusted (for example by resizing a figure), so that all
+content fits the available space. The size includes possible padding, such
+as from an `Outside` alignmode on the `GridLayout`.
+"""
+function tight_bbox(gl::GridLayout)
+    maxgrid, gridboxes = compute_rowcols(gl, suggestedbboxobservable(gl)[])
+    base_width = gridboxes.rights[end] - gridboxes.lefts[1]
+    base_height = gridboxes.tops[1] - gridboxes.bottoms[end]
+    al = gl.alignmode[]
+    if al isa Outside
+        width = base_width + maxgrid.lefts[1] + maxgrid.rights[end] + al.padding.left + al.padding.right
+        height = base_height + maxgrid.tops[1] + maxgrid.bottoms[end] + al.padding.top + al.padding.bottom
+        l = gridboxes.lefts[1] - maxgrid.lefts[1] - al.padding.left
+        b = gridboxes.bottoms[end] - maxgrid.bottoms[end] - al.padding.bottom
+        Rect2f((l, b), (width, height))
+    elseif al isa Mixed
+        error("Mixed not implemented")
+    elseif al isa Inside
+        l = gridboxes.lefts[1]
+        b = gridboxes.bottoms[end]
+        Rect2f((l, b), (base_width, base_height))
+    else
+        error("Invalid alignmode $al")
+    end
+end
+
 function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
 
     maxgrid, gridboxes = compute_rowcols(gl, suggestedbbox)
