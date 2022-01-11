@@ -12,11 +12,8 @@ const DEFAULT_COLGAP_GETTER = Ref{Function}(() -> DEFAULT_COLGAP[])
 
 include("types.jl")
 include("gridlayout.jl")
-include("layout_engine.jl")
 include("layoutobservables.jl")
-include("gridapi.jl")
 include("helpers.jl")
-include("geometry_integration.jl")
 include("gridlayoutspec.jl")
 
 export GridLayout, GridPosition
