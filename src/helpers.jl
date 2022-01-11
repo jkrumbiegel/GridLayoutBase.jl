@@ -165,3 +165,6 @@ function mapsides(
         f(side, getindex.((first, rest...), (side,))...)
     end
 end
+
+set_nrows!(gl, x) = gl.size = (x, gl.size[2])
+set_ncols!(gl, x) = gl.size = (gl.size[1], x)

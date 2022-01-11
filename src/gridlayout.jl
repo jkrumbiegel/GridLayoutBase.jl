@@ -45,11 +45,29 @@ function GridLayout(nrows::Int, ncols::Int;
         height, tellwidth, tellheight, halign, valign;
         suggestedbbox = bbox)
 
+    offsets = (0, 0)
+
     gl = GridLayout(
         parent,
-        content, nrows, ncols, rowsizes, colsizes, addedrowgaps,
-        addedcolgaps, alignmode, equalprotrusiongaps, needs_update, layoutobservables,
-        width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
+        content,
+        (nrows, ncols),
+        offsets,
+        rowsizes,
+        colsizes,
+        addedrowgaps,
+        addedcolgaps,
+        alignmode,
+        equalprotrusiongaps,
+        needs_update,
+        layoutobservables,
+        width,
+        height,
+        tellwidth,
+        tellheight,
+        halign,
+        valign,
+        default_rowgap,
+        default_colgap)
 
     on(computedbboxobservable(gl)) do cbb
         align_to_bbox!(gl, cbb)
@@ -97,23 +115,23 @@ function update!(gl::GridLayout)
 end
 
 function validategridlayout(gl::GridLayout)
-    if gl.nrows < 1
+    if nrows(gl) < 1
         error("Number of rows can't be smaller than 1")
     end
-    if gl.ncols < 1
+    if ncols(gl) < 1
         error("Number of columns can't be smaller than 1")
     end
 
-    if length(gl.rowsizes) != gl.nrows
+    if length(gl.rowsizes) != nrows(gl)
         error("There are $nrows rows but $(length(gl.rowsizes)) row sizes.")
     end
-    if length(gl.colsizes) != gl.ncols
+    if length(gl.colsizes) != ncols(gl)
         error("There are $ncols columns but $(length(gl.colsizes)) column sizes.")
     end
-    if length(gl.addedrowgaps) != gl.nrows - 1
+    if length(gl.addedrowgaps) != nrows(gl) - 1
         error("There are $nrows rows but $(length(gl.addedrowgaps)) row gaps.")
     end
-    if length(gl.addedcolgaps) != gl.ncols - 1
+    if length(gl.addedcolgaps) != ncols(gl) - 1
         error("There are $ncols columns but $(length(gl.addedcolgaps)) column gaps.")
     end
 end
@@ -234,7 +252,7 @@ function appendrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=noth
     addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
 
     with_updates_suspended(gl, update = update) do
-        gl.nrows += n
+        set_nrows!(gl, nrows(gl) + n)
         append!(gl.rowsizes, rowsizes)
         append!(gl.addedrowgaps, addedrowgaps)
     end
@@ -246,7 +264,7 @@ function appendcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=noth
     addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
 
     with_updates_suspended(gl, update = update) do
-        gl.ncols += n
+        set_ncols!(gl, ncols(gl) + n)
         append!(gl.colsizes, colsizes)
         append!(gl.addedcolgaps, addedcolgaps)
     end
@@ -264,7 +282,7 @@ function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=not
     end
 
     with_updates_suspended(gl, update = update) do
-        gl.nrows += n
+        set_nrows!(gl, nrows(gl) + n)
         prepend!(gl.rowsizes, rowsizes)
         prepend!(gl.addedrowgaps, addedrowgaps)
     end
@@ -282,7 +300,7 @@ function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=not
     end
 
     with_updates_suspended(gl, update = update) do
-        gl.ncols += n
+        set_ncols!(gl, ncols(gl) + n)
         prepend!(gl.colsizes, colsizes)
         prepend!(gl.addedcolgaps, addedcolgaps)
     end
@@ -322,7 +340,7 @@ function insertrows!(gl::GridLayout, at::Int, n::Int; rowsizes=nothing, addedrow
     end
 
     with_updates_suspended(gl) do
-        gl.nrows += n
+        set_nrows!(gl, nrows(gl) + n)
         splice!(gl.rowsizes, at:at-1, rowsizes)
         splice!(gl.addedrowgaps, at:at-1, addedrowgaps)
     end
@@ -361,18 +379,18 @@ function insertcols!(gl::GridLayout, at::Int, n::Int; colsizes=nothing, addedcol
     end
 
     with_updates_suspended(gl) do
-        gl.ncols += n
+        set_ncols!(gl, ncols(gl) + n)
         splice!(gl.colsizes, at:at-1, colsizes)
         splice!(gl.addedcolgaps, at:at-1, addedcolgaps)
     end
 end
 
 function deleterow!(gl::GridLayout, irow::Int)
-    if !(1 <= irow <= gl.nrows)
+    if !(1 <= irow <= nrows(gl))
         error("Row $irow does not exist.")
     end
 
-    if gl.nrows == 1
+    if nrows(gl) == 1
         error("Can't delete the last row")
     end
 
@@ -404,16 +422,16 @@ function deleterow!(gl::GridLayout, irow::Int)
     # gl.content = new_content
     deleteat!(gl.rowsizes, irow)
     deleteat!(gl.addedrowgaps, irow == 1 ? 1 : irow - 1)
-    gl.nrows -= 1
+    set_nrows!(gl, nrows(gl) - 1)
     gl.needs_update[] = true
 end
 
 function deletecol!(gl::GridLayout, icol::Int)
-    if !(1 <= icol <= gl.ncols)
+    if !(1 <= icol <= ncols(gl))
         error("Col $icol does not exist.")
     end
 
-    if gl.ncols == 1
+    if ncols(gl) == 1
         error("Can't delete the last col")
     end
 
@@ -444,7 +462,7 @@ function deletecol!(gl::GridLayout, icol::Int)
     # gl.content = new_content
     deleteat!(gl.colsizes, icol)
     deleteat!(gl.addedcolgaps, icol == 1 ? 1 : icol - 1)
-    gl.ncols -= 1
+    set_ncols!(gl, ncols(gl) - 1)
     gl.needs_update[] = true
 end
 
@@ -457,7 +475,7 @@ end
 
 function trim!(gl::GridLayout)
     irow = 1
-    while irow <= gl.nrows && gl.nrows > 1
+    while irow <= nrows(gl) && nrows(gl) > 1
         if isempty(gl, Row(), irow)
             deleterow!(gl, irow)
         else
@@ -466,7 +484,7 @@ function trim!(gl::GridLayout)
     end
 
     icol = 1
-    while icol <= gl.ncols && gl.ncols > 1
+    while icol <= ncols(gl) && ncols(gl) > 1
         if isempty(gl, Col(), icol)
             deletecol!(gl, icol)
         else
@@ -524,7 +542,7 @@ function Base.show(io::IO, ::MIME"text/plain", gl::GridLayout)
         join(split(str, "\n"), joinstr)
     end
 
-    println(io, "GridLayout[$(gl.nrows), $(gl.ncols)] with $(length(gl.content)) children")
+    println(io, "GridLayout[$(nrows(gl)), $(ncols(gl))] with $(length(gl.content)) children")
 
     simplespan(span) = span.start == span.stop ? span.start : span
 
@@ -546,11 +564,11 @@ function Base.show(io::IO, ::MIME"text/plain", gl::GridLayout)
 end
 
 function Base.show(io::IO, gl::GridLayout)
-    print(io, "GridLayout[$(gl.nrows), $(gl.ncols)] ($(length(gl.content)) children)")
+    print(io, "GridLayout[$(nrows(gl)), $(ncols(gl))] ($(length(gl.content)) children)")
 end
 
 function colsize!(gl::GridLayout, i::Int, s::ContentSize)
-    if !(1 <= i <= gl.ncols)
+    if !(1 <= i <= ncols(gl))
         error("Can't set size of invalid column $i.")
     end
     gl.colsizes[i] = s
@@ -560,7 +578,7 @@ end
 colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
 
 function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
-    if !(1 <= i <= gl.nrows)
+    if !(1 <= i <= nrows(gl))
         error("Can't set size of invalid row $i.")
     end
     gl.rowsizes[i] = s
@@ -570,7 +588,7 @@ end
 rowsize!(gl::GridLayout, i::Int, s::Real) = rowsize!(gl, i, Fixed(s))
 
 function colgap!(gl::GridLayout, i::Int, s::GapSize)
-    if !(1 <= i <= (gl.ncols - 1))
+    if !(1 <= i <= (ncols(gl) - 1))
         error("Can't set size of invalid column gap $i.")
     end
     gl.addedcolgaps[i] = s
@@ -590,7 +608,7 @@ function colgap!(gl::GridLayout, r::Real)
 end
 
 function rowgap!(gl::GridLayout, i::Int, s::GapSize)
-    if !(1 <= i <= (gl.nrows - 1))
+    if !(1 <= i <= (nrows(gl) - 1))
         error("Can't set size of invalid row gap $i.")
     end
     gl.addedrowgaps[i] = s
@@ -633,7 +651,7 @@ function _compute_content_bbox(suggestedbbox, alignmode::Mixed)
 end
 
 function _compute_maxgrid(gl)
-    maxgrid = RowCols(gl.ncols, gl.nrows)
+    maxgrid = RowCols(ncols(gl), nrows(gl))
     # go through all the layout objects placed in the grid
     for c in gl.content
         idx_rect = side_indices(c)
@@ -710,17 +728,17 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     # determine the biggest gap
     # using the biggest gap size for all gaps will make the layout more even
     if gl.equalprotrusiongaps[2]
-        colgaps = gl.ncols <= 1 ? [0f0] : fill(maximum(colgaps), gl.ncols - 1)
+        colgaps = ncols(gl) <= 1 ? [0f0] : fill(maximum(colgaps), ncols(gl) - 1)
     end
     if gl.equalprotrusiongaps[1]
-        rowgaps = gl.nrows <= 1 ? [0f0] : fill(maximum(rowgaps), gl.nrows - 1)
+        rowgaps = nrows(gl) <= 1 ? [0f0] : fill(maximum(rowgaps), nrows(gl) - 1)
     end
 
     # determine the vertical and horizontal space needed just for the gaps
     # again, the gaps are what the protrusions stick into, so they are not actually "empty"
     # depending on what sticks out of the plots
-    sumcolgaps = (gl.ncols <= 1) ? 0f0 : sum(colgaps)
-    sumrowgaps = (gl.nrows <= 1) ? 0f0 : sum(rowgaps)
+    sumcolgaps = (ncols(gl) <= 1) ? 0f0 : sum(colgaps)
+    sumrowgaps = (nrows(gl) <= 1) ? 0f0 : sum(rowgaps)
 
     # compute what space remains for the inner parts of the plots
     remaininghorizontalspace = _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode)
@@ -751,8 +769,8 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     end
 
     # compute the actual space available for the rows and columns (plots without protrusions)
-    spaceforcolumns = remaininghorizontalspace - ((gl.ncols <= 1) ? 0f0 : sum(addedcolgaps))
-    spaceforrows = remainingverticalspace - ((gl.nrows <= 1) ? 0f0 : sum(addedrowgaps))
+    spaceforcolumns = remaininghorizontalspace - ((ncols(gl) <= 1) ? 0f0 : sum(addedcolgaps))
+    spaceforrows = remainingverticalspace - ((nrows(gl) <= 1) ? 0f0 : sum(addedrowgaps))
 
     colwidths, rowheights = compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)
 
@@ -922,8 +940,8 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
     nothing
 end
 
-dirlength(gl::GridLayout, c::Col) = gl.ncols
-dirlength(gl::GridLayout, r::Row) = gl.nrows
+dirlength(gl::GridLayout, c::Col) = ncols(gl)
+dirlength(gl::GridLayout, r::Row) = nrows(gl)
 
 function dirgaps(gl::GridLayout, dir::GridDir)
     starts = zeros(Float32, dirlength(gl, dir))
@@ -1064,11 +1082,11 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
     # 7. compute remaining aspect sizes on other side
     # 8. compute remaining auto sizes on the same side
 
-    colwidths = zeros(gl.ncols)
-    rowheights = zeros(gl.nrows)
+    colwidths = zeros(ncols(gl))
+    rowheights = zeros(nrows(gl))
 
-    determinedcols = zeros(Bool, gl.ncols)
-    determinedrows = zeros(Bool, gl.nrows)
+    determinedcols = zeros(Bool, ncols(gl))
+    determinedrows = zeros(Bool, nrows(gl))
 
     # first fixed sizes
     filterenum(Fixed, gl.colsizes) do (i, fixed)
@@ -1357,9 +1375,9 @@ end
 
 function Base.lastindex(g::GridLayout, d)
     if d == 1
-        g.nrows
+        nrows(g)
     elseif d == 2
-        g.ncols
+        ncols(g)
     else
         error("A grid only has two dimensions, you're indexing dimension $d.")
     end
@@ -1384,9 +1402,9 @@ function Base.setindex!(gp::GridPosition, element, rows, cols, side = Inner())
     element
 end
 
-ncols(g::GridLayout) = g.ncols
-nrows(g::GridLayout) = g.nrows
-Base.size(g::GridLayout) = (nrows(g), ncols(g))
+nrows(g::GridLayout) = size(g)[1]
+ncols(g::GridLayout) = size(g)[2]
+Base.size(g::GridLayout) = g.size
 
 Base.in(span1::Span, span2::Span) = span1.rows.start >= span2.rows.start &&
     span1.rows.stop <= span2.rows.stop &&
@@ -1520,8 +1538,8 @@ end
 # These functions tell whether an object in a grid touches the left, top, etc. border
 # of the grid. This means that it is relevant for the grid's own protrusion on that side.
 ismostin(gc::GridContent, grid, ::Left) = gc.span.cols.start == 1
-ismostin(gc::GridContent, grid, ::Right) = gc.span.cols.stop == grid.ncols
-ismostin(gc::GridContent, grid, ::Bottom) = gc.span.rows.stop == grid.nrows
+ismostin(gc::GridContent, grid, ::Right) = gc.span.cols.stop == ncols(grid)
+ismostin(gc::GridContent, grid, ::Bottom) = gc.span.rows.stop == nrows(grid)
 ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == 1
 
 
@@ -1714,12 +1732,12 @@ function to_ranges(g::GridLayout, rows::Indexables, cols::Indexables)
     if rows isa Int
         rows = rows:rows
     elseif rows isa Colon
-        rows = 1:g.nrows
+        rows = 1:nrows(g)
     end
     if cols isa Int
         cols = cols:cols
     elseif cols isa Colon
-        cols = 1:g.ncols
+        cols = 1:ncols(g)
     end
     rows, cols
 end
@@ -1733,8 +1751,8 @@ function adjust_rows_cols!(g::GridLayout, rows, cols; update = true)
         # adjust rows for the newly prepended ones
         rows = rows .+ n
     end
-    if rows.stop > g.nrows
-        n = rows.stop - g.nrows
+    if rows.stop > nrows(g)
+        n = rows.stop - nrows(g)
         appendrows!(g, n, update = update)
     end
     if cols.start < 1
@@ -1743,8 +1761,8 @@ function adjust_rows_cols!(g::GridLayout, rows, cols; update = true)
         # adjust cols for the newly prepended ones
         cols = cols .+ n
     end
-    if cols.stop > g.ncols
-        n = cols.stop - g.ncols
+    if cols.stop > ncols(g)
+        n = cols.stop - ncols(g)
         appendcols!(g, n, update = update)
     end
 
