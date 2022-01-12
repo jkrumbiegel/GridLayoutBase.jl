@@ -833,3 +833,52 @@ end
     # not implemented yet
     @test_throws ErrorException tight_bbox(gl)
 end
+
+@testset "offset row/col auto size" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
+    dr1 = gl[0, 1] = DebugRect(height = 200)
+    dr2 = gl[1, 0] = DebugRect(width = 100)
+    dr3 = gl[1, 1] = DebugRect()
+    colgap!(gl, 0)
+    rowgap!(gl, 0)
+
+    @test GridLayoutBase.determinedirsize(0, gl, GridLayoutBase.Col()) == 100
+    @test GridLayoutBase.determinedirsize(0, gl, GridLayoutBase.Row()) == 200
+
+    @test suggestedbboxobservable(dr1)[] == BBox(100, 1000, 800, 1000)
+    @test suggestedbboxobservable(dr2)[] == BBox(0, 100, 0, 800)
+    @test suggestedbboxobservable(dr3)[] == BBox(100, 1000, 0, 800)
+end
+
+@testset "offset aspect" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
+    # make columns and rows offset
+    gl[0, 0] = DebugRect()
+    colgap!(gl, 0)
+    rowgap!(gl, 0)
+    # aspect refers to row 0 
+    colsize!(gl, 1, Aspect(0, 1.5))
+
+    maxgrid, gridboxes = GridLayoutBase.compute_rowcols(gl, suggestedbboxobservable(gl)[])
+    @test gridboxes.lefts == [0, 250]
+    @test gridboxes.rights == [250, 1000]
+    @test gridboxes.tops == [1000, 500]
+    @test gridboxes.bottoms == [500, 0]
+
+    bbox = BBox(0, 1000, 0, 1000)
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
+    # make columns and rows offset
+    gl[0, 0] = DebugRect()
+    colgap!(gl, 0)
+    rowgap!(gl, 0)
+    # aspect refers to column 0
+    rowsize!(gl, 1, Aspect(0, 1.5))
+
+    maxgrid, gridboxes = GridLayoutBase.compute_rowcols(gl, suggestedbboxobservable(gl)[])
+    @test gridboxes.lefts == [0, 500]
+    @test gridboxes.rights == [500, 1000]
+    @test gridboxes.tops == [1000, 750]
+    @test gridboxes.bottoms == [750, 0]
+end

@@ -565,20 +565,22 @@ function Base.show(io::IO, gl::GridLayout)
 end
 
 function colsize!(gl::GridLayout, i::Int, s::ContentSize)
-    if !(1 <= i <= ncols(gl))
+    if !(firstcol(gl) <= i <= lastcol(gl))
         error("Can't set size of invalid column $i.")
     end
-    gl.colsizes[i] = s
+    i_unoffset = unoffset(gl, i, Col())
+    gl.colsizes[i_unoffset] = s
     gl.needs_update[] = true
 end
 
 colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
 
 function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
-    if !(1 <= i <= nrows(gl))
+    if !(firstrow(gl) <= i <= lastrow(gl))
         error("Can't set size of invalid row $i.")
     end
-    gl.rowsizes[i] = s
+    i_unoffset = unoffset(gl, i, Row())
+    gl.rowsizes[i_unoffset] = s
     gl.needs_update[] = true
 end
 
@@ -973,7 +975,8 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
     for idir in 1:dirlength(gl, gdir)
         # width can only be determined for fixed and auto
         sz = sizes[idir]
-        dsize = determinedirsize(idir, gl, gdir)
+        idir_offset = offset(gl, idir, gdir)
+        dsize = determinedirsize(idir_offset, gl, gdir)
 
         if isnothing(dsize)
             # early exit if a colsize can not be determined
@@ -1024,10 +1027,11 @@ end
 
 """
 Determine the size of one row or column of a grid layout.
+`idir` is the dir index including offset (so can be negative)
 """
 function determinedirsize(idir, gl, dir::GridDir)
 
-    sz = dirsizes(gl, dir)[idir]
+    sz = dirsizes(gl, dir)[unoffset(gl, idir, dir)]
 
     if sz isa Fixed
         # fixed dir size can simply be returned
@@ -1082,6 +1086,10 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
     # 7. compute remaining aspect sizes on other side
     # 8. compute remaining auto sizes on the same side
 
+    # helpers to convert col/row indices to array indices considering gl offsets
+    r_off(i) = i - offsets(gl)[1]
+    c_off(i) = i - offsets(gl)[2]
+
     colwidths = zeros(ncols(gl))
     rowheights = zeros(nrows(gl))
 
@@ -1110,14 +1118,16 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
 
     # then determinable auto sizes
     filterenum(Auto, gl.colsizes) do (i, auto)
-        size = determinedirsize(i, gl, Col())
+        i_offset = offset(gl, i, Col())
+        size = determinedirsize(i_offset, gl, Col())
         if !isnothing(size)
             colwidths[i] = size
             determinedcols[i] = true
         end
     end
     filterenum(Auto, gl.rowsizes) do (i, auto)
-        size = determinedirsize(i, gl, Row())
+        i_offset = offset(gl, i, Row())
+        size = determinedirsize(i_offset, gl, Row())
         if !isnothing(size)
             rowheights[i] = size
             determinedrows[i] = true
@@ -1126,14 +1136,16 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
 
     # now aspect sizes that refer to already determined counterparts
     filterenum(Aspect, gl.colsizes) do (i, aspect)
-        if determinedrows[aspect.index]
-            colwidths[i] = aspect.ratio * rowheights[aspect.index]
+        aspectindex_unoffset = unoffset(gl, aspect.index, Col())
+        if determinedrows[aspectindex_unoffset]
+            colwidths[i] = aspect.ratio * rowheights[aspectindex_unoffset]
             determinedcols[i] = true
         end
     end
     filterenum(Aspect, gl.rowsizes) do (i, aspect)
-        if determinedcols[aspect.index]
-            rowheights[i] = aspect.ratio * colwidths[aspect.index]
+        aspectindex_unoffset = unoffset(gl, aspect.index, Row())
+        if determinedcols[aspectindex_unoffset]
+            rowheights[i] = aspect.ratio * colwidths[aspectindex_unoffset]
             determinedrows[i] = true
         end
     end
@@ -1196,16 +1208,18 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
     # now if either columns or rows had no aspects left, they should have all sizes determined
     # we run over the aspects again
     filterenum(Aspect, gl.colsizes) do (i, aspect)
-        if determinedrows[aspect.index]
-            colwidths[i] = aspect.ratio * rowheights[aspect.index]
+        aspectindex_unoffset = unoffset(gl, aspect.index, Col())
+        if determinedrows[aspectindex_unoffset]
+            colwidths[i] = aspect.ratio * rowheights[aspectindex_unoffset]
             determinedcols[i] = true
         else
             error("Column $i was given an Aspect size relative to row $(aspect.index). This row's size could not be determined in time, therefore the layouting algorithm failed. This probably happened because you used an Aspect row and column size at the same time, which couldn't both be resolved.")
         end
     end
     filterenum(Aspect, gl.rowsizes) do (i, aspect)
-        if determinedcols[aspect.index]
-            rowheights[i] = aspect.ratio * colwidths[aspect.index]
+        aspectindex_unoffset = unoffset(gl, aspect.index, Row())
+        if determinedcols[aspectindex_unoffset]
+            rowheights[i] = aspect.ratio * colwidths[aspectindex_unoffset]
             determinedrows[i] = true
         else
             error("Row $i was given an Aspect size relative to column $(aspect.index). This column's size could not be determined in time, therefore the layouting algorithm failed. This probably happened because you used an Aspect row and column size at the same time, which couldn't both be resolved.")
