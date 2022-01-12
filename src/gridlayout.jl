@@ -1385,9 +1385,19 @@ end
 
 function Base.lastindex(g::GridLayout, d)
     if d == 1
-        nrows(g) - offsets(g)[1]
+        lastrow(g)
     elseif d == 2
-        ncols(g) - offsets(g)[2]
+        lastcol(g)
+    else
+        error("A grid only has two dimensions, you're indexing dimension $d.")
+    end
+end
+
+function Base.firstindex(g::GridLayout, d)
+    if d == 1
+        firstrow(g)
+    elseif d == 2
+        firstcol(g)
     else
         error("A grid only has two dimensions, you're indexing dimension $d.")
     end
