@@ -276,7 +276,7 @@ function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=not
 
     with_updates_suspended(gl, update = update) do
         set_nrows!(gl, nrows(gl) + n)
-        set_rowoffset!(gl, offsets(gl)[1] - n)
+        set_rowoffset!(gl, offset(gl, Row()) - n)
         prepend!(gl.rowsizes, rowsizes)
         prepend!(gl.addedrowgaps, addedrowgaps)
     end
@@ -289,7 +289,7 @@ function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=not
 
     with_updates_suspended(gl, update = update) do
         set_ncols!(gl, ncols(gl) + n)
-        set_coloffset!(gl, offsets(gl)[2] - n)
+        set_coloffset!(gl, offset(gl, Col()) - n)
         prepend!(gl.colsizes, colsizes)
         prepend!(gl.addedcolgaps, addedcolgaps)
     end
@@ -416,8 +416,8 @@ function deleterow!(gl::GridLayout, irow::Int)
     gl.needs_update[] = true
 end
 
-rowoffset(gl) = offsets(gl)[1]
-coloffset(gl) = offsets(gl)[2]
+rowoffset(gl) = offset(gl, Row())
+coloffset(gl) = offset(gl, Col())
 
 function deletecol!(gl::GridLayout, icol::Int)
     if !(firstcol(gl) <= icol <= lastcol(gl))
@@ -661,8 +661,8 @@ function _compute_maxgrid(gl)
     maxgrid
 end
 
-sideoffset(gl, ::Union{Right, Left}) = offsets(gl)[2]
-sideoffset(gl, ::Union{Top, Bottom}) = offsets(gl)[1]
+sideoffset(gl, ::Union{Right, Left}) = offset(gl, Col())
+sideoffset(gl, ::Union{Top, Bottom}) = offset(gl, Row())
 
 function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Inside)::Float32
     width(content_bbox) - sumcolgaps
@@ -1085,10 +1085,6 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
     # 6. compute remaining auto sizes for one side
     # 7. compute remaining aspect sizes on other side
     # 8. compute remaining auto sizes on the same side
-
-    # helpers to convert col/row indices to array indices considering gl offsets
-    r_off(i) = i - offsets(gl)[1]
-    c_off(i) = i - offsets(gl)[2]
 
     colwidths = zeros(ncols(gl))
     rowheights = zeros(nrows(gl))
@@ -1543,10 +1539,10 @@ Indices of the rows / cols for each side
 """
 function side_indices(gl, c::GridContent)
     return RowCols(
-        c.span.cols.start - offsets(gl)[2],
-        c.span.cols.stop - offsets(gl)[2],
-        c.span.rows.start - offsets(gl)[1],
-        c.span.rows.stop - offsets(gl)[1],
+        c.span.cols.start - offset(gl, Col()),
+        c.span.cols.stop - offset(gl, Col()),
+        c.span.rows.start - offset(gl, Row()),
+        c.span.rows.stop - offset(gl, Row()),
     )
 end
 
