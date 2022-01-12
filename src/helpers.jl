@@ -166,5 +166,16 @@ function mapsides(
     end
 end
 
-set_nrows!(gl, x) = gl.size = (x, gl.size[2])
-set_ncols!(gl, x) = gl.size = (gl.size[1], x)
+function set_nrows!(gl, x)
+    gl.size = (x, gl.size[2])
+end
+function set_ncols!(gl, x)
+    gl.size = (gl.size[1], x)
+end
+
+function set_rowoffset!(gl, x)
+    gl.offsets = (x, gl.offsets[2])
+end
+function set_coloffset!(gl, x)
+    gl.offsets = (gl.offsets[1], x)
+end

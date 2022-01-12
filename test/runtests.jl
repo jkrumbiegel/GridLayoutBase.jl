@@ -1,5 +1,6 @@
 using GridLayoutBase
 using GridLayoutBase: GridSubposition
+using GridLayoutBase: offsets
 using Test
 using Observables
 
@@ -174,28 +175,38 @@ end
 
     dr = layout[1, 1] = DebugRect()
     @test size(layout) == (1, 1)
+    @test offsets(layout) == (0, 0)
 
     layout[1, 2] = dr
     @test size(layout) == (1, 2)
+    @test offsets(layout) == (0, 0)
 
     layout[3, 2] = dr
     @test size(layout) == (3, 2)
+    @test offsets(layout) == (0, 0)
 
     layout[4, 4] = dr
     @test size(layout) == (4, 4)
+    @test offsets(layout) == (0, 0)
 
     layout[0, 1] = dr
     @test size(layout) == (5, 4)
+    @test offsets(layout) == (-1, 0)
 
     layout[1, 0] = dr
     @test size(layout) == (5, 5)
+    @test offsets(layout) == (-1, -1)
 
     layout[-1, -1] = dr
-    @test size(layout) == (7, 7)
+    @test size(layout) == (6, 6)
+    @test offsets(layout) == (-2, -2)
 
     layout[3, 3] = dr
     trim!(layout)
     @test size(layout) == (1, 1)
+    @test offsets(layout) == (-2, -2)
+    # reset offsets to zero
+    layout.offsets = (0, 0)
 
     layout[2:3, 4:5] = dr
     @test size(layout) == (3, 5)
@@ -360,7 +371,7 @@ end
 
     text_long = repr(MIME"text/plain"(), gl)
     @test text_long == """
-    GridLayout[3, 5] with 2 children
+    GridLayout[1:3, 1:5] with 2 children
      ┣━ [1, 1] DebugRect
      ┗━ [2:3, 4:5] DebugRect
     """
@@ -372,7 +383,7 @@ end
 
     text_longer = repr(MIME"text/plain"(), gl)
     # this is actually a bit buggy with the newline space space newline at the end
-    @test text_longer == "GridLayout[3, 5] with 3 children\n ┣━ [1, 1] DebugRect\n ┣━ [2:3, 4:5] DebugRect\n ┗━ [1, 2] GridLayout[5, 3] with 1 children\n   ┗━ [1:5, 3] DebugRect\n  \n"
+    @test text_longer == "GridLayout[1:3, 1:5] with 3 children\n ┣━ [1, 1] DebugRect\n ┣━ [2:3, 4:5] DebugRect\n ┗━ [1, 2] GridLayout[1:5, 1:3] with 1 children\n   ┗━ [1:5, 3] DebugRect\n  \n"
 
 
     gl3 = GridLayout()
@@ -382,7 +393,7 @@ end
     text_long_downconnection = repr(MIME"text/plain"(), gl3)
 
     # this is also a bit buggy for the same reason as above
-    @test text_long_downconnection == "GridLayout[2, 2] with 2 children\n ┣━ [1, 1] GridLayout[1, 1] with 1 children\n ┃ ┗━ [1, 1] DebugRect\n ┃\n ┗━ [2, 2] DebugRect\n"
+    @test text_long_downconnection == "GridLayout[1:2, 1:2] with 2 children\n ┣━ [1, 1] GridLayout[1:1, 1:1] with 1 children\n ┃ ┗━ [1, 1] DebugRect\n ┃\n ┗━ [2, 2] DebugRect\n"
 end
 
 @testset "vector and array assigning" begin
@@ -822,4 +833,3 @@ end
     # not implemented yet
     @test_throws ErrorException tight_bbox(gl)
 end
-

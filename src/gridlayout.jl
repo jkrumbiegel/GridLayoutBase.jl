@@ -259,7 +259,6 @@ function appendrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=noth
 end
 
 function appendcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing, update = true)
-
     colsizes = convert_contentsizes(n, colsizes)
     addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
 
@@ -275,14 +274,9 @@ function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=not
     rowsizes = convert_contentsizes(n, rowsizes)
     addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
 
-    foreach(gl.content) do gc
-        span = gc.span
-        newspan = Span(span.rows .+ n, span.cols)
-        gc.span = newspan
-    end
-
     with_updates_suspended(gl, update = update) do
         set_nrows!(gl, nrows(gl) + n)
+        set_rowoffset!(gl, offsets(gl)[1] - n)
         prepend!(gl.rowsizes, rowsizes)
         prepend!(gl.addedrowgaps, addedrowgaps)
     end
@@ -293,14 +287,9 @@ function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=not
     colsizes = convert_contentsizes(n, colsizes)
     addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
 
-    foreach(gl.content) do gc
-        span = gc.span
-        newspan = Span(span.rows, span.cols .+ n)
-        gc.span = newspan
-    end
-
     with_updates_suspended(gl, update = update) do
         set_ncols!(gl, ncols(gl) + n)
+        set_coloffset!(gl, offsets(gl)[2] - n)
         prepend!(gl.colsizes, colsizes)
         prepend!(gl.addedcolgaps, addedcolgaps)
     end
@@ -386,12 +375,12 @@ function insertcols!(gl::GridLayout, at::Int, n::Int; colsizes=nothing, addedcol
 end
 
 function deleterow!(gl::GridLayout, irow::Int)
-    if !(1 <= irow <= nrows(gl))
+    if !(firstrow(gl) <= irow <= lastrow(gl))
         error("Row $irow does not exist.")
     end
 
     if nrows(gl) == 1
-        error("Can't delete the last row")
+        error("Can't delete the only row.")
     end
 
     # new_content = GridContent[]
@@ -419,20 +408,24 @@ function deleterow!(gl::GridLayout, irow::Int)
     for c in to_remove
         remove_from_gridlayout!(c)
     end
-    # gl.content = new_content
-    deleteat!(gl.rowsizes, irow)
-    deleteat!(gl.addedrowgaps, irow == 1 ? 1 : irow - 1)
+
+    idx = irow - rowoffset(gl)
+    deleteat!(gl.rowsizes, idx)
+    deleteat!(gl.addedrowgaps, idx == 1 ? 1 : idx - 1)
     set_nrows!(gl, nrows(gl) - 1)
     gl.needs_update[] = true
 end
 
+rowoffset(gl) = offsets(gl)[1]
+coloffset(gl) = offsets(gl)[2]
+
 function deletecol!(gl::GridLayout, icol::Int)
-    if !(1 <= icol <= ncols(gl))
+    if !(firstcol(gl) <= icol <= lastcol(gl))
         error("Col $icol does not exist.")
     end
 
     if ncols(gl) == 1
-        error("Can't delete the last col")
+        error("Can't delete the only column.")
     end
 
     to_remove = GridContent[]
@@ -459,9 +452,10 @@ function deletecol!(gl::GridLayout, icol::Int)
     for c in to_remove
         remove_from_gridlayout!(c)
     end
-    # gl.content = new_content
-    deleteat!(gl.colsizes, icol)
-    deleteat!(gl.addedcolgaps, icol == 1 ? 1 : icol - 1)
+    
+    idx = icol - coloffset(gl)
+    deleteat!(gl.colsizes, idx)
+    deleteat!(gl.addedcolgaps, idx == 1 ? 1 : idx - 1)
     set_ncols!(gl, ncols(gl) - 1)
     gl.needs_update[] = true
 end
@@ -474,8 +468,8 @@ function Base.isempty(gl::GridLayout, dir::GridDir, i::Int)
 end
 
 function trim!(gl::GridLayout)
-    irow = 1
-    while irow <= nrows(gl) && nrows(gl) > 1
+    irow = firstrow(gl)
+    while irow <= lastrow(gl) && nrows(gl) > 1
         if isempty(gl, Row(), irow)
             deleterow!(gl, irow)
         else
@@ -483,8 +477,8 @@ function trim!(gl::GridLayout)
         end
     end
 
-    icol = 1
-    while icol <= ncols(gl) && ncols(gl) > 1
+    icol = firstcol(gl)
+    while icol <= lastcol(gl) && ncols(gl) > 1
         if isempty(gl, Col(), icol)
             deletecol!(gl, icol)
         else
@@ -542,7 +536,10 @@ function Base.show(io::IO, ::MIME"text/plain", gl::GridLayout)
         join(split(str, "\n"), joinstr)
     end
 
-    println(io, "GridLayout[$(nrows(gl)), $(ncols(gl))] with $(length(gl.content)) children")
+    rowrange = firstrow(gl):lastrow(gl)
+    colrange = firstcol(gl):lastcol(gl)
+
+    println(io, "GridLayout[$rowrange, $colrange] with $(length(gl.content)) children")
 
     simplespan(span) = span.start == span.stop ? span.start : span
 
@@ -654,13 +651,16 @@ function _compute_maxgrid(gl)
     maxgrid = RowCols(ncols(gl), nrows(gl))
     # go through all the layout objects placed in the grid
     for c in gl.content
-        idx_rect = side_indices(c)
+        idx_rect = side_indices(gl, c)
         mapsides(idx_rect, maxgrid) do side, idx, grid
             grid[idx] = max(grid[idx], protrusion(c, side))
         end
     end
     maxgrid
 end
+
+sideoffset(gl, ::Union{Right, Left}) = offsets(gl)[2]
+sideoffset(gl, ::Union{Top, Bottom}) = offsets(gl)[1]
 
 function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Inside)::Float32
     width(content_bbox) - sumcolgaps
@@ -927,7 +927,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
     # because the protrusions should be static (like tick labels etc don't change size with the plot)
 
     for c in gl.content
-        idx_rect = side_indices(c)
+        idx_rect = side_indices(gl, c)
         bbox_cell = mapsides(idx_rect, gridboxes) do side, idx, gridside
             gridside[idx]
         end
@@ -1375,9 +1375,9 @@ end
 
 function Base.lastindex(g::GridLayout, d)
     if d == 1
-        nrows(g)
+        nrows(g) - offsets(g)[1]
     elseif d == 2
-        ncols(g)
+        ncols(g) - offsets(g)[2]
     else
         error("A grid only has two dimensions, you're indexing dimension $d.")
     end
@@ -1405,6 +1405,7 @@ end
 nrows(g::GridLayout) = size(g)[1]
 ncols(g::GridLayout) = size(g)[2]
 Base.size(g::GridLayout) = g.size
+offsets(g::GridLayout) = g.offsets
 
 Base.in(span1::Span, span2::Span) = span1.rows.start >= span2.rows.start &&
     span1.rows.stop <= span2.rows.stop &&
@@ -1522,25 +1523,25 @@ function top_parent_grid(g::GridLayout)
 end
 
 """
-    side_indices(c::GridContent)::RowCols{Int}
+    side_indices(gl::GridLayout, c::GridContent)::RowCols{Int}
 
 Indices of the rows / cols for each side
 """
-function side_indices(c::GridContent)
+function side_indices(gl, c::GridContent)
     return RowCols(
-        c.span.cols.start,
-        c.span.cols.stop,
-        c.span.rows.start,
-        c.span.rows.stop,
+        c.span.cols.start - offsets(gl)[2],
+        c.span.cols.stop - offsets(gl)[2],
+        c.span.rows.start - offsets(gl)[1],
+        c.span.rows.stop - offsets(gl)[1],
     )
 end
 
 # These functions tell whether an object in a grid touches the left, top, etc. border
 # of the grid. This means that it is relevant for the grid's own protrusion on that side.
-ismostin(gc::GridContent, grid, ::Left) = gc.span.cols.start == 1
-ismostin(gc::GridContent, grid, ::Right) = gc.span.cols.stop == ncols(grid)
-ismostin(gc::GridContent, grid, ::Bottom) = gc.span.rows.stop == nrows(grid)
-ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == 1
+ismostin(gc::GridContent, grid, ::Left) = gc.span.cols.start == firstcol(grid)
+ismostin(gc::GridContent, grid, ::Right) = gc.span.cols.stop == lastcol(grid)
+ismostin(gc::GridContent, grid, ::Bottom) = gc.span.rows.stop == lastrow(grid)
+ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == firstrow(grid)
 
 
 function protrusion(x::T, side::Side) where T
@@ -1745,26 +1746,28 @@ end
 function adjust_rows_cols!(g::GridLayout, rows, cols; update = true)
     rows, cols = to_ranges(g, rows, cols)
 
-    if rows.start < 1
-        n = 1 - rows.start
-        prependrows!(g, n, update = update)
-        # adjust rows for the newly prepended ones
-        rows = rows .+ n
+    rowdiff_start = firstrow(g) - rows.start
+    if rowdiff_start > 0
+        prependrows!(g, rowdiff_start, update = update)
     end
-    if rows.stop > nrows(g)
-        n = rows.stop - nrows(g)
-        appendrows!(g, n, update = update)
+    rowdiff_stop = rows.stop - lastrow(g)
+    if rowdiff_stop > 0
+        appendrows!(g, rowdiff_stop, update = update)
     end
-    if cols.start < 1
-        n = 1 - cols.start
-        prependcols!(g, n, update = update)
-        # adjust cols for the newly prepended ones
-        cols = cols .+ n
+    coldiff_start = firstcol(g) - cols.start
+    if coldiff_start > 0
+        prependcols!(g, coldiff_start, update = update)
     end
-    if cols.stop > ncols(g)
-        n = cols.stop - ncols(g)
-        appendcols!(g, n, update = update)
+    coldiff_stop = cols.stop - lastcol(g)
+
+    if coldiff_stop > 0
+        appendcols!(g, coldiff_stop, update = update)
     end
 
     rows, cols
 end
+
+firstrow(g) = (1 + offsets(g)[1])
+firstcol(g) = (1 + offsets(g)[2])
+lastrow(g) = (nrows(g) + offsets(g)[1])
+lastcol(g) = (ncols(g) + offsets(g)[2])
