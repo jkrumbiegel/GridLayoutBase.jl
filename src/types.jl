@@ -177,7 +177,6 @@ mutable struct GridLayout
     valign::Observable
     default_rowgap::GapSize
     default_colgap::GapSize
-    _update_func_handle::Optional{Function} # stores a reference to the result of on(obs)
 
     function GridLayout(
         parent,
@@ -188,7 +187,7 @@ mutable struct GridLayout
         gl = new(parent, content, size, offsets, rowsizes, colsizes,
             addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps,
             false, layoutobservables, width, height, tellwidth, tellheight,
-            halign, valign, default_rowgap, default_colgap, nothing)
+            halign, valign, default_rowgap, default_colgap)
 
         validategridlayout(gl)
 
