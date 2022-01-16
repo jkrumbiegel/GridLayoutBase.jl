@@ -50,9 +50,9 @@ end
 
 Wraps content elements of a `GridLayout`. It keeps track of the `parent`, the `content` and its position in the grid via `span` and `side`.
 """
-mutable struct GridContent{G, T} # G should be GridLayout but can't be used before definition
+mutable struct GridContent{G} # G should be GridLayout but can't be used before definition
     parent::Optional{G}
-    content::T
+    content # accessing the content object which can be anything is rare, so avoid overspecialization (type hiding)
     span::Span
     side::Side
     needs_update::Observable{Bool}
@@ -134,7 +134,7 @@ struct Aspect <: ContentSize
 end
 
 """
-    mutable struct LayoutObservables{T, G}
+    mutable struct LayoutObservables{G}
 
 `T` is the same type parameter of contained `GridContent`, `G` is `GridLayout` which is defined only after `LayoutObservables`.
 
@@ -145,15 +145,15 @@ A collection of `Observable`s and an optional `GridContent` that are needed to i
 - `reportedsize::Observable{NTuple{2, Optional{Float32}}}`: The width and height that the element computes for itself if possible (else `nothing`).
 - `autosize::Observable{NTuple{2, Optional{Float32}}}`: The width and height that the element reports to its parent `GridLayout`. If the element doesn't want to cause the parent to adjust to its size, autosize can hide the reportedsize from it by being set to `nothing`.
 - `computedbbox::Observable{Rect2f}`: The bounding box that the element computes for itself after it has received a suggestedbbox.
-- `gridcontent::Optional{GridContent{G, T}}`: A reference of a `GridContent` if the element is currently placed in a `GridLayout`. This can be used to retrieve the parent layout, remove the element from it or change its position, and assign it to a different layout.
+- `gridcontent::Optional{GridContent{G}}`: A reference of a `GridContent` if the element is currently placed in a `GridLayout`. This can be used to retrieve the parent layout, remove the element from it or change its position, and assign it to a different layout.
 """
-mutable struct LayoutObservables{T, G} # G again GridLayout
+mutable struct LayoutObservables{G} # G again GridLayout
     suggestedbbox::Observable{Rect2f}
     protrusions::Observable{RectSides{Float32}}
     reportedsize::Observable{NTuple{2, Optional{Float32}}}
     autosize::Observable{NTuple{2, Optional{Float32}}}
     computedbbox::Observable{Rect2f}
-    gridcontent::Optional{GridContent{G, T}} # the connecting link to the gridlayout
+    gridcontent::Optional{GridContent{G}} # the connecting link to the gridlayout
 end
 
 mutable struct GridLayout

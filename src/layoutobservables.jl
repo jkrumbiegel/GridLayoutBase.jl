@@ -18,7 +18,7 @@ function align_shift_tuple(halign::Union{Number, Symbol}, valign::Union{Number, 
     return (halign2shift(halign), valign2shift(valign))
 end
 
-function LayoutObservables{T}(width::Observable, height::Observable,
+function LayoutObservables(width::Observable, height::Observable,
         tellwidth::Observable, tellheight::Observable, halign::Observable,
         valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
@@ -46,7 +46,7 @@ function LayoutObservables{T}(width::Observable, height::Observable,
     finalbbox = alignedbboxobservable!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
-    LayoutObservables{T, GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, nothing)
+    LayoutObservables{GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, nothing)
 end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)

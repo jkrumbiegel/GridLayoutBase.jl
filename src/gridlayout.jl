@@ -41,7 +41,7 @@ function GridLayout(nrows::Int, ncols::Int;
     halign = observablify(halign)
     valign = observablify(valign)
 
-    layoutobservables = layoutobservables = LayoutObservables{GridLayout}(width,
+    layoutobservables = layoutobservables = LayoutObservables(width,
         height, tellwidth, tellheight, halign, valign;
         suggestedbbox = bbox)
 
@@ -1346,7 +1346,7 @@ function Base.setindex!(g::GridLayout, content_array::AbstractArray, rows::Index
     content_array
 end
 
-function GridContent(content::T, span::Span, side::Side) where T
+function GridContent(content, span::Span, side::Side)
     needs_update = Observable(false)
     # connect the correct observables
     protrusions_handle = on(protrusionsobservable(content)) do p
@@ -1355,7 +1355,7 @@ function GridContent(content::T, span::Span, side::Side) where T
     reportedsize_handle = on(reportedsizeobservable(content)) do c
         needs_update[] = true
     end
-    GridContent{GridLayout, T}(nothing, content, span, side, needs_update,
+    GridContent{GridLayout}(nothing, content, span, side, needs_update,
         protrusions_handle, reportedsize_handle)
 end
 

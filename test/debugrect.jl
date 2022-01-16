@@ -38,7 +38,7 @@ function DebugRect(; bbox = nothing, width=nothing, height=nothing,
         GridLayoutBase.RectSides{Float32}(l, r, b, t)
     end
 
-    layoutobservables = GridLayoutBase.LayoutObservables{DebugRect}(width,
+    layoutobservables = GridLayoutBase.LayoutObservables(width,
         height, tellwidth, tellheight, halign, valign, alignmode;
         suggestedbbox = bbox, protrusions = protrusions)
 
