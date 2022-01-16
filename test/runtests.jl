@@ -1,13 +1,13 @@
 using GridLayoutBase
 using GridLayoutBase: GridSubposition
+using GridLayoutBase: offsets
 using Test
 using Observables
 
 include("debugrect.jl")
 
 
-# @testset "GridLayout Zero Outside AlignMode" begin
-begin
+@testset "GridLayout Zero Outside AlignMode" begin
     bbox = BBox(0, 1000, 0, 1000)
     layout = GridLayout(bbox = bbox, alignmode = Outside(0))
     dr = layout[1, 1] = DebugRect()
@@ -24,7 +24,7 @@ begin
     @test computedbboxobservable(dr)[] == BBox(100, 900, 100, 900)
 
     dr2 = layout[1, 2] = DebugRect()
-    @test layout.nrows == 1 && layout.ncols == 2
+    @test nrows(layout) == 1 && ncols(layout) == 2
     colgap!(layout, 1, Fixed(0))
 
     @test computedbboxobservable(dr)[].widths == computedbboxobservable(dr2)[].widths == Float32[400.0, 800.0]
@@ -175,28 +175,38 @@ end
 
     dr = layout[1, 1] = DebugRect()
     @test size(layout) == (1, 1)
+    @test offsets(layout) == (0, 0)
 
     layout[1, 2] = dr
     @test size(layout) == (1, 2)
+    @test offsets(layout) == (0, 0)
 
     layout[3, 2] = dr
     @test size(layout) == (3, 2)
+    @test offsets(layout) == (0, 0)
 
     layout[4, 4] = dr
     @test size(layout) == (4, 4)
+    @test offsets(layout) == (0, 0)
 
     layout[0, 1] = dr
     @test size(layout) == (5, 4)
+    @test offsets(layout) == (-1, 0)
 
     layout[1, 0] = dr
     @test size(layout) == (5, 5)
+    @test offsets(layout) == (-1, -1)
 
     layout[-1, -1] = dr
-    @test size(layout) == (7, 7)
+    @test size(layout) == (6, 6)
+    @test offsets(layout) == (-2, -2)
 
     layout[3, 3] = dr
     trim!(layout)
     @test size(layout) == (1, 1)
+    @test offsets(layout) == (-2, -2)
+    # reset offsets to zero
+    layout.offsets = (0, 0)
 
     layout[2:3, 4:5] = dr
     @test size(layout) == (3, 5)
@@ -361,7 +371,7 @@ end
 
     text_long = repr(MIME"text/plain"(), gl)
     @test text_long == """
-    GridLayout[3, 5] with 2 children
+    GridLayout[1:3, 1:5] with 2 children
      ┣━ [1, 1] DebugRect
      ┗━ [2:3, 4:5] DebugRect
     """
@@ -373,7 +383,7 @@ end
 
     text_longer = repr(MIME"text/plain"(), gl)
     # this is actually a bit buggy with the newline space space newline at the end
-    @test text_longer == "GridLayout[3, 5] with 3 children\n ┣━ [1, 1] DebugRect\n ┣━ [2:3, 4:5] DebugRect\n ┗━ [1, 2] GridLayout[5, 3] with 1 children\n   ┗━ [1:5, 3] DebugRect\n  \n"
+    @test text_longer == "GridLayout[1:3, 1:5] with 3 children\n ┣━ [1, 1] DebugRect\n ┣━ [2:3, 4:5] DebugRect\n ┗━ [1, 2] GridLayout[1:5, 1:3] with 1 children\n   ┗━ [1:5, 3] DebugRect\n  \n"
 
 
     gl3 = GridLayout()
@@ -383,7 +393,7 @@ end
     text_long_downconnection = repr(MIME"text/plain"(), gl3)
 
     # this is also a bit buggy for the same reason as above
-    @test text_long_downconnection == "GridLayout[2, 2] with 2 children\n ┣━ [1, 1] GridLayout[1, 1] with 1 children\n ┃ ┗━ [1, 1] DebugRect\n ┃\n ┗━ [2, 2] DebugRect\n"
+    @test text_long_downconnection == "GridLayout[1:2, 1:2] with 2 children\n ┣━ [1, 1] GridLayout[1:1, 1:1] with 1 children\n ┃ ┗━ [1, 1] DebugRect\n ┃\n ┗━ [2, 2] DebugRect\n"
 end
 
 @testset "vector and array assigning" begin
@@ -824,3 +834,51 @@ end
     @test_throws ErrorException tight_bbox(gl)
 end
 
+@testset "offset row/col auto size" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
+    dr1 = gl[0, 1] = DebugRect(height = 200)
+    dr2 = gl[1, 0] = DebugRect(width = 100)
+    dr3 = gl[1, 1] = DebugRect()
+    colgap!(gl, 0)
+    rowgap!(gl, 0)
+
+    @test GridLayoutBase.determinedirsize(0, gl, GridLayoutBase.Col()) == 100
+    @test GridLayoutBase.determinedirsize(0, gl, GridLayoutBase.Row()) == 200
+
+    @test suggestedbboxobservable(dr1)[] == BBox(100, 1000, 800, 1000)
+    @test suggestedbboxobservable(dr2)[] == BBox(0, 100, 0, 800)
+    @test suggestedbboxobservable(dr3)[] == BBox(100, 1000, 0, 800)
+end
+
+@testset "offset aspect" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
+    # make columns and rows offset
+    gl[0, 0] = DebugRect()
+    colgap!(gl, 0)
+    rowgap!(gl, 0)
+    # aspect refers to row 0 
+    colsize!(gl, 1, Aspect(0, 1.5))
+
+    maxgrid, gridboxes = GridLayoutBase.compute_rowcols(gl, suggestedbboxobservable(gl)[])
+    @test gridboxes.lefts == [0, 250]
+    @test gridboxes.rights == [250, 1000]
+    @test gridboxes.tops == [1000, 500]
+    @test gridboxes.bottoms == [500, 0]
+
+    bbox = BBox(0, 1000, 0, 1000)
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
+    # make columns and rows offset
+    gl[0, 0] = DebugRect()
+    colgap!(gl, 0)
+    rowgap!(gl, 0)
+    # aspect refers to column 0
+    rowsize!(gl, 1, Aspect(0, 1.5))
+
+    maxgrid, gridboxes = GridLayoutBase.compute_rowcols(gl, suggestedbboxobservable(gl)[])
+    @test gridboxes.lefts == [0, 500]
+    @test gridboxes.rights == [500, 1000]
+    @test gridboxes.tops == [1000, 750]
+    @test gridboxes.bottoms == [750, 0]
+end

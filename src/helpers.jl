@@ -165,3 +165,30 @@ function mapsides(
         f(side, getindex.((first, rest...), (side,))...)
     end
 end
+
+function set_nrows!(gl, x)
+    gl.size = (x, gl.size[2])
+end
+function set_ncols!(gl, x)
+    gl.size = (gl.size[1], x)
+end
+
+function set_rowoffset!(gl, x)
+    gl.offsets = (x, offset(gl, Col()))
+end
+function set_coloffset!(gl, x)
+    gl.offsets = (offset(gl, Row()), x)
+end
+
+offset(gl, ::Row) = offsets(gl)[1]
+offset(gl, ::Col) = offsets(gl)[2]
+
+# convert an index into an array from 1:nrow or 1:ncol
+# into the respective column / row number that can also be negative if offset
+offset(gl, i, ::Row) = i + offset(gl, Row())
+offset(gl, i, ::Col) = i + offset(gl, Col())
+
+# convert a column / row number that can also be negative if offset
+# to an index from 1:nrow or 1:ncol
+unoffset(gl, i, ::Row) = i - offset(gl, Row())
+unoffset(gl, i, ::Col) = i - offset(gl, Col())
