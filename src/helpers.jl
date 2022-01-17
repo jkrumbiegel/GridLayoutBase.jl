@@ -135,17 +135,18 @@ function RowCols(ncols::Int, nrows::Int)
     )
 end
 
-Base.getindex(rowcols::RowCols, ::Left) = rowcols.lefts
-Base.getindex(rowcols::RowCols, ::Right) = rowcols.rights
-Base.getindex(rowcols::RowCols, ::Top) = rowcols.tops
-Base.getindex(rowcols::RowCols, ::Bottom) = rowcols.bottoms
+Base.getindex(rowcols::RowCols, side::Side) = side == Left ? rowcols.lefts :
+                                              side == Right ? rowcols.rights :
+                                              side == Top ? rowcols.tops :
+                                              side == Bottom ? rowcols.bottoms : throw_side(side)
+
 
 """
     eachside(f)
 Calls f over all sides (Left, Right, Top, Bottom), and creates a BBox from the result of f(side)
 """
 function eachside(f)
-    return BBox(f(Left()), f(Right()), f(Bottom()), f(Top()))
+    return BBox(f(Left), f(Right), f(Bottom), f(Top))
 end
 
 """

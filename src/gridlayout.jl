@@ -129,10 +129,10 @@ function update!(gl::GridLayout)
 
     new_autosize = (w, h)
     new_protrusions = RectSides{Float32}(
-        protrusion(gl, Left()),
-        protrusion(gl, Right()),
-        protrusion(gl, Bottom()),
-        protrusion(gl, Top()),
+        protrusion(gl, Left),
+        protrusion(gl, Right),
+        protrusion(gl, Bottom),
+        protrusion(gl, Top),
     )
 
     if autosizeobservable(gl)[] == new_autosize &&
@@ -696,8 +696,8 @@ function _compute_maxgrid(gl)
     maxgrid
 end
 
-sideoffset(gl, ::Union{Right, Left}) = offset(gl, Col)
-sideoffset(gl, ::Union{Top, Bottom}) = offset(gl, Row)
+sideoffset(gl, s::Side) = s in (Left, Right) ? offset(gl, Col) :
+                          s in (Top, Bottom) ? offset(gl, Row) : throw_side(s)
 
 function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Inside)::Float32
     width(content_bbox) - sumcolgaps
@@ -710,8 +710,8 @@ end
 
 function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Mixed)::Float32
 
-    rightal = getside(alignmode, Right())
-    leftal = getside(alignmode, Left())
+    rightal = getside(alignmode, Right)
+    leftal = getside(alignmode, Left)
     width(content_bbox) - sumcolgaps -
         (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot) -
         (isnothing(rightal) ? zero(rightprot) : isa(rightal, Protrusion) ? rightal.p : rightprot)
@@ -729,8 +729,8 @@ end
 
 function _compute_remaining_vertical_space(content_bbox, sumrowgaps, topprot, bottomprot, alignmode::Mixed)::Float32
 
-    topal = getside(alignmode, Top())
-    bottomal = getside(alignmode, Bottom())
+    topal = getside(alignmode, Top)
+    bottomal = getside(alignmode, Bottom)
     height(content_bbox) - sumrowgaps -
         (isnothing(bottomal) ? zero(bottomprot) : isa(bottomal, Protrusion) ? bottomal.p : bottomprot) -
         (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
@@ -827,8 +827,8 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
         if alignmode isa Outside
             leftprot + rightprot
         elseif alignmode isa Mixed
-            rightal = getside(alignmode, Right())
-            leftal = getside(alignmode, Left())
+            rightal = getside(alignmode, Right)
+            leftal = getside(alignmode, Left)
             r = if rightal === nothing
                 0f0
             elseif rightal isa Protrusion
@@ -853,8 +853,8 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
         if alignmode isa Outside
             topprot + bottomprot
         elseif alignmode isa Mixed
-            bottomal = getside(alignmode, Bottom())
-            topal = getside(alignmode, Top())
+            bottomal = getside(alignmode, Bottom)
+            topal = getside(alignmode, Top)
             b = if bottomal === nothing
                 0f0
             elseif bottomal isa Protrusion
@@ -887,7 +887,7 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
         xadjustment .+ left(content_bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ leftprot
     elseif alignmode isa Mixed
-        leftal = getside(alignmode, Left())
+        leftal = getside(alignmode, Left)
         xadjustment .+ left(content_bbox) .+ zcumsum(colwidths[1:end-1]) .+
             zcumsum(finalcolgaps) .+ (isnothing(leftal) ? zero(leftprot) : isa(leftal, Protrusion) ? leftal.p : leftprot)
     else
@@ -903,7 +903,7 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
         top(content_bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps) .- topprot
     elseif alignmode isa Mixed
-        topal = getside(alignmode, Top())
+        topal = getside(alignmode, Top)
         top(content_bbox) .- yadjustment .- zcumsum(rowheights[1:end-1]) .-
             zcumsum(finalrowgaps) .- (isnothing(topal) ? zero(topprot) : isa(topal, Protrusion) ? topal.p : topprot)
     else
@@ -1084,7 +1084,7 @@ function determinedirsize(idir, gl, dir::GridDir)
 
             # content has to be placed with Inner side, otherwise it's protrusion
             # content
-            is_inner = c.side isa Inner
+            is_inner = c.side == Inner
 
             if singlespanned && is_inner
                 s = determinedirsize(c.content, dir, c.side)
@@ -1308,7 +1308,7 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
     colwidths, rowheights
 end
 
-function Base.setindex!(g::GridLayout, content, rows::Indexables, cols::Indexables, side::Side = Inner())
+function Base.setindex!(g::GridLayout, content, rows::Indexables, cols::Indexables, side::Side = Inner)
     add_content!(g, content, rows, cols, side)
     content
 end
@@ -1445,12 +1445,12 @@ function Base.firstindex(g::GridLayout, d)
     end
 end
 
-function GridPosition(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner())
+function GridPosition(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner)
     span = Span(to_ranges(g, rows, cols)...)
     GridPosition(g, span, side)
 end
 
-function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner())
+function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner)
     GridPosition(g, rows, cols, side)
 end
 
@@ -1458,7 +1458,7 @@ function Base.setindex!(gp::GridPosition, element)
     gp.layout[gp.span.rows, gp.span.cols, gp.side] = element
 end
 
-function Base.setindex!(gp::GridPosition, element, rows, cols, side = Inner())
+function Base.setindex!(gp::GridPosition, element, rows, cols, side = Inner)
     layout = get_layout_at!(gp, createmissing = true)
     layout[rows, cols, side] = element
     element
@@ -1510,12 +1510,12 @@ function contents(g::GridLayout)
 end
 
 
-function Base.getindex(gp::Union{GridPosition, GridSubposition}, rows, cols, side = Inner())
+function Base.getindex(gp::Union{GridPosition, GridSubposition}, rows, cols, side = Inner)
     GridSubposition(gp, rows, cols, side)
 end
 
 function Base.setindex!(parent::GridSubposition, obj,
-    rows, cols, side = GridLayoutBase.Inner())
+    rows, cols, side = Inner)
     layout = get_layout_at!(parent, createmissing = true)
     layout[rows, cols, side] = obj
     obj
@@ -1529,10 +1529,10 @@ end
 
 function get_layout_at!(gp::GridPosition; createmissing = false)
     c = contents(gp, exact = true)
-    layouts = filter(x -> x isa GridLayoutBase.GridLayout, c)
+    layouts = filter(x -> x isa GridLayout, c)
     if isempty(layouts)
         if createmissing
-            return gp[] = GridLayoutBase.GridLayout()
+            return gp[] = GridLayout()
         else
             error("No layout found but `createmissing` is false.")
         end
@@ -1600,21 +1600,21 @@ end
 
 # These functions tell whether an object in a grid touches the left, top, etc. border
 # of the grid. This means that it is relevant for the grid's own protrusion on that side.
-ismostin(gc::GridContent, grid, ::Left) = gc.span.cols.start == firstcol(grid)
-ismostin(gc::GridContent, grid, ::Right) = gc.span.cols.stop == lastcol(grid)
-ismostin(gc::GridContent, grid, ::Bottom) = gc.span.rows.stop == lastrow(grid)
-ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == firstrow(grid)
+ismostin(gc::GridContent, grid, side::Side) = side == Left ? (gc.span.cols.start == firstcol(grid)) :
+                                              side == Right ? (gc.span.cols.stop == lastcol(grid)) :
+                                              side == Bottom ? (gc.span.rows.stop == lastrow(grid)) :
+                                              side == Top ? (gc.span.rows.start == firstrow(grid)) : throw_side(side)
 
 
 function protrusion(x::T, side::Side) where T
     protrusions = protrusionsobservable(x)
-    if side isa Left
+    if side == Left
         protrusions[].left
-    elseif side isa Right
+    elseif side == Right
         protrusions[].right
-    elseif side isa Bottom
+    elseif side == Bottom
         protrusions[].bottom
-    elseif side isa Top
+    elseif side == Top
         protrusions[].top
     else
         error("Can't get a protrusion value for side $(typeof(side)), only
@@ -1624,49 +1624,49 @@ end
 
 function protrusion(gc::GridContent, side::Side)
     prot = 
-        if gc.side isa Inner
+        if gc.side == Inner
             protrusion(gc.content, side)
         # elseif gc.side isa Outer; BBox(l - pl, r + pr, b - pb, t + pt)
-        elseif gc.side isa Union{Left, Right}
-            if side isa typeof(gc.side)
+        elseif gc.side in (Left, Right)
+            if side == gc.side
                 determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
-        elseif gc.side isa Union{Top, Bottom}
-            if side isa typeof(gc.side)
+        elseif gc.side in (Top, Bottom)
+            if side == gc.side
                 determinedirsize(gc.content, Row, gc.side)
             else
                 0.0
             end
-        elseif gc.side isa TopLeft
-            if side isa Top
+        elseif gc.side == TopLeft
+            if side == Top
                 determinedirsize(gc.content, Row, gc.side)
-            elseif side isa Left
+            elseif side == Left
                 determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
-        elseif gc.side isa TopRight
-            if side isa Top
+        elseif gc.side == TopRight
+            if side == Top
                 determinedirsize(gc.content, Row, gc.side)
-            elseif side isa Right
+            elseif side == Right
                 determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
-        elseif gc.side isa BottomLeft
-            if side isa Bottom
+        elseif gc.side == BottomLeft
+            if side == Bottom
                 determinedirsize(gc.content, Row, gc.side)
-            elseif side isa Left
+            elseif side == Left
                 determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
-        elseif gc.side isa BottomRight
-            if side isa Bottom
+        elseif gc.side == BottomRight
+            if side == Bottom
                 determinedirsize(gc.content, Row, gc.side)
-            elseif side isa Right
+            elseif side == Right
                 determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
@@ -1677,10 +1677,13 @@ function protrusion(gc::GridContent, side::Side)
     ifnothing(prot, 0.0)
 end
 
-getside(m::Mixed, ::Left) = m.sides.left
-getside(m::Mixed, ::Right) = m.sides.right
-getside(m::Mixed, ::Top) = m.sides.top
-getside(m::Mixed, ::Bottom) = m.sides.bottom
+function getside(m::Mixed, side::Side)
+    msides = m.sides
+    return side == Left ? msides.left :
+           side == Right ? msides.right :
+           side == Top ? msides.top :
+           side == Bottom ? msides.bottom : throw_side(side)
+end
 
 function inside_protrusion(gl::GridLayout, side::Side)
     prot = 0.0
@@ -1726,33 +1729,33 @@ function bbox_for_solving_from_side(maxgrid::RowCols, bbox_cell::Rect2f, idx_rec
     b = bottom(bbox_cell)
     t = top(bbox_cell)
 
-    if side isa Inner
+    if side == Inner
         bbox_cell
-    elseif side isa Outer
+    elseif side == Outer
         BBox(l - pl, r + pr, b - pb, t + pt)
-    elseif side isa Left
+    elseif side == Left
         BBox(l - pl, l, b, t)
-    elseif side isa Top
+    elseif side == Top
         BBox(l, r, t, t + pt)
-    elseif side isa Right
+    elseif side == Right
         BBox(r, r + pr, b, t)
-    elseif side isa Bottom
+    elseif side == Bottom
         BBox(l, r, b - pb, b)
-    elseif side isa TopLeft
+    elseif side == TopLeft
         BBox(l - pl, l, t, t + pt)
-    elseif side isa TopRight
+    elseif side == TopRight
         BBox(r, r + pr, t, t + pt)
-    elseif side isa BottomRight
+    elseif side == BottomRight
         BBox(r, r + pr, b - pb, b)
-    elseif side isa BottomLeft
+    elseif side == BottomLeft
         BBox(l - pl, l, b - pb, b)
     else
-        error("Invalid side $side")
+        throw_side(side)
     end
 end
 
-startside(g::GridDir) = g == Col ? Left() : Top()
-stopside(g::GridDir) = g == Col ? Right() : Bottom()
+startside(g::GridDir) = g == Col ? Left : Top
+stopside(g::GridDir) = g == Col ? Right : Bottom
 
 getspan(gc::GridContent, g::GridDir) = g == Col ? gc.span.cols : gc.span.rows
 
@@ -1767,18 +1770,18 @@ an element placed in the left protrusion loses its ability to influence height.
 function determinedirsize(content, gdir::GridDir, side::Side)
     reportedsize = reportedsizeobservable(content)
     if gdir == Row
-        if side isa Union{Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight}
+        if side in (Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight)
             # TODO: is reportedsize the correct thing to return? or plus protrusions depending on the side
             ifnothing(reportedsize[][2], nothing)
-        elseif side isa Union{Left, Right}
+        elseif side in (Left, Right)
             nothing
         else
             error("$side not implemented")
         end
     else
-        if side isa Union{Inner, Left, Right, TopLeft, TopRight, BottomLeft, BottomRight}
+        if side in (Inner, Left, Right, TopLeft, TopRight, BottomLeft, BottomRight)
             ifnothing(reportedsize[][1], nothing)
-        elseif side isa Union{Top, Bottom}
+        elseif side in (Top, Bottom)
             nothing
         else
             error("$side not implemented")
