@@ -562,26 +562,26 @@ end
     gl = GridLayout(;alignmode = Outside(0))
     gl[1, 1] = DebugRect(width = 800, height = 600)
 
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row) == 600
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col) == 800
 
     gl[1, 1, Left()] = DebugRect(width = 200)
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800 + 200
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col) == 800 + 200
     gl[1, 1, Right()] = DebugRect(width = 200)
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800 + 200 + 200
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col) == 800 + 200 + 200
 
     gl[1, 1, Top()] = DebugRect(height = 100)
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600 + 100
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row) == 600 + 100
     gl[1, 1, Bottom()] = DebugRect(height = 100)
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600 + 100 + 100
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row) == 600 + 100 + 100
 
     gl.alignmode[] = Outside(50)
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800 + 200 + 200 + 2 * 50
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600 + 100 + 100 + 2 * 50
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col) == 800 + 200 + 200 + 2 * 50
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row) == 600 + 100 + 100 + 2 * 50
 
     gl.alignmode[] = Inside()
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col()) == 800
-    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row()) == 600
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Col) == 800
+    @test GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row) == 600
 end
 
 @testset "alignment" begin
@@ -843,8 +843,8 @@ end
     colgap!(gl, 0)
     rowgap!(gl, 0)
 
-    @test GridLayoutBase.determinedirsize(0, gl, GridLayoutBase.Col()) == 100
-    @test GridLayoutBase.determinedirsize(0, gl, GridLayoutBase.Row()) == 200
+    @test GridLayoutBase.determinedirsize(0, gl, GridLayoutBase.Col) == 100
+    @test GridLayoutBase.determinedirsize(0, gl, GridLayoutBase.Row) == 200
 
     @test suggestedbboxobservable(dr1)[] == BBox(100, 1000, 800, 1000)
     @test suggestedbboxobservable(dr2)[] == BBox(0, 100, 0, 800)

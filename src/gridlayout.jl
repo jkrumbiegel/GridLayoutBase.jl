@@ -1,4 +1,4 @@
-GridLayout(; kwargs...) = GridLayout(1, 1; kwargs...)
+GridLayout(; @nospecialize(kwargs...)) = GridLayout(1, 1; kwargs...)
 
 observablify(x::Observable) = x
 observablify(x, type=Any) = Observable{type}(x)
@@ -72,7 +72,7 @@ function GridLayout(nrows::Int, ncols::Int;
 
     content = GridContent[]
 
-    alignmode = observablify(alignmode, AlignMode)
+    alignmode_obs = convert(Observable{AlignMode}, alignmode)
     width_obs = convert(Observable{SizeAttribute}, width)
     height_obs = convert(Observable{SizeAttribute}, height)
     tellwidth_obs = convert(Observable{Bool}, tellwidth)
@@ -101,7 +101,7 @@ function GridLayout(nrows::Int, ncols::Int;
         colsizes,
         addedrowgaps,
         addedcolgaps,
-        alignmode,
+        alignmode_obs,
         equalprotrusiongaps,
         layoutobservables,
         width_obs,
@@ -124,8 +124,8 @@ end
 function update!(gl::GridLayout)
     gl.block_updates && return
 
-    w = determinedirsize(gl, Col())
-    h = determinedirsize(gl, Row())
+    w = determinedirsize(gl, Col)
+    h = determinedirsize(gl, Row)
 
     new_autosize = (w, h)
     new_protrusions = RectSides{Float32}(
@@ -311,7 +311,7 @@ function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=not
 
     with_updates_suspended(gl, update = update) do
         set_nrows!(gl, nrows(gl) + n)
-        set_rowoffset!(gl, offset(gl, Row()) - n)
+        set_rowoffset!(gl, offset(gl, Row) - n)
         prepend!(gl.rowsizes, rowsizes)
         prepend!(gl.addedrowgaps, addedrowgaps)
     end
@@ -324,7 +324,7 @@ function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=not
 
     with_updates_suspended(gl, update = update) do
         set_ncols!(gl, ncols(gl) + n)
-        set_coloffset!(gl, offset(gl, Col()) - n)
+        set_coloffset!(gl, offset(gl, Col) - n)
         prepend!(gl.colsizes, colsizes)
         prepend!(gl.addedcolgaps, addedcolgaps)
     end
@@ -451,8 +451,8 @@ function deleterow!(gl::GridLayout, irow::Int)
     update!(gl)
 end
 
-rowoffset(gl) = offset(gl, Row())
-coloffset(gl) = offset(gl, Col())
+rowoffset(gl) = offset(gl, Row)
+coloffset(gl) = offset(gl, Col)
 
 function deletecol!(gl::GridLayout, icol::Int)
     if !(firstcol(gl) <= icol <= lastcol(gl))
@@ -497,7 +497,7 @@ end
 
 function Base.isempty(gl::GridLayout, dir::GridDir, i::Int)
     !any(gl.content) do c
-        span = dir isa Row ? c.span.rows : c.span.cols
+        span = dir == Row ? c.span.rows : c.span.cols
         i in span
     end
 end
@@ -505,7 +505,7 @@ end
 function trim!(gl::GridLayout)
     irow = firstrow(gl)
     while irow <= lastrow(gl) && nrows(gl) > 1
-        if isempty(gl, Row(), irow)
+        if isempty(gl, Row, irow)
             deleterow!(gl, irow)
         else
             irow += 1
@@ -514,7 +514,7 @@ function trim!(gl::GridLayout)
 
     icol = firstcol(gl)
     while icol <= lastcol(gl) && ncols(gl) > 1
-        if isempty(gl, Col(), icol)
+        if isempty(gl, Col, icol)
             deletecol!(gl, icol)
         else
             icol += 1
@@ -603,7 +603,7 @@ function colsize!(gl::GridLayout, i::Int, s::ContentSize)
     if !(firstcol(gl) <= i <= lastcol(gl))
         error("Can't set size of invalid column $i.")
     end
-    i_unoffset = unoffset(gl, i, Col())
+    i_unoffset = unoffset(gl, i, Col)
     gl.colsizes[i_unoffset] = s
     update!(gl)
 end
@@ -614,7 +614,7 @@ function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
     if !(firstrow(gl) <= i <= lastrow(gl))
         error("Can't set size of invalid row $i.")
     end
-    i_unoffset = unoffset(gl, i, Row())
+    i_unoffset = unoffset(gl, i, Row)
     gl.rowsizes[i_unoffset] = s
     update!(gl)
 end
@@ -696,8 +696,8 @@ function _compute_maxgrid(gl)
     maxgrid
 end
 
-sideoffset(gl, ::Union{Right, Left}) = offset(gl, Col())
-sideoffset(gl, ::Union{Top, Bottom}) = offset(gl, Row())
+sideoffset(gl, ::Union{Right, Left}) = offset(gl, Col)
+sideoffset(gl, ::Union{Top, Bottom}) = offset(gl, Row)
 
 function _compute_remaining_horizontal_space(content_bbox, sumcolgaps, leftprot, rightprot, alignmode::Inside)::Float32
     width(content_bbox) - sumcolgaps
@@ -977,8 +977,7 @@ function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
     nothing
 end
 
-dirlength(gl::GridLayout, c::Col) = ncols(gl)
-dirlength(gl::GridLayout, r::Row) = nrows(gl)
+dirlength(gl::GridLayout, g::GridDir) = g == Row ? nrows(gl) : ncols(gl)
 
 function dirgaps(gl::GridLayout, dir::GridDir)
     starts = zeros(Float32, dirlength(gl, dir))
@@ -993,8 +992,7 @@ function dirgaps(gl::GridLayout, dir::GridDir)
     starts, stops
 end
 
-dirsizes(gl::GridLayout, c::Col) = gl.colsizes
-dirsizes(gl::GridLayout, r::Row) = gl.rowsizes
+dirsizes(gl::GridLayout, g::GridDir) = g == Row ? gl.rowsizes : gl.colsizes
 
 """
 Determine the size of a grid layout along one of its dimensions.
@@ -1022,7 +1020,7 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
 
     dirgapsstart, dirgapsstop = dirgaps(gl, gdir)
 
-    forceequalprotrusiongaps = gl.equalprotrusiongaps[gdir isa Row ? 1 : 2]
+    forceequalprotrusiongaps = gl.equalprotrusiongaps[gdir == Row ? 1 : 2]
 
     dirgapsizes = if forceequalprotrusiongaps
         innergaps = dirgapsstart[2:end] .+ dirgapsstop[1:end-1]
@@ -1034,7 +1032,7 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
 
     inner_gapsizes = dirlength(gl, gdir) > 1 ? sum(dirgapsizes) : 0
 
-    addeddirgapsizes = gdir isa Row ? gl.addedrowgaps : gl.addedcolgaps
+    addeddirgapsizes = gdir == Row ? gl.addedrowgaps : gl.addedcolgaps
 
     addeddirgaps = dirlength(gl, gdir) == 1 ? 0 : sum(addeddirgapsizes) do c
         if c isa Fixed
@@ -1048,7 +1046,7 @@ function determinedirsize(gl::GridLayout, gdir::GridDir)
     return if gl.alignmode[] isa Inside
         inner_size_combined
     elseif gl.alignmode[] isa Outside
-        paddings = if gdir isa Row
+        paddings = if gdir == Row
             gl.alignmode[].padding.top + gl.alignmode[].padding.bottom
         else
             gl.alignmode[].padding.left + gl.alignmode[].padding.right
@@ -1149,16 +1147,16 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
 
     # then determinable auto sizes
     filterenum(Auto, gl.colsizes) do (i, auto)
-        i_offset = offset(gl, i, Col())
-        size = determinedirsize(i_offset, gl, Col())
+        i_offset = offset(gl, i, Col)
+        size = determinedirsize(i_offset, gl, Col)
         if !isnothing(size)
             colwidths[i] = size
             determinedcols[i] = true
         end
     end
     filterenum(Auto, gl.rowsizes) do (i, auto)
-        i_offset = offset(gl, i, Row())
-        size = determinedirsize(i_offset, gl, Row())
+        i_offset = offset(gl, i, Row)
+        size = determinedirsize(i_offset, gl, Row)
         if !isnothing(size)
             rowheights[i] = size
             determinedrows[i] = true
@@ -1167,14 +1165,14 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
 
     # now aspect sizes that refer to already determined counterparts
     filterenum(Aspect, gl.colsizes) do (i, aspect)
-        aspectindex_unoffset = unoffset(gl, aspect.index, Col())
+        aspectindex_unoffset = unoffset(gl, aspect.index, Col)
         if determinedrows[aspectindex_unoffset]
             colwidths[i] = aspect.ratio * rowheights[aspectindex_unoffset]
             determinedcols[i] = true
         end
     end
     filterenum(Aspect, gl.rowsizes) do (i, aspect)
-        aspectindex_unoffset = unoffset(gl, aspect.index, Row())
+        aspectindex_unoffset = unoffset(gl, aspect.index, Row)
         if determinedcols[aspectindex_unoffset]
             rowheights[i] = aspect.ratio * colwidths[aspectindex_unoffset]
             determinedrows[i] = true
@@ -1239,7 +1237,7 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
     # now if either columns or rows had no aspects left, they should have all sizes determined
     # we run over the aspects again
     filterenum(Aspect, gl.colsizes) do (i, aspect)
-        aspectindex_unoffset = unoffset(gl, aspect.index, Col())
+        aspectindex_unoffset = unoffset(gl, aspect.index, Col)
         if determinedrows[aspectindex_unoffset]
             colwidths[i] = aspect.ratio * rowheights[aspectindex_unoffset]
             determinedcols[i] = true
@@ -1248,7 +1246,7 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
         end
     end
     filterenum(Aspect, gl.rowsizes) do (i, aspect)
-        aspectindex_unoffset = unoffset(gl, aspect.index, Row())
+        aspectindex_unoffset = unoffset(gl, aspect.index, Row)
         if determinedcols[aspectindex_unoffset]
             rowheights[i] = aspect.ratio * colwidths[aspectindex_unoffset]
             determinedrows[i] = true
@@ -1593,10 +1591,10 @@ Indices of the rows / cols for each side
 """
 function side_indices(gl, c::GridContent)
     return RowCols(
-        c.span.cols.start - offset(gl, Col()),
-        c.span.cols.stop - offset(gl, Col()),
-        c.span.rows.start - offset(gl, Row()),
-        c.span.rows.stop - offset(gl, Row()),
+        c.span.cols.start - offset(gl, Col),
+        c.span.cols.stop - offset(gl, Col),
+        c.span.rows.start - offset(gl, Row),
+        c.span.rows.stop - offset(gl, Row),
     )
 end
 
@@ -1631,45 +1629,45 @@ function protrusion(gc::GridContent, side::Side)
         # elseif gc.side isa Outer; BBox(l - pl, r + pr, b - pb, t + pt)
         elseif gc.side isa Union{Left, Right}
             if side isa typeof(gc.side)
-                determinedirsize(gc.content, Col(), gc.side)
+                determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
         elseif gc.side isa Union{Top, Bottom}
             if side isa typeof(gc.side)
-                determinedirsize(gc.content, Row(), gc.side)
+                determinedirsize(gc.content, Row, gc.side)
             else
                 0.0
             end
         elseif gc.side isa TopLeft
             if side isa Top
-                determinedirsize(gc.content, Row(), gc.side)
+                determinedirsize(gc.content, Row, gc.side)
             elseif side isa Left
-                determinedirsize(gc.content, Col(), gc.side)
+                determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
         elseif gc.side isa TopRight
             if side isa Top
-                determinedirsize(gc.content, Row(), gc.side)
+                determinedirsize(gc.content, Row, gc.side)
             elseif side isa Right
-                determinedirsize(gc.content, Col(), gc.side)
+                determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
         elseif gc.side isa BottomLeft
             if side isa Bottom
-                determinedirsize(gc.content, Row(), gc.side)
+                determinedirsize(gc.content, Row, gc.side)
             elseif side isa Left
-                determinedirsize(gc.content, Col(), gc.side)
+                determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
         elseif gc.side isa BottomRight
             if side isa Bottom
-                determinedirsize(gc.content, Row(), gc.side)
+                determinedirsize(gc.content, Row, gc.side)
             elseif side isa Right
-                determinedirsize(gc.content, Col(), gc.side)
+                determinedirsize(gc.content, Col, gc.side)
             else
                 0.0
             end
@@ -1753,15 +1751,10 @@ function bbox_for_solving_from_side(maxgrid::RowCols, bbox_cell::Rect2f, idx_rec
     end
 end
 
-startside(c::Col) = Left()
-stopside(c::Col) = Right()
-startside(r::Row) = Top()
-stopside(r::Row) = Bottom()
+startside(g::GridDir) = g == Col ? Left() : Top()
+stopside(g::GridDir) = g == Col ? Right() : Bottom()
 
-
-getspan(gc::GridContent, dir::Col) = gc.span.cols
-getspan(gc::GridContent, dir::Row) = gc.span.rows
-
+getspan(gc::GridContent, g::GridDir) = g == Col ? gc.span.cols : gc.span.rows
 
 
 """
@@ -1773,7 +1766,7 @@ an element placed in the left protrusion loses its ability to influence height.
 """
 function determinedirsize(content, gdir::GridDir, side::Side)
     reportedsize = reportedsizeobservable(content)
-    if gdir isa Row
+    if gdir == Row
         if side isa Union{Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight}
             # TODO: is reportedsize the correct thing to return? or plus protrusions depending on the side
             ifnothing(reportedsize[][2], nothing)

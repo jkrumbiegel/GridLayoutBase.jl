@@ -117,11 +117,13 @@ width(rect::Rect{2}) = right(rect) - left(rect)
 height(rect::Rect{2}) = top(rect) - bottom(rect)
 
 
-function BBox(left::Number, right::Number, bottom::Number, top::Number)
+function BBox(left::Float32, right::Float32, bottom::Float32, top::Float32)
     mini = (left, bottom)
     maxi = (right, top)
     return Rect2f(mini, maxi .- mini)
 end
+BBox(left::Number, right::Number, bottom::Number, top::Number) =
+    BBox(Float32(left)::Float32, Float32(right)::Float32, Float32(bottom)::Float32, Float32(top)::Float32)
 
 
 function RowCols(ncols::Int, nrows::Int)
@@ -174,21 +176,18 @@ function set_ncols!(gl, x)
 end
 
 function set_rowoffset!(gl, x)
-    gl.offsets = (x, offset(gl, Col()))
+    gl.offsets = (x, offset(gl, Col))
 end
 function set_coloffset!(gl, x)
-    gl.offsets = (offset(gl, Row()), x)
+    gl.offsets = (offset(gl, Row), x)
 end
 
-offset(gl, ::Row) = offsets(gl)[1]
-offset(gl, ::Col) = offsets(gl)[2]
+offset(gl, g::GridDir) = offsets(gl)[g == Row ? 1 : 2]
 
 # convert an index into an array from 1:nrow or 1:ncol
 # into the respective column / row number that can also be negative if offset
-offset(gl, i, ::Row) = i + offset(gl, Row())
-offset(gl, i, ::Col) = i + offset(gl, Col())
+offset(gl, i, g::GridDir) = i + offset(gl, g)
 
 # convert a column / row number that can also be negative if offset
 # to an index from 1:nrow or 1:ncol
-unoffset(gl, i, ::Row) = i - offset(gl, Row())
-unoffset(gl, i, ::Col) = i - offset(gl, Col())
+unoffset(gl, i, g::GridDir) = i - offset(gl, g)

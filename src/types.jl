@@ -22,9 +22,7 @@ struct BottomRight <: Side end
 struct Inner <: Side end
 struct Outer <: Side end
 
-abstract type GridDir end
-struct Col <: GridDir end
-struct Row <: GridDir end
+@enum GridDir Row Col
 
 struct RowCols{T <: Union{Number, Vector{Float32}}}
     lefts::T
