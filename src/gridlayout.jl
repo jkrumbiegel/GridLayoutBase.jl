@@ -30,11 +30,9 @@ function Base.convert(::Type{VerticalAlignment}, s::Symbol)
     end
 end
 
-function Base.setproperty!(g::GridLayout, s::Symbol, value)
-    if s === :halign
-        g.halign[] = value
-    elseif s === :valign
-        g.valign[] = value
+@inline function Base.setproperty!(g::GridLayout, s::Symbol, value)
+    if fieldtype(GridLayout, s) <: Observable
+        setindex!(getfield(g, s), value)
     else
         setfield!(g, s, value)
     end
