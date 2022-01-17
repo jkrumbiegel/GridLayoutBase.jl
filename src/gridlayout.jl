@@ -69,14 +69,20 @@ function GridLayout(nrows::Int, ncols::Int;
     alignmode = observablify(alignmode, AlignMode)
     width = observablify(width)
     height = observablify(height)
-    tellwidth = observablify(tellwidth)
-    tellheight = observablify(tellheight)
+    tellwidth_obs = convert(Observable{Bool}, tellwidth)
+    tellheight_obs = convert(Observable{Bool}, tellheight)
     halign_obs = convert(Observable{HorizontalAlignment}, halign)
     valign_obs = convert(Observable{VerticalAlignment}, valign)
 
-    layoutobservables = layoutobservables = LayoutObservables(width,
-        height, tellwidth, tellheight, halign_obs, valign_obs;
-        suggestedbbox = bbox)
+    layoutobservables = layoutobservables = LayoutObservables(
+        width,
+        height,
+        tellwidth_obs,
+        tellheight_obs,
+        halign_obs,
+        valign_obs;
+        suggestedbbox = bbox
+    )
 
     offsets = (0, 0)
 
@@ -94,12 +100,13 @@ function GridLayout(nrows::Int, ncols::Int;
         layoutobservables,
         width,
         height,
-        tellwidth,
-        tellheight,
+        tellwidth_obs,
+        tellheight_obs,
         halign_obs,
         valign_obs,
         default_rowgap,
-        default_colgap)
+        default_colgap
+    )
 
     on(computedbboxobservable(gl)) do cbb
         align_to_bbox!(gl, cbb)

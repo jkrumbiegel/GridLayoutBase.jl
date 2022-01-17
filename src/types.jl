@@ -178,8 +178,8 @@ mutable struct GridLayout
     layoutobservables::LayoutObservables
     width::Observable
     height::Observable
-    tellwidth::Observable
-    tellheight::Observable
+    tellwidth::Observable{Bool}
+    tellheight::Observable{Bool}
     halign::Observable{HorizontalAlignment}
     valign::Observable{VerticalAlignment}
     default_rowgap::GapSize
