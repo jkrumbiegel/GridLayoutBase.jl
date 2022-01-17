@@ -1,3 +1,4 @@
+halign2shift(align::HorizontalAlignment)::Float32 = Float32(align.x)
 halign2shift(align::Number)::Float32 = Float32(align)
 function halign2shift(align::Symbol)::Float32
     align == :left && return 0.0f0
@@ -6,6 +7,7 @@ function halign2shift(align::Symbol)::Float32
     error("Invalid horizontal alignment $align (only Real or :left, :center, or :right allowed).")
 end
 
+valign2shift(align::VerticalAlignment)::Float32 = Float32(align.x)
 valign2shift(align::Number)::Float32 = Float32(align)
 function valign2shift(align::Symbol)::Float32
     align == :bottom && return 0.0f0
@@ -14,7 +16,7 @@ function valign2shift(align::Symbol)::Float32
     error("Invalid vertical alignment $align (only Real or :bottom, :center, or :top allowed).")
 end
 
-function align_shift_tuple(halign::Union{Number, Symbol}, valign::Union{Number, Symbol})
+function align_shift_tuple(halign, valign)
     return (halign2shift(halign), valign2shift(valign))
 end
 
@@ -201,7 +203,7 @@ function alignedbboxobservable!(
     finalbbox = Observable(BBox(0, 100, 0, 100))
 
     onany(suggestedbbox, alignment, reportedsize) do sbbox, al, rsize
-
+        
         bw = width(sbbox)
         bh = height(sbbox)
 

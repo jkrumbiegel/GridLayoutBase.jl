@@ -3,6 +3,43 @@ GridLayout(; kwargs...) = GridLayout(1, 1; kwargs...)
 observablify(x::Observable) = x
 observablify(x, type=Any) = Observable{type}(x)
 
+get_default_rowgap()::Float64 = DEFAULT_ROWGAP_GETTER[]()
+get_default_colgap()::Float64 = DEFAULT_COLGAP_GETTER[]()
+
+Base.convert(::Type{T}, a::Real) where T <: Union{HorizontalAlignment, VerticalAlignment} = T(a)
+function Base.convert(::Type{HorizontalAlignment}, s::Symbol)
+    if s === :left
+        HorizontalAlignment(0.0)
+    elseif s === :right
+        HorizontalAlignment(1.0)
+    elseif s === :center
+        HorizontalAlignment(0.5)
+    else
+        error("Symbol $s is not a horizontal alignment. Possible values are :left, :right, :center.")
+    end
+end
+function Base.convert(::Type{VerticalAlignment}, s::Symbol)
+    if s === :bottom
+        VerticalAlignment(0.0)
+    elseif s === :top
+        VerticalAlignment(1.0)
+    elseif s === :center
+        VerticalAlignment(0.5)
+    else
+        error("Symbol $s is not a vertical alignment. Possible values are :bottom, :top, :center.")
+    end
+end
+
+function Base.setproperty!(g::GridLayout, s::Symbol, value)
+    if s === :halign
+        g.halign[] = value
+    elseif s === :valign
+        g.valign[] = value
+    else
+        setfield!(g, s, value)
+    end
+end
+
 function GridLayout(nrows::Int, ncols::Int;
         parent = nothing,
         rowsizes = nothing,
@@ -18,8 +55,8 @@ function GridLayout(nrows::Int, ncols::Int;
         tellheight::Bool = true,
         halign = :center,
         valign = :center,
-        default_rowgap = DEFAULT_ROWGAP_GETTER[](),
-        default_colgap = DEFAULT_COLGAP_GETTER[](),
+        default_rowgap = get_default_rowgap(),
+        default_colgap = get_default_colgap(),
         kwargs...)
 
     default_rowgap::GapSize = default_rowgap isa Number ? Fixed(default_rowgap)::Fixed : default_rowgap
@@ -36,11 +73,11 @@ function GridLayout(nrows::Int, ncols::Int;
     height = observablify(height)
     tellwidth = observablify(tellwidth)
     tellheight = observablify(tellheight)
-    halign = observablify(halign)
-    valign = observablify(valign)
+    halign_obs = convert(Observable{HorizontalAlignment}, halign)
+    valign_obs = convert(Observable{VerticalAlignment}, valign)
 
     layoutobservables = layoutobservables = LayoutObservables(width,
-        height, tellwidth, tellheight, halign, valign;
+        height, tellwidth, tellheight, halign_obs, valign_obs;
         suggestedbbox = bbox)
 
     offsets = (0, 0)
@@ -61,8 +98,8 @@ function GridLayout(nrows::Int, ncols::Int;
         height,
         tellwidth,
         tellheight,
-        halign,
-        valign,
+        halign_obs,
+        valign_obs,
         default_rowgap,
         default_colgap)
 

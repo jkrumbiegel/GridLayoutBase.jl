@@ -775,11 +775,11 @@ end
         @test computedbboxobservable(dr1)[] == BBox(250, 1250, 0, 1000)
         @test computedbboxobservable(dr2)[] == BBox(1250, 1750, 0, 1000)
 
-        outer.halign[] = :left
+        outer.halign = :left
         @test computedbboxobservable(dr1)[] == BBox(0, 1000, 0, 1000)
         @test computedbboxobservable(dr2)[] == BBox(1000, 1500, 0, 1000)
 
-        outer.halign[] = :right
+        outer.halign = :right
         @test computedbboxobservable(dr1)[] == BBox(500, 1500, 0, 1000)
         @test computedbboxobservable(dr2)[] == BBox(1500, 2000, 0, 1000)
     end
@@ -794,11 +794,11 @@ end
         @test computedbboxobservable(dr1)[] == BBox(0, 1000, 750, 1750)
         @test computedbboxobservable(dr2)[] == BBox(0, 1000, 250, 750)
 
-        outer.valign[] = :top
+        outer.valign = :top
         @test computedbboxobservable(dr1)[] == BBox(0, 1000, 1000, 2000)
         @test computedbboxobservable(dr2)[] == BBox(0, 1000, 500, 1000)
 
-        outer.valign[] = :bottom
+        outer.valign = :bottom
         @test computedbboxobservable(dr1)[] == BBox(0, 1000, 500, 1500)
         @test computedbboxobservable(dr2)[] == BBox(0, 1000, 0, 500)
     end

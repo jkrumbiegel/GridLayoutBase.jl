@@ -155,6 +155,13 @@ mutable struct LayoutObservables{G} # G again GridLayout
     gridcontent::Optional{GridContent{G}} # the connecting link to the gridlayout
 end
 
+struct HorizontalAlignment
+    x::Float32
+end
+struct VerticalAlignment
+    x::Float32
+end
+
 mutable struct GridLayout
     parent # this parent is supposed to be any kind of object where it's beneficial
     # to access it through the assigned GridLayout, like a Figure in Makie
@@ -173,8 +180,8 @@ mutable struct GridLayout
     height::Observable
     tellwidth::Observable
     tellheight::Observable
-    halign::Observable
-    valign::Observable
+    halign::Observable{HorizontalAlignment}
+    valign::Observable{VerticalAlignment}
     default_rowgap::GapSize
     default_colgap::GapSize
 

@@ -3,8 +3,8 @@ module GridLayoutBase
 using GeometryBasics
 using Observables
 
-const DEFAULT_COLGAP = Ref{Any}(20.0)
-const DEFAULT_ROWGAP = Ref{Any}(20.0)
+const DEFAULT_COLGAP = Ref{Float64}(20.0)
+const DEFAULT_ROWGAP = Ref{Float64}(20.0)
 # These function refs can be mutated by other packages to override the default
 # way of retrieving default column and row gap sizes
 const DEFAULT_ROWGAP_GETTER = Ref{Function}(() -> DEFAULT_ROWGAP[])
