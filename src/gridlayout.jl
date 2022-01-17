@@ -30,6 +30,12 @@ function Base.convert(::Type{VerticalAlignment}, s::Symbol)
     end
 end
 
+# maybe this is not ideal, converting to an abstract type?
+Base.convert(::Type{SizeAttribute}, r::Real) = Float32(r)
+Base.convert(::Type{SizeAttribute}, f::Fixed) = f
+Base.convert(::Type{SizeAttribute}, r::Relative) = r
+Base.convert(::Type{SizeAttribute}, a::Auto) = a
+
 @inline function Base.setproperty!(g::GridLayout, s::Symbol, value)
     if fieldtype(GridLayout, s) <: Observable
         setindex!(getfield(g, s), value)
@@ -67,16 +73,16 @@ function GridLayout(nrows::Int, ncols::Int;
     content = GridContent[]
 
     alignmode = observablify(alignmode, AlignMode)
-    width = observablify(width)
-    height = observablify(height)
+    width_obs = convert(Observable{SizeAttribute}, width)
+    height_obs = convert(Observable{SizeAttribute}, height)
     tellwidth_obs = convert(Observable{Bool}, tellwidth)
     tellheight_obs = convert(Observable{Bool}, tellheight)
     halign_obs = convert(Observable{HorizontalAlignment}, halign)
     valign_obs = convert(Observable{VerticalAlignment}, valign)
 
     layoutobservables = layoutobservables = LayoutObservables(
-        width,
-        height,
+        width_obs,
+        height_obs,
         tellwidth_obs,
         tellheight_obs,
         halign_obs,
@@ -98,8 +104,8 @@ function GridLayout(nrows::Int, ncols::Int;
         alignmode,
         equalprotrusiongaps,
         layoutobservables,
-        width,
-        height,
+        width_obs,
+        height_obs,
         tellwidth_obs,
         tellheight_obs,
         halign_obs,

@@ -30,7 +30,9 @@ function LayoutObservables(width::Observable, height::Observable,
         computedbbox = nothing,
         gridcontent = nothing) where T
 
-    sizeobservable = sizeobservable!(width, height)
+    width_obs = convert(Observable{SizeAttribute}, width)
+    height_obs = convert(Observable{SizeAttribute}, height)
+    sizeobservable = sizeobservable!(width_obs, height_obs)
     alignment = map(align_shift_tuple, halign, valign)
 
     suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
@@ -91,8 +93,8 @@ create_protrusions(p::Observable{RectSides{Float32}}) = p
 create_protrusions(p::RectSides{Float32}) = Observable(p)
 
 
-function sizeobservable!(@nospecialize(widthattr::Observable), @nospecialize(heightattr::Observable))
-    sizeattrs = Observable{Tuple{Any, Any}}((widthattr[], heightattr[]))
+function sizeobservable!(widthattr::Observable{SizeAttribute}, heightattr::Observable{SizeAttribute})
+    sizeattrs = Observable{Tuple{SizeAttribute, SizeAttribute}}((widthattr[], heightattr[]))
     onany(widthattr, heightattr) do w, h
         sizeattrs[] = (w, h)
     end

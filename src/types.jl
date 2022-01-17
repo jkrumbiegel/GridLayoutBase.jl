@@ -162,6 +162,8 @@ struct VerticalAlignment
     x::Float32
 end
 
+const SizeAttribute = Union{Nothing, Float32, Fixed, Relative, Auto}
+
 mutable struct GridLayout
     parent # this parent is supposed to be any kind of object where it's beneficial
     # to access it through the assigned GridLayout, like a Figure in Makie
@@ -176,8 +178,8 @@ mutable struct GridLayout
     equalprotrusiongaps::Tuple{Bool, Bool}
     block_updates::Bool
     layoutobservables::LayoutObservables
-    width::Observable
-    height::Observable
+    width::Observable{SizeAttribute}
+    height::Observable{SizeAttribute}
     tellwidth::Observable{Bool}
     tellheight::Observable{Bool}
     halign::Observable{HorizontalAlignment}
@@ -203,7 +205,6 @@ mutable struct GridLayout
 end
 
 const Indexables = Union{UnitRange, Int, Colon}
-const SizeAttribute = Union{Nothing, Real, Fixed, Relative, Auto}
 const AutoSize = Union{Nothing, Float32}
 
 struct GridPosition
