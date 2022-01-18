@@ -36,8 +36,9 @@ export ncols, nrows, offsets
 export contents, content
 export tight_bbox
 
-if Base.VERSION >= v"1.4.2" && ccall(:jl_generating_output, Cint, ()) == 1
+if Base.VERSION >= v"1.4.2"
     include("precompile.jl")
+    _precompile_()
 end
 
 end
