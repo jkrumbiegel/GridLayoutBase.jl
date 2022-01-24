@@ -1082,7 +1082,11 @@ function determinedirsize(idir::Int64, gl::GridLayout, dir::GridDir)::Optional{F
         dirsize = nothing
         for c in gl.content
             # content has to be single span to be determinable in size
-            singlespanned = getspan(c, dir).start == getspan(c, dir).stop == idir
+            if dir isa Row
+                singlespanned = c.span.rows.start == c.span.rows.stop == idir
+            elseif dir isa Col
+                singlespanned = c.span.cols.start == c.span.cols.stop == idir
+            end
 
             # content has to be placed with Inner side, otherwise it's protrusion
             # content
