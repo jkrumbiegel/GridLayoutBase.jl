@@ -1107,7 +1107,12 @@ end
 # a function that iterates over those sizes that belong to a type T
 # while enumerating all indices, so that i can be used to index colwidths / rowheights
 # and determinedcols / determinedrows
-filterenum(f, T::Type, iter) = foreach(f, ((i, value) for (i, value) in enumerate(iter) if value isa T))
+function filterenum(f, T::Type, iter)
+    for (i, value) in enumerate(iter)
+        value isa T && f((i, value))
+    end
+    return
+end
 
 
 function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{Float32}, Vector{Float32}}
