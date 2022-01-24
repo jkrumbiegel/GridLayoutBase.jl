@@ -33,7 +33,7 @@ struct Span
 end
 
 """
-    mutable struct GridContent{G, T}
+    mutable struct GridContent{G}
 
 Wraps content elements of a `GridLayout`. It keeps track of the `parent`, the `content` and its position in the grid via `span` and `side`.
 """
@@ -154,7 +154,7 @@ const SizeAttribute = Union{Nothing, Float32, Fixed, Relative, Auto}
 mutable struct GridLayout
     parent # this parent is supposed to be any kind of object where it's beneficial
     # to access it through the assigned GridLayout, like a Figure in Makie
-    content::Vector{GridContent}
+    content::Vector{GridContent{GridLayout}}
     size::Tuple{Int, Int}
     offsets::Tuple{Int, Int}
     rowsizes::Vector{ContentSize}

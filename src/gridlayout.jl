@@ -1000,8 +1000,8 @@ Determine the size of a grid layout along one of its dimensions.
 The size is dependent on the alignmode of the grid, `Outside` includes
 protrusions and paddings.
 """
-function determinedirsize(gl::GridLayout, gdir::GridDir)
-    sum_dirsizes = 0
+function determinedirsize(gl::GridLayout, gdir::GridDir)::Optional{Float32}
+    sum_dirsizes = 0f0
 
     sizes = dirsizes(gl, gdir)
 
@@ -1062,7 +1062,7 @@ end
 Determine the size of one row or column of a grid layout.
 `idir` is the dir index including offset (so can be negative)
 """
-function determinedirsize(idir, gl, dir::GridDir)
+function determinedirsize(idir::Int64, gl::GridLayout, dir::GridDir)::Optional{Float32}
 
     sz = dirsizes(gl, dir)[unoffset(gl, idir, dir)]
 
@@ -1087,7 +1087,7 @@ function determinedirsize(idir, gl, dir::GridDir)
             is_inner = c.side == Inner
 
             if singlespanned && is_inner
-                s = determinedirsize(c.content, dir, c.side)
+                s = determinedirsize(c, dir, c.side)
                 if !isnothing(s)
                     dirsize = isnothing(dirsize) ? s : max(dirsize, s)
                 end
@@ -1788,6 +1788,8 @@ function determinedirsize(content, gdir::GridDir, side::Side)
         end
     end
 end
+
+determinedirsize(gc::GridContent, gdir::GridDir, side::Side) = determinedirsize(gc.content, gdir, side)::Optional{Float32}
 
 function to_ranges(g::GridLayout, rows::Indexables, cols::Indexables)
     if rows isa Int
