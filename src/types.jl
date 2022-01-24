@@ -84,11 +84,9 @@ function Mixed(; left = nothing, right = nothing, bottom = nothing, top = nothin
     Mixed(RectSides{Union{Nothing, Float32, Protrusion}}(sides...))
 end
 
-abstract type ContentSize end
-abstract type GapSize <: ContentSize end
 
 """
-    struct Auto <: ContentSize
+    struct Auto
 
 If used as a `GridLayout`'s row / column size and `trydetermine == true`, signals to the `GridLayout` that the row / column should shrink to match the largest determinable element inside.
 If no size of a content element can be determined, the remaining space is split between all `Auto` rows / columns according to their `ratio`.
@@ -100,7 +98,7 @@ This is useful to, e.g., prohibit a `GridLayout` from shrinking a column's width
 
 The `ratio` is ignored if `Auto` is used as an element size.
 """
-struct Auto <: ContentSize
+struct Auto
     trydetermine::Bool # false for determinable size content that should be ignored
     ratio::Float32 # float ratio in case it's not determinable
 
@@ -108,16 +106,19 @@ struct Auto <: ContentSize
 end
 Auto(ratio::Real) = Auto(true, ratio)
 
-struct Fixed <: GapSize
+struct Fixed
     x::Float32
 end
-struct Relative <: GapSize
+struct Relative
     x::Float32
 end
-struct Aspect <: ContentSize
+struct Aspect
     index::Int
     ratio::Float32
 end
+
+const ContentSize = Union{Auto, Fixed, Relative, Aspect}
+const GapSize = Union{Fixed, Relative}
 
 """
     mutable struct LayoutObservables{G}

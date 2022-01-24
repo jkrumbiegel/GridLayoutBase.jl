@@ -338,8 +338,8 @@ end
     @test gl.rowsizes == GridLayoutBase.ContentSize[Relative(0.5), Relative(0.5)]
 
     gl2 = GridLayout(2, 2;
-        colsizes = [Fixed(10), Relative(0.3)],
-        rowsizes = [Auto(false), Auto(true)])
+        colsizes = GridLayoutBase.ContentSize[Fixed(10), Relative(0.3)],
+        rowsizes = GridLayoutBase.ContentSize[Auto(false), Auto(true)])
     @test gl2.colsizes == GridLayoutBase.ContentSize[Fixed(10), Relative(0.3)]
     @test gl2.rowsizes == GridLayoutBase.ContentSize[Auto(false), Auto(true)]
 
