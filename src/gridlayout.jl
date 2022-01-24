@@ -1618,15 +1618,15 @@ ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == firstrow(grid)
 
 
 function protrusion(x::T, side::Side) where T
-    protrusions = protrusionsobservable(x)
+    protrusions = protrusionsobservable(x)[]::RectSides{Float32}
     if side isa Left
-        protrusions[].left
+        protrusions.left
     elseif side isa Right
-        protrusions[].right
+        protrusions.right
     elseif side isa Bottom
-        protrusions[].bottom
+        protrusions.bottom
     elseif side isa Top
-        protrusions[].top
+        protrusions.top
     else
         error("Can't get a protrusion value for side $(typeof(side)), only
         Left, Right, Bottom, or Top.")
@@ -1705,24 +1705,26 @@ function inside_protrusion(gl::GridLayout, side::Side)
     return prot
 end
 
-function protrusion(gl::GridLayout, side::Side)
+function protrusion(gl::GridLayout, side::Side)::Float32
     # when we align with the outside there is by definition no protrusion
-    if gl.alignmode[] isa Outside
-        return 0.0
-    elseif gl.alignmode[] isa Inside
+
+    al = gl.alignmode[]
+    if al isa Outside
+        return 0f0
+    elseif al isa Inside
         inside_protrusion(gl, side)
-    elseif gl.alignmode[] isa Mixed
-        si = getside(gl.alignmode[], side)
+    elseif al isa Mixed
+        si = getside(al, side)
         if isnothing(si)
             inside_protrusion(gl, side)
         elseif si isa Protrusion
             si.p
         else
             # Outside alignment
-            0.0
+            0f0
         end
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode[]))")
+        error("Unknown AlignMode of type $(typeof(al))")
     end
 end
 

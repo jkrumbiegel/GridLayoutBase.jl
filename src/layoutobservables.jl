@@ -342,8 +342,8 @@ Access `x`'s field `:layoutobservables` containing a `LayoutObservables` instanc
 be overloaded for any type that is layoutable but stores its `LayoutObservables` in
 a differently named field.
 """
-function layoutobservables(x::T) where T
-    if hasfield(T, :layoutobservables) && fieldtype(T, :layoutobservables) <: LayoutObservables
+function layoutobservables(x::T)::LayoutObservables{GridLayout} where T
+    if hasfield(T, :layoutobservables) && fieldtype(T, :layoutobservables) === LayoutObservables{GridLayout}
         x.layoutobservables
     else
         error("It's not defined how to get LayoutObservables for type $T, overload this method for layoutable types.")

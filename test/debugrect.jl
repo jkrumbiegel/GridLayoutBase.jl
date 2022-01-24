@@ -1,5 +1,5 @@
 mutable struct DebugRect
-    layoutobservables::GridLayoutBase.LayoutObservables
+    layoutobservables::GridLayoutBase.LayoutObservables{GridLayout}
     width::Observable
     height::Observable
     tellwidth::Observable

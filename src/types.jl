@@ -178,7 +178,7 @@ mutable struct GridLayout
     alignmode::Observable{AlignMode}
     equalprotrusiongaps::Tuple{Bool, Bool}
     block_updates::Bool
-    layoutobservables::LayoutObservables
+    layoutobservables::LayoutObservables{GridLayout}
     width::Observable{SizeAttribute}
     height::Observable{SizeAttribute}
     tellwidth::Observable{Bool}
