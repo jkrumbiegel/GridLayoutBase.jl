@@ -11,7 +11,9 @@ end
 throw_side(side) = throw(ArgumentError("side $side not supported"))
 
 
-@enum GridDir Row Col
+abstract type GridDir end
+struct Col <: GridDir end
+struct Row <: GridDir end
 
 struct RowCols{T <: Union{Number, Vector{Float32}}}
     lefts::T
