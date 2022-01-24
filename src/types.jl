@@ -7,9 +7,20 @@ struct RectSides{T}
     top::T
 end
 
-@enum Side Left Right Top Bottom #= protrusion content: =# TopLeft TopRight BottomLeft BottomRight Inner Outer
-throw_side(side) = throw(ArgumentError("side $side not supported"))
+abstract type Side end
 
+struct Left <: Side end
+struct Right <: Side end
+struct Top <: Side end
+struct Bottom <: Side end
+# for protrusion content:
+struct TopLeft <: Side end
+struct TopRight <: Side end
+struct BottomLeft <: Side end
+struct BottomRight <: Side end
+
+struct Inner <: Side end
+struct Outer <: Side end
 
 abstract type GridDir end
 struct Col <: GridDir end

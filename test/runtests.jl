@@ -69,27 +69,27 @@ end
     layout = GridLayout(bbox = bbox, alignmode = Mixed(left = 0, top = 100))
     dr = layout[1, 1] = DebugRect()
 
-    @test GridLayoutBase.protrusion(layout, Left) == 0
-    @test GridLayoutBase.protrusion(layout, Right) == 0
-    @test GridLayoutBase.protrusion(layout, Bottom) == 0
-    @test GridLayoutBase.protrusion(layout, Top) == 0
+    @test GridLayoutBase.protrusion(layout, Left()) == 0
+    @test GridLayoutBase.protrusion(layout, Right()) == 0
+    @test GridLayoutBase.protrusion(layout, Bottom()) == 0
+    @test GridLayoutBase.protrusion(layout, Top()) == 0
 
     @test computedbboxobservable(dr)[] == BBox(0, 1000, 0, 900)
 
     dr.topprot[] = 100
-    @test GridLayoutBase.protrusion(layout, Top) == 0
+    @test GridLayoutBase.protrusion(layout, Top()) == 0
     @test computedbboxobservable(dr)[] == BBox(0, 1000, 0, 800)
 
     dr.bottomprot[] = 100
-    @test GridLayoutBase.protrusion(layout, Bottom) == 100
+    @test GridLayoutBase.protrusion(layout, Bottom()) == 100
     @test computedbboxobservable(dr)[] == BBox(0, 1000, 0, 800)
 
     dr.leftprot[] = 100
-    @test GridLayoutBase.protrusion(layout, Left) == 0
+    @test GridLayoutBase.protrusion(layout, Left()) == 0
     @test computedbboxobservable(dr)[] == BBox(100, 1000, 0, 800)
 
     dr.rightprot[] = 100
-    @test GridLayoutBase.protrusion(layout, Right) == 100
+    @test GridLayoutBase.protrusion(layout, Right()) == 100
     @test computedbboxobservable(dr)[] == BBox(100, 1000, 0, 800)
 
     layout.alignmode[] = Mixed(
@@ -100,10 +100,10 @@ end
     )
 
     # set layout to forced protrusion alignment
-    @test GridLayoutBase.protrusion(layout, Left) == 50
-    @test GridLayoutBase.protrusion(layout, Right) == 60
-    @test GridLayoutBase.protrusion(layout, Bottom) == 70
-    @test GridLayoutBase.protrusion(layout, Top) == 80
+    @test GridLayoutBase.protrusion(layout, Left()) == 50
+    @test GridLayoutBase.protrusion(layout, Right()) == 60
+    @test GridLayoutBase.protrusion(layout, Bottom()) == 70
+    @test GridLayoutBase.protrusion(layout, Top()) == 80
     # bb of dr only depends on its protrusions now
     @test computedbboxobservable(dr)[] == BBox(100, 1000, 0, 800)
 
@@ -135,33 +135,33 @@ end
     layout = GridLayout(bbox = bbox, alignmode = Outside(0))
     subgl = layout[1, 1] = GridLayout()
 
-    subgl[1, 1, Left] = DebugRect(width = Fixed(100))
-    @test GridLayoutBase.protrusion(subgl, Left) == 100
+    subgl[1, 1, Left()] = DebugRect(width = Fixed(100))
+    @test GridLayoutBase.protrusion(subgl, Left()) == 100
 
-    subgl[1, 1, Top] = DebugRect(height = 50)
-    @test GridLayoutBase.protrusion(subgl, Top) == 50
+    subgl[1, 1, Top()] = DebugRect(height = 50)
+    @test GridLayoutBase.protrusion(subgl, Top()) == 50
 
-    subgl[1, 1, Right] = DebugRect(width = 120)
-    @test GridLayoutBase.protrusion(subgl, Right) == 120
+    subgl[1, 1, Right()] = DebugRect(width = 120)
+    @test GridLayoutBase.protrusion(subgl, Right()) == 120
 
-    subgl[1, 1, Bottom] = DebugRect(height = 40)
-    @test GridLayoutBase.protrusion(subgl, Bottom) == 40
+    subgl[1, 1, Bottom()] = DebugRect(height = 40)
+    @test GridLayoutBase.protrusion(subgl, Bottom()) == 40
 
-    subgl[1, 1, TopLeft] = DebugRect(width = 200, height = 200)
-    @test GridLayoutBase.protrusion(subgl, Left) == 200
-    @test GridLayoutBase.protrusion(subgl, Top) == 200
+    subgl[1, 1, TopLeft()] = DebugRect(width = 200, height = 200)
+    @test GridLayoutBase.protrusion(subgl, Left()) == 200
+    @test GridLayoutBase.protrusion(subgl, Top()) == 200
 
-    subgl[1, 1, TopRight] = DebugRect(width = 210, height = 210)
-    @test GridLayoutBase.protrusion(subgl, Right) == 210
-    @test GridLayoutBase.protrusion(subgl, Top) == 210
+    subgl[1, 1, TopRight()] = DebugRect(width = 210, height = 210)
+    @test GridLayoutBase.protrusion(subgl, Right()) == 210
+    @test GridLayoutBase.protrusion(subgl, Top()) == 210
 
-    subgl[1, 1, BottomRight] = DebugRect(width = 220, height = 220)
-    @test GridLayoutBase.protrusion(subgl, Right) == 220
-    @test GridLayoutBase.protrusion(subgl, Bottom) == 220
+    subgl[1, 1, BottomRight()] = DebugRect(width = 220, height = 220)
+    @test GridLayoutBase.protrusion(subgl, Right()) == 220
+    @test GridLayoutBase.protrusion(subgl, Bottom()) == 220
 
-    subgl[1, 1, BottomLeft] = DebugRect(width = 230, height = 230)
-    @test GridLayoutBase.protrusion(subgl, Left) == 230
-    @test GridLayoutBase.protrusion(subgl, Bottom) == 230
+    subgl[1, 1, BottomLeft()] = DebugRect(width = 230, height = 230)
+    @test GridLayoutBase.protrusion(subgl, Left()) == 230
+    @test GridLayoutBase.protrusion(subgl, Bottom()) == 230
 
     # dr = subgl[1, 1, GridLayoutBase.Outer()] = DebugRect()
     # @test computedbboxobservable(dr)[].widths == (1000, 1000)
@@ -484,7 +484,7 @@ end
     layout = GridLayout(bbox = bbox, alignmode = Outside(0))
     subgl = layout[1, 1] = GridLayout(3, 3, equalprotrusiongaps = (true, true),
         addedcolgaps = Fixed(0), addedrowgaps = Fixed(0))
-    subgl[1, 1, BottomRight] = DebugRect(width = 100, height = 100)
+    subgl[1, 1, BottomRight()] = DebugRect(width = 100, height = 100)
 
     dr1 = subgl[1, 1] = DebugRect()
     dr2 = subgl[2, 2] = DebugRect()
@@ -530,12 +530,12 @@ end
     co = contents(layout[:, :])
     @test co == [dr1, dr2, dr3, dr4]
 
-    dr5 = layout[2, 2, Right] = DebugRect()
+    dr5 = layout[2, 2, Right()] = DebugRect()
 
     co = contents(layout[:, :]) # implicit Inner() side
     @test co == [dr1, dr2, dr3, dr4]
 
-    @test contents(layout[2, 2, Right]) == [dr5]
+    @test contents(layout[2, 2, Right()]) == [dr5]
 
     dr6 = layout[1:2, 2] = DebugRect()
     @test contents(layout[1:2, 2]) == [dr2, dr4, dr6]
@@ -636,7 +636,7 @@ end
 
     spec = GridLayoutSpec([
             (1, 1) => dr,
-            (1:2, 4:5, Left) => dr2,
+            (1:2, 4:5, Left()) => dr2,
             (:, 0) => GridLayoutSpec([
                 (1:3, 2:4) => dr3
             ])
