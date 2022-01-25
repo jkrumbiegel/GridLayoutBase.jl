@@ -59,13 +59,11 @@ mutable struct GridContent{G} # G should be GridLayout but can't be used before 
     reportedsize_handle::Optional{Function}
 end
 
-abstract type AlignMode end
-
 "AlignMode that excludes the protrusions from the bounding box."
-struct Inside <: AlignMode end
+struct Inside end
 
 "AlignMode that includes the protrusions within the bounding box, plus paddings."
-struct Outside <: AlignMode
+struct Outside
     padding::RectSides{Float32}
 end
 Outside() = Outside(0f0)
@@ -86,7 +84,7 @@ end
 AlignMode that is Inside where padding is Nothing, Outside where it is Real, and
 overrides the protrusion with a fixed value where it is a `Protrusion`.
 """
-struct Mixed <: AlignMode
+struct Mixed
     sides::RectSides{Union{Nothing, Float32, Protrusion}}
 end
 
@@ -96,6 +94,8 @@ function Mixed(; left = nothing, right = nothing, bottom = nothing, top = nothin
     end
     Mixed(RectSides{Union{Nothing, Float32, Protrusion}}(sides...))
 end
+
+const AlignMode = Union{Inside, Outside, Mixed}
 
 
 """
