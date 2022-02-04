@@ -46,27 +46,24 @@ struct Span
 end
 
 """
-    mutable struct GridContent{G, T}
+    mutable struct GridContent{G}
 
 Wraps content elements of a `GridLayout`. It keeps track of the `parent`, the `content` and its position in the grid via `span` and `side`.
 """
-mutable struct GridContent{G, T} # G should be GridLayout but can't be used before definition
+mutable struct GridContent{G} # G should be GridLayout but can't be used before definition
     parent::Optional{G}
-    content::T
+    content # accessing the content object which can be anything is rare, so avoid overspecialization (type hiding)
     span::Span
     side::Side
-    needs_update::Observable{Bool}
     protrusions_handle::Optional{Function}
     reportedsize_handle::Optional{Function}
 end
 
-abstract type AlignMode end
-
 "AlignMode that excludes the protrusions from the bounding box."
-struct Inside <: AlignMode end
+struct Inside end
 
 "AlignMode that includes the protrusions within the bounding box, plus paddings."
-struct Outside <: AlignMode
+struct Outside
     padding::RectSides{Float32}
 end
 Outside() = Outside(0f0)
@@ -87,7 +84,7 @@ end
 AlignMode that is Inside where padding is Nothing, Outside where it is Real, and
 overrides the protrusion with a fixed value where it is a `Protrusion`.
 """
-struct Mixed <: AlignMode
+struct Mixed
     sides::RectSides{Union{Nothing, Float32, Protrusion}}
 end
 
@@ -98,11 +95,11 @@ function Mixed(; left = nothing, right = nothing, bottom = nothing, top = nothin
     Mixed(RectSides{Union{Nothing, Float32, Protrusion}}(sides...))
 end
 
-abstract type ContentSize end
-abstract type GapSize <: ContentSize end
+const AlignMode = Union{Inside, Outside, Mixed}
+
 
 """
-    struct Auto <: ContentSize
+    struct Auto
 
 If used as a `GridLayout`'s row / column size and `trydetermine == true`, signals to the `GridLayout` that the row / column should shrink to match the largest determinable element inside.
 If no size of a content element can be determined, the remaining space is split between all `Auto` rows / columns according to their `ratio`.
@@ -114,7 +111,7 @@ This is useful to, e.g., prohibit a `GridLayout` from shrinking a column's width
 
 The `ratio` is ignored if `Auto` is used as an element size.
 """
-struct Auto <: ContentSize
+struct Auto
     trydetermine::Bool # false for determinable size content that should be ignored
     ratio::Float32 # float ratio in case it's not determinable
 
@@ -122,19 +119,22 @@ struct Auto <: ContentSize
 end
 Auto(ratio::Real) = Auto(true, ratio)
 
-struct Fixed <: GapSize
+struct Fixed
     x::Float32
 end
-struct Relative <: GapSize
+struct Relative
     x::Float32
 end
-struct Aspect <: ContentSize
+struct Aspect
     index::Int
     ratio::Float32
 end
 
+const ContentSize = Union{Auto, Fixed, Relative, Aspect}
+const GapSize = Union{Fixed, Relative}
+
 """
-    mutable struct LayoutObservables{T, G}
+    mutable struct LayoutObservables{G}
 
 `T` is the same type parameter of contained `GridContent`, `G` is `GridLayout` which is defined only after `LayoutObservables`.
 
@@ -145,21 +145,30 @@ A collection of `Observable`s and an optional `GridContent` that are needed to i
 - `reportedsize::Observable{NTuple{2, Optional{Float32}}}`: The width and height that the element computes for itself if possible (else `nothing`).
 - `autosize::Observable{NTuple{2, Optional{Float32}}}`: The width and height that the element reports to its parent `GridLayout`. If the element doesn't want to cause the parent to adjust to its size, autosize can hide the reportedsize from it by being set to `nothing`.
 - `computedbbox::Observable{Rect2f}`: The bounding box that the element computes for itself after it has received a suggestedbbox.
-- `gridcontent::Optional{GridContent{G, T}}`: A reference of a `GridContent` if the element is currently placed in a `GridLayout`. This can be used to retrieve the parent layout, remove the element from it or change its position, and assign it to a different layout.
+- `gridcontent::Optional{GridContent{G}}`: A reference of a `GridContent` if the element is currently placed in a `GridLayout`. This can be used to retrieve the parent layout, remove the element from it or change its position, and assign it to a different layout.
 """
-mutable struct LayoutObservables{T, G} # G again GridLayout
+mutable struct LayoutObservables{G} # G again GridLayout
     suggestedbbox::Observable{Rect2f}
     protrusions::Observable{RectSides{Float32}}
     reportedsize::Observable{NTuple{2, Optional{Float32}}}
     autosize::Observable{NTuple{2, Optional{Float32}}}
     computedbbox::Observable{Rect2f}
-    gridcontent::Optional{GridContent{G, T}} # the connecting link to the gridlayout
+    gridcontent::Optional{GridContent{G}} # the connecting link to the gridlayout
 end
+
+struct HorizontalAlignment
+    x::Float32
+end
+struct VerticalAlignment
+    x::Float32
+end
+
+const SizeAttribute = Union{Nothing, Float32, Fixed, Relative, Auto}
 
 mutable struct GridLayout
     parent # this parent is supposed to be any kind of object where it's beneficial
     # to access it through the assigned GridLayout, like a Figure in Makie
-    content::Vector{GridContent}
+    content::Vector{GridContent{GridLayout}}
     size::Tuple{Int, Int}
     offsets::Tuple{Int, Int}
     rowsizes::Vector{ContentSize}
@@ -168,29 +177,27 @@ mutable struct GridLayout
     addedcolgaps::Vector{GapSize}
     alignmode::Observable{AlignMode}
     equalprotrusiongaps::Tuple{Bool, Bool}
-    needs_update::Observable{Bool}
     block_updates::Bool
-    layoutobservables::LayoutObservables
-    width::Observable
-    height::Observable
-    tellwidth::Observable
-    tellheight::Observable
-    halign::Observable
-    valign::Observable
+    layoutobservables::LayoutObservables{GridLayout}
+    width::Observable{SizeAttribute}
+    height::Observable{SizeAttribute}
+    tellwidth::Observable{Bool}
+    tellheight::Observable{Bool}
+    halign::Observable{HorizontalAlignment}
+    valign::Observable{VerticalAlignment}
     default_rowgap::GapSize
     default_colgap::GapSize
-    _update_func_handle::Optional{Function} # stores a reference to the result of on(obs)
 
     function GridLayout(
         parent,
         content, size, offsets, rowsizes, colsizes,
-        addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps, needs_update,
+        addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps,
         layoutobservables, width, height, tellwidth, tellheight, halign, valign, default_rowgap, default_colgap)
 
         gl = new(parent, content, size, offsets, rowsizes, colsizes,
             addedrowgaps, addedcolgaps, alignmode, equalprotrusiongaps,
-            needs_update, false, layoutobservables, width, height, tellwidth, tellheight,
-            halign, valign, default_rowgap, default_colgap, nothing)
+            false, layoutobservables, width, height, tellwidth, tellheight,
+            halign, valign, default_rowgap, default_colgap)
 
         validategridlayout(gl)
 
@@ -199,7 +206,6 @@ mutable struct GridLayout
 end
 
 const Indexables = Union{UnitRange, Int, Colon}
-const SizeAttribute = Union{Nothing, Real, Fixed, Relative, Auto}
 const AutoSize = Union{Nothing, Float32}
 
 struct GridPosition

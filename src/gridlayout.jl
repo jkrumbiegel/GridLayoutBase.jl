@@ -3,6 +3,47 @@ GridLayout(; kwargs...) = GridLayout(1, 1; kwargs...)
 observablify(x::Observable) = x
 observablify(x, type=Any) = Observable{type}(x)
 
+get_default_rowgap()::Float64 = DEFAULT_ROWGAP_GETTER[]()
+get_default_colgap()::Float64 = DEFAULT_COLGAP_GETTER[]()
+
+Base.convert(::Type{T}, a::Real) where T <: Union{HorizontalAlignment, VerticalAlignment} = T(a)
+function Base.convert(::Type{HorizontalAlignment}, s::Symbol)
+    if s === :left
+        HorizontalAlignment(0.0)
+    elseif s === :right
+        HorizontalAlignment(1.0)
+    elseif s === :center
+        HorizontalAlignment(0.5)
+    else
+        error("Symbol $s is not a horizontal alignment. Possible values are :left, :right, :center.")
+    end
+end
+function Base.convert(::Type{VerticalAlignment}, s::Symbol)
+    if s === :bottom
+        VerticalAlignment(0.0)
+    elseif s === :top
+        VerticalAlignment(1.0)
+    elseif s === :center
+        VerticalAlignment(0.5)
+    else
+        error("Symbol $s is not a vertical alignment. Possible values are :bottom, :top, :center.")
+    end
+end
+
+# maybe this is not ideal, converting to an abstract type?
+Base.convert(::Type{SizeAttribute}, r::Real) = Float32(r)
+Base.convert(::Type{SizeAttribute}, f::Fixed) = f
+Base.convert(::Type{SizeAttribute}, r::Relative) = r
+Base.convert(::Type{SizeAttribute}, a::Auto) = a
+
+@inline function Base.setproperty!(g::GridLayout, s::Symbol, value)
+    if fieldtype(GridLayout, s) <: Observable
+        setindex!(getfield(g, s), value)
+    else
+        setfield!(g, s, value)
+    end
+end
+
 function GridLayout(nrows::Int, ncols::Int;
         parent = nothing,
         rowsizes = nothing,
@@ -18,8 +59,8 @@ function GridLayout(nrows::Int, ncols::Int;
         tellheight::Bool = true,
         halign = :center,
         valign = :center,
-        default_rowgap = DEFAULT_ROWGAP_GETTER[](),
-        default_colgap = DEFAULT_COLGAP_GETTER[](),
+        default_rowgap = get_default_rowgap(),
+        default_colgap = get_default_colgap(),
         kwargs...)
 
     default_rowgap::GapSize = default_rowgap isa Number ? Fixed(default_rowgap)::Fixed : default_rowgap
@@ -29,21 +70,25 @@ function GridLayout(nrows::Int, ncols::Int;
     addedrowgaps = convert_gapsizes(nrows - 1, addedrowgaps, default_rowgap)
     addedcolgaps = convert_gapsizes(ncols - 1, addedcolgaps, default_colgap)
 
-    needs_update = Observable(true)
-
     content = GridContent[]
 
     alignmode = observablify(alignmode, AlignMode)
-    width = observablify(width)
-    height = observablify(height)
-    tellwidth = observablify(tellwidth)
-    tellheight = observablify(tellheight)
-    halign = observablify(halign)
-    valign = observablify(valign)
+    width_obs = convert(Observable{SizeAttribute}, width)
+    height_obs = convert(Observable{SizeAttribute}, height)
+    tellwidth_obs = convert(Observable{Bool}, tellwidth)
+    tellheight_obs = convert(Observable{Bool}, tellheight)
+    halign_obs = convert(Observable{HorizontalAlignment}, halign)
+    valign_obs = convert(Observable{VerticalAlignment}, valign)
 
-    layoutobservables = layoutobservables = LayoutObservables{GridLayout}(width,
-        height, tellwidth, tellheight, halign, valign;
-        suggestedbbox = bbox)
+    layoutobservables = layoutobservables = LayoutObservables(
+        width_obs,
+        height_obs,
+        tellwidth_obs,
+        tellheight_obs,
+        halign_obs,
+        valign_obs;
+        suggestedbbox = bbox
+    )
 
     offsets = (0, 0)
 
@@ -58,23 +103,19 @@ function GridLayout(nrows::Int, ncols::Int;
         addedcolgaps,
         alignmode,
         equalprotrusiongaps,
-        needs_update,
         layoutobservables,
-        width,
-        height,
-        tellwidth,
-        tellheight,
-        halign,
-        valign,
+        width_obs,
+        height_obs,
+        tellwidth_obs,
+        tellheight_obs,
+        halign_obs,
+        valign_obs,
         default_rowgap,
-        default_colgap)
+        default_colgap
+    )
 
     on(computedbboxobservable(gl)) do cbb
         align_to_bbox!(gl, cbb)
-    end
-
-    on(needs_update) do _
-        update!(gl)
     end
 
     gl
@@ -152,10 +193,10 @@ function connect_layoutobservables!(gc::GridContent)
     disconnect_layoutobservables!(gc::GridContent)
 
     gc.protrusions_handle = on(protrusionsobservable(gc.content)) do p
-        gc.needs_update[] = true
+        update!(gc)
     end
     gc.reportedsize_handle = on(reportedsizeobservable(gc.content)) do c
-        gc.needs_update[] = true
+        update!(gc)
     end
 end
 
@@ -184,12 +225,8 @@ function add_to_gridlayout!(g::GridLayout, gc::GridContent)
         content.parent = g
     end
 
-    on(gc.needs_update) do update
-        g.needs_update[] = true
-    end
-
     # trigger relayout
-    g.needs_update[] = true
+    update!(g)
 end
 
 
@@ -216,9 +253,7 @@ function remove_from_gridlayout!(gc::GridContent)
         content.parent = nothing
     end
 
-    # remove all listeners from needs_update because they could be pointing
-    # to previous parents if we're re-nesting layout objects
-    empty!(gc.needs_update.listeners)
+    return
 end
 
 
@@ -413,7 +448,7 @@ function deleterow!(gl::GridLayout, irow::Int)
     deleteat!(gl.rowsizes, idx)
     deleteat!(gl.addedrowgaps, idx == 1 ? 1 : idx - 1)
     set_nrows!(gl, nrows(gl) - 1)
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 rowoffset(gl) = offset(gl, Row())
@@ -457,7 +492,7 @@ function deletecol!(gl::GridLayout, icol::Int)
     deleteat!(gl.colsizes, idx)
     deleteat!(gl.addedcolgaps, idx == 1 ? 1 : idx - 1)
     set_ncols!(gl, ncols(gl) - 1)
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function Base.isempty(gl::GridLayout, dir::GridDir, i::Int)
@@ -570,7 +605,7 @@ function colsize!(gl::GridLayout, i::Int, s::ContentSize)
     end
     i_unoffset = unoffset(gl, i, Col())
     gl.colsizes[i_unoffset] = s
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
@@ -581,7 +616,7 @@ function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
     end
     i_unoffset = unoffset(gl, i, Row())
     gl.rowsizes[i_unoffset] = s
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 rowsize!(gl::GridLayout, i::Int, s::Real) = rowsize!(gl, i, Fixed(s))
@@ -591,19 +626,19 @@ function colgap!(gl::GridLayout, i::Int, s::GapSize)
         error("Can't set size of invalid column gap $i.")
     end
     gl.addedcolgaps[i] = s
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 colgap!(gl::GridLayout, i::Int, s::Real) = colgap!(gl, i, Fixed(s))
 
 function colgap!(gl::GridLayout, s::GapSize)
     gl.addedcolgaps .= Ref(s)
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function colgap!(gl::GridLayout, r::Real)
     gl.addedcolgaps .= Ref(Fixed(r))
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function rowgap!(gl::GridLayout, i::Int, s::GapSize)
@@ -611,19 +646,19 @@ function rowgap!(gl::GridLayout, i::Int, s::GapSize)
         error("Can't set size of invalid row gap $i.")
     end
     gl.addedrowgaps[i] = s
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 rowgap!(gl::GridLayout, i::Int, s::Real) = rowgap!(gl, i, Fixed(s))
 
 function rowgap!(gl::GridLayout, s::GapSize)
     gl.addedrowgaps .= Ref(s)
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 function rowgap!(gl::GridLayout, r::Real)
     gl.addedrowgaps .= Ref(Fixed(r))
-    gl.needs_update[] = true
+    update!(gl)
 end
 
 
@@ -967,8 +1002,8 @@ Determine the size of a grid layout along one of its dimensions.
 The size is dependent on the alignmode of the grid, `Outside` includes
 protrusions and paddings.
 """
-function determinedirsize(gl::GridLayout, gdir::GridDir)
-    sum_dirsizes = 0
+function determinedirsize(gl::GridLayout, gdir::GridDir)::Optional{Float32}
+    sum_dirsizes = 0f0
 
     sizes = dirsizes(gl, gdir)
 
@@ -1029,7 +1064,7 @@ end
 Determine the size of one row or column of a grid layout.
 `idir` is the dir index including offset (so can be negative)
 """
-function determinedirsize(idir, gl, dir::GridDir)
+function determinedirsize(idir::Int64, gl::GridLayout, dir::GridDir)::Optional{Float32}
 
     sz = dirsizes(gl, dir)[unoffset(gl, idir, dir)]
 
@@ -1047,14 +1082,18 @@ function determinedirsize(idir, gl, dir::GridDir)
         dirsize = nothing
         for c in gl.content
             # content has to be single span to be determinable in size
-            singlespanned = getspan(c, dir).start == getspan(c, dir).stop == idir
+            if dir isa Row
+                singlespanned = c.span.rows.start == c.span.rows.stop == idir
+            elseif dir isa Col
+                singlespanned = c.span.cols.start == c.span.cols.stop == idir
+            end
 
             # content has to be placed with Inner side, otherwise it's protrusion
             # content
             is_inner = c.side isa Inner
 
             if singlespanned && is_inner
-                s = determinedirsize(c.content, dir, c.side)
+                s = determinedirsize(c, dir, c.side)
                 if !isnothing(s)
                     dirsize = isnothing(dirsize) ? s : max(dirsize, s)
                 end
@@ -1068,7 +1107,12 @@ end
 # a function that iterates over those sizes that belong to a type T
 # while enumerating all indices, so that i can be used to index colwidths / rowheights
 # and determinedcols / determinedrows
-filterenum(f, T::Type, iter) = foreach(f, ((i, value) for (i, value) in enumerate(iter) if value isa T))
+function filterenum(f, T::Type, iter)
+    for (i, value) in enumerate(iter)
+        value isa T && f((i, value))
+    end
+    return
+end
 
 
 function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{Float32}, Vector{Float32}}
@@ -1346,17 +1390,26 @@ function Base.setindex!(g::GridLayout, content_array::AbstractArray, rows::Index
     content_array
 end
 
-function GridContent(content::T, span::Span, side::Side) where T
-    needs_update = Observable(false)
+function GridContent(content, span::Span, side::Side)
     # connect the correct observables
-    protrusions_handle = on(protrusionsobservable(content)) do p
-        needs_update[] = true
+    gc = GridContent{GridLayout}(nothing, content, span, side, nothing, nothing)
+
+    gc.protrusions_handle = on(protrusionsobservable(content)) do p
+        update!(gc)
     end
-    reportedsize_handle = on(reportedsizeobservable(content)) do c
-        needs_update[] = true
+    gc.reportedsize_handle = on(reportedsizeobservable(content)) do c
+        update!(gc)
     end
-    GridContent{GridLayout, T}(nothing, content, span, side, needs_update,
-        protrusions_handle, reportedsize_handle)
+    
+    gc
+end
+
+function update!(gc::GridContent)
+    p = gc.parent
+    if p isa GridLayout
+        update!(p)
+    end
+    nothing
 end
 
 function add_content!(g::GridLayout, content, rows, cols, side::Side)
@@ -1565,15 +1618,15 @@ ismostin(gc::GridContent, grid, ::Top) = gc.span.rows.start == firstrow(grid)
 
 
 function protrusion(x::T, side::Side) where T
-    protrusions = protrusionsobservable(x)
+    protrusions = protrusionsobservable(x)[]::RectSides{Float32}
     if side isa Left
-        protrusions[].left
+        protrusions.left
     elseif side isa Right
-        protrusions[].right
+        protrusions.right
     elseif side isa Bottom
-        protrusions[].bottom
+        protrusions.bottom
     elseif side isa Top
-        protrusions[].top
+        protrusions.top
     else
         error("Can't get a protrusion value for side $(typeof(side)), only
         Left, Right, Bottom, or Top.")
@@ -1652,24 +1705,26 @@ function inside_protrusion(gl::GridLayout, side::Side)
     return prot
 end
 
-function protrusion(gl::GridLayout, side::Side)
+function protrusion(gl::GridLayout, side::Side)::Float32
     # when we align with the outside there is by definition no protrusion
-    if gl.alignmode[] isa Outside
-        return 0.0
-    elseif gl.alignmode[] isa Inside
+
+    al = gl.alignmode[]
+    if al isa Outside
+        return 0f0
+    elseif al isa Inside
         inside_protrusion(gl, side)
-    elseif gl.alignmode[] isa Mixed
-        si = getside(gl.alignmode[], side)
+    elseif al isa Mixed
+        si = getside(al, side)
         if isnothing(si)
             inside_protrusion(gl, side)
         elseif si isa Protrusion
             si.p
         else
             # Outside alignment
-            0.0
+            0f0
         end
     else
-        error("Unknown AlignMode of type $(typeof(gl.alignmode[]))")
+        error("Unknown AlignMode of type $(typeof(al))")
     end
 end
 
@@ -1748,6 +1803,8 @@ function determinedirsize(content, gdir::GridDir, side::Side)
         end
     end
 end
+
+determinedirsize(gc::GridContent, gdir::GridDir, side::Side) = determinedirsize(gc.content, gdir, side)::Optional{Float32}
 
 function to_ranges(g::GridLayout, rows::Indexables, cols::Indexables)
     if rows isa Int

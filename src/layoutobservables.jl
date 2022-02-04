@@ -1,3 +1,4 @@
+halign2shift(align::HorizontalAlignment)::Float32 = Float32(align.x)
 halign2shift(align::Number)::Float32 = Float32(align)
 function halign2shift(align::Symbol)::Float32
     align == :left && return 0.0f0
@@ -6,6 +7,7 @@ function halign2shift(align::Symbol)::Float32
     error("Invalid horizontal alignment $align (only Real or :left, :center, or :right allowed).")
 end
 
+valign2shift(align::VerticalAlignment)::Float32 = Float32(align.x)
 valign2shift(align::Number)::Float32 = Float32(align)
 function valign2shift(align::Symbol)::Float32
     align == :bottom && return 0.0f0
@@ -14,11 +16,11 @@ function valign2shift(align::Symbol)::Float32
     error("Invalid vertical alignment $align (only Real or :bottom, :center, or :top allowed).")
 end
 
-function align_shift_tuple(halign::Union{Number, Symbol}, valign::Union{Number, Symbol})
+function align_shift_tuple(halign, valign)
     return (halign2shift(halign), valign2shift(valign))
 end
 
-function LayoutObservables{T}(width::Observable, height::Observable,
+function LayoutObservables(width::Observable, height::Observable,
         tellwidth::Observable, tellheight::Observable, halign::Observable,
         valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
@@ -28,7 +30,9 @@ function LayoutObservables{T}(width::Observable, height::Observable,
         computedbbox = nothing,
         gridcontent = nothing) where T
 
-    sizeobservable = sizeobservable!(width, height)
+    width_obs = convert(Observable{SizeAttribute}, width)
+    height_obs = convert(Observable{SizeAttribute}, height)
+    sizeobservable = sizeobservable!(width_obs, height_obs)
     alignment = map(align_shift_tuple, halign, valign)
 
     suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
@@ -46,7 +50,7 @@ function LayoutObservables{T}(width::Observable, height::Observable,
     finalbbox = alignedbboxobservable!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
-    LayoutObservables{T, GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, nothing)
+    LayoutObservables{GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, nothing)
 end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
@@ -89,8 +93,8 @@ create_protrusions(p::Observable{RectSides{Float32}}) = p
 create_protrusions(p::RectSides{Float32}) = Observable(p)
 
 
-function sizeobservable!(@nospecialize(widthattr::Observable), @nospecialize(heightattr::Observable))
-    sizeattrs = Observable{Tuple{Any, Any}}((widthattr[], heightattr[]))
+function sizeobservable!(widthattr::Observable{SizeAttribute}, heightattr::Observable{SizeAttribute})
+    sizeattrs = Observable{Tuple{SizeAttribute, SizeAttribute}}((widthattr[], heightattr[]))
     onany(widthattr, heightattr) do w, h
         sizeattrs[] = (w, h)
     end
@@ -201,7 +205,7 @@ function alignedbboxobservable!(
     finalbbox = Observable(BBox(0, 100, 0, 100))
 
     onany(suggestedbbox, alignment, reportedsize) do sbbox, al, rsize
-
+        
         bw = width(sbbox)
         bh = height(sbbox)
 
@@ -338,8 +342,8 @@ Access `x`'s field `:layoutobservables` containing a `LayoutObservables` instanc
 be overloaded for any type that is layoutable but stores its `LayoutObservables` in
 a differently named field.
 """
-function layoutobservables(x::T) where T
-    if hasfield(T, :layoutobservables) && fieldtype(T, :layoutobservables) <: LayoutObservables
+function layoutobservables(x::T)::LayoutObservables{GridLayout} where T
+    if hasfield(T, :layoutobservables) && fieldtype(T, :layoutobservables) === LayoutObservables{GridLayout}
         x.layoutobservables
     else
         error("It's not defined how to get LayoutObservables for type $T, overload this method for layoutable types.")

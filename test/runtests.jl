@@ -338,8 +338,8 @@ end
     @test gl.rowsizes == GridLayoutBase.ContentSize[Relative(0.5), Relative(0.5)]
 
     gl2 = GridLayout(2, 2;
-        colsizes = [Fixed(10), Relative(0.3)],
-        rowsizes = [Auto(false), Auto(true)])
+        colsizes = GridLayoutBase.ContentSize[Fixed(10), Relative(0.3)],
+        rowsizes = GridLayoutBase.ContentSize[Auto(false), Auto(true)])
     @test gl2.colsizes == GridLayoutBase.ContentSize[Fixed(10), Relative(0.3)]
     @test gl2.rowsizes == GridLayoutBase.ContentSize[Auto(false), Auto(true)]
 
@@ -775,11 +775,11 @@ end
         @test computedbboxobservable(dr1)[] == BBox(250, 1250, 0, 1000)
         @test computedbboxobservable(dr2)[] == BBox(1250, 1750, 0, 1000)
 
-        outer.halign[] = :left
+        outer.halign = :left
         @test computedbboxobservable(dr1)[] == BBox(0, 1000, 0, 1000)
         @test computedbboxobservable(dr2)[] == BBox(1000, 1500, 0, 1000)
 
-        outer.halign[] = :right
+        outer.halign = :right
         @test computedbboxobservable(dr1)[] == BBox(500, 1500, 0, 1000)
         @test computedbboxobservable(dr2)[] == BBox(1500, 2000, 0, 1000)
     end
@@ -794,11 +794,11 @@ end
         @test computedbboxobservable(dr1)[] == BBox(0, 1000, 750, 1750)
         @test computedbboxobservable(dr2)[] == BBox(0, 1000, 250, 750)
 
-        outer.valign[] = :top
+        outer.valign = :top
         @test computedbboxobservable(dr1)[] == BBox(0, 1000, 1000, 2000)
         @test computedbboxobservable(dr2)[] == BBox(0, 1000, 500, 1000)
 
-        outer.valign[] = :bottom
+        outer.valign = :bottom
         @test computedbboxobservable(dr1)[] == BBox(0, 1000, 500, 1500)
         @test computedbboxobservable(dr2)[] == BBox(0, 1000, 0, 500)
     end
