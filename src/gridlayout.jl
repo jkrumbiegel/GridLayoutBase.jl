@@ -1810,12 +1810,12 @@ function to_ranges(g::GridLayout, rows::Indexables, cols::Indexables)
     if rows isa Int
         rows = rows:rows
     elseif rows isa Colon
-        rows = 1:nrows(g)
+        rows = firstrow(g):lastrow(g)
     end
     if cols isa Int
         cols = cols:cols
     elseif cols isa Colon
-        cols = 1:ncols(g)
+        cols = firstcol(g):lastcol(g)
     end
     rows, cols
 end

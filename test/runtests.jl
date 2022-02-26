@@ -882,3 +882,12 @@ end
     @test gridboxes.tops == [1000, 750]
     @test gridboxes.bottoms == [750, 0]
 end
+
+@testset "colon rows/cols with offsets" begin
+    gl = GridLayout()
+    gl[0, 0] = GridLayout()
+    g1 = gl[-1, :] = GridLayout()
+    g2 = gl[:, -1] = GridLayout()
+    @test g1.layoutobservables.gridcontent.span == GridLayoutBase.Span(-1:-1, 0:1)
+    @test g2.layoutobservables.gridcontent.span == GridLayoutBase.Span(-1:1, -1:-1)
+end
