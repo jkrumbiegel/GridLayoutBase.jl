@@ -27,9 +27,6 @@ function _precompile_()
         @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{Rect2f, Al}}, Type{GridLayout}))
         @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{Observable{Rect2f}, Al}}, Type{GridLayout}))
         @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:bbox, :alignmode), Tuple{NTuple{4,Int}, Al}}, Type{GridLayout}))
-        if fbody !== nothing
-            @warnpcfail precompile(fbody, (Nothing, Nothing, Nothing, Nothing, Nothing, Al, Tuple{Bool, Bool}, Rect2f, Auto, Auto, Bool, Bool, Symbol, Symbol, Float64, Float64, Emptykwargs, Type{GridLayout}, Int, Int))
-        end
     end
     @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:colsizes, :rowsizes), Tuple{Fixed, Relative}}, Type{GridLayout}, Int, Int))
     @warnpcfail precompile(Core.kwfunc(GridLayout), (NamedTuple{(:addedcolgaps,), Tuple{Vector{Fixed}}}, Type{GridLayout}, Int, Int))
