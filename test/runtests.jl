@@ -888,6 +888,6 @@ end
     gl[0, 0] = GridLayout()
     g1 = gl[-1, :] = GridLayout()
     g2 = gl[:, -1] = GridLayout()
-    @test g1.layoutobservables.gridcontent.span == GridLayoutBase.Span(-1:-1, 0:1)
-    @test g2.layoutobservables.gridcontent.span == GridLayoutBase.Span(-1:1, -1:-1)
+    @test gridcontent(g1).span == GridLayoutBase.Span(-1:-1, 0:1)
+    @test gridcontent(g2).span == GridLayoutBase.Span(-1:1, -1:-1)
 end

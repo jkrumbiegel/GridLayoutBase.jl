@@ -153,7 +153,7 @@ struct LayoutObservables{G} # G again GridLayout
     reportedsize::Observable{NTuple{2, Optional{Float32}}}
     autosize::Observable{NTuple{2, Optional{Float32}}}
     computedbbox::Observable{Rect2f}
-    gridcontent::Optional{GridContent{G}} # the connecting link to the gridlayout
+    gridcontent::Base.RefValue{Optional{GridContent{G}}} # the connecting link to the gridlayout
 end
 
 struct HorizontalAlignment

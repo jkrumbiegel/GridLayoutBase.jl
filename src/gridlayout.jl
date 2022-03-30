@@ -1429,7 +1429,7 @@ function add_content!(g::GridLayout, content, rows, cols, side::Side)
         GridContent(content, Span(rows, cols), side)
     end
 
-    layoutobservables(content).gridcontent = gc
+    layoutobservables(content).gridcontent[] = gc
 
     connect_layoutobservables!(gc)
 
