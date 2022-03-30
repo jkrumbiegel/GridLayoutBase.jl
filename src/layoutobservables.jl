@@ -50,7 +50,7 @@ function LayoutObservables(width::Observable, height::Observable,
     finalbbox = alignedbboxobservable!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
-    LayoutObservables{GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, nothing)
+    LayoutObservables{GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, Ref{Optional{GridContent{GridLayout}}}(gridcontent))
 end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
@@ -356,4 +356,4 @@ suggestedbboxobservable(x) = layoutobservables(x).suggestedbbox
 reportedsizeobservable(x) = layoutobservables(x).reportedsize
 autosizeobservable(x) = layoutobservables(x).autosize
 computedbboxobservable(x) = layoutobservables(x).computedbbox
-gridcontent(x) = layoutobservables(x).gridcontent
+gridcontent(x) = layoutobservables(x).gridcontent[]

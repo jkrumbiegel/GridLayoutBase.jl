@@ -134,7 +134,7 @@ const ContentSize = Union{Auto, Fixed, Relative, Aspect}
 const GapSize = Union{Fixed, Relative}
 
 """
-    mutable struct LayoutObservables{G}
+    struct LayoutObservables{G}
 
 `T` is the same type parameter of contained `GridContent`, `G` is `GridLayout` which is defined only after `LayoutObservables`.
 
@@ -147,13 +147,13 @@ A collection of `Observable`s and an optional `GridContent` that are needed to i
 - `computedbbox::Observable{Rect2f}`: The bounding box that the element computes for itself after it has received a suggestedbbox.
 - `gridcontent::Optional{GridContent{G}}`: A reference of a `GridContent` if the element is currently placed in a `GridLayout`. This can be used to retrieve the parent layout, remove the element from it or change its position, and assign it to a different layout.
 """
-mutable struct LayoutObservables{G} # G again GridLayout
+struct LayoutObservables{G} # G again GridLayout
     suggestedbbox::Observable{Rect2f}
     protrusions::Observable{RectSides{Float32}}
     reportedsize::Observable{NTuple{2, Optional{Float32}}}
     autosize::Observable{NTuple{2, Optional{Float32}}}
     computedbbox::Observable{Rect2f}
-    gridcontent::Optional{GridContent{G}} # the connecting link to the gridlayout
+    gridcontent::Base.RefValue{Optional{GridContent{G}}} # the connecting link to the gridlayout
 end
 
 struct HorizontalAlignment
