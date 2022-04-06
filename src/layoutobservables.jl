@@ -38,25 +38,22 @@ function LayoutObservables(width::Observable, height::Observable,
     suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
     protrusions = create_protrusions(protrusions)
 
+    effective_protrusions = map(effective_protrusion, protrusions, alignmode)
+    
     tellsizeobservable = map(tuple, tellwidth, tellheight)
-
-    protrusions_after_alignmode = Observable(RectSides{Float32}(0, 0, 0, 0))
-    onany(protrusions, alignmode) do prot, al
-        protrusions_after_alignmode[] = aligned_protrusion(prot, al)
-    end
 
     autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
     reportedsize = reportedsizeobservable!(sizeobservable, autosizeobservable, alignmode, protrusions, tellsizeobservable)
     finalbbox = alignedbboxobservable!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
-    LayoutObservables{GridLayout}(suggestedbbox_observable, protrusions_after_alignmode, reportedsize, autosizeobservable, finalbbox, Ref{Optional{GridContent{GridLayout}}}(gridcontent))
+    LayoutObservables{GridLayout}(suggestedbbox_observable, protrusions, effective_protrusions, reportedsize, autosizeobservable, finalbbox, Ref{Optional{GridContent{GridLayout}}}(gridcontent))
 end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
 
-function aligned_protrusion(prot, @nospecialize(al::AlignMode))
-    if al isa Inside
+function effective_protrusion(prot, @nospecialize(al::AlignMode))
+    x = if al isa Inside
         prot
     elseif al isa Outside
         RectSides{Float32}(0, 0, 0, 0)
@@ -352,6 +349,7 @@ end
 
 # These are the default API functions to retrieve the layout parts from an object
 protrusionsobservable(x) = layoutobservables(x).protrusions
+effectiveprotrusionsobservable(x) = layoutobservables(x).effective_protrusions
 suggestedbboxobservable(x) = layoutobservables(x).suggestedbbox
 reportedsizeobservable(x) = layoutobservables(x).reportedsize
 autosizeobservable(x) = layoutobservables(x).autosize
