@@ -684,17 +684,35 @@ function _compute_content_bbox(suggestedbbox, alignmode::Mixed)
         top(suggestedbbox) - (sides.top isa Float32 ? sides.top : 0f0))
 end
 
+# compute a grid of maximum protrusions for a gridlayout
 function _compute_maxgrid(gl)
     maxgrid = RowCols(ncols(gl), nrows(gl))
-    # go through all the layout objects placed in the grid
     for c in gl.content
+        # TODO this RowCols{Int} should actually just be a RectSides and RowCols should always store vectors
         idx_rect = side_indices(gl, c)
         mapsides(idx_rect, maxgrid) do side, idx, grid
-            grid[idx] = max(grid[idx], protrusion(c, side))
+            if c.side === Inner()
+                # for an Inner object, the protrusions themselves count
+                grid[idx] = max(grid[idx], effective_protrusion(c, side))
+            else
+                # for all the sides, the width or height of the object counts
+                grid[idx] = max(grid[idx], effective_protrusion(c, side, c.side)::Float32)
+            end
         end
     end
     maxgrid
 end
+
+effective_protrusion(c::GridContent, ::Left) = effectiveprotrusionsobservable(c.content)[].left
+effective_protrusion(c::GridContent, ::Right) = effectiveprotrusionsobservable(c.content)[].right
+effective_protrusion(c::GridContent, ::Top) = effectiveprotrusionsobservable(c.content)[].top
+effective_protrusion(c::GridContent, ::Bottom) = effectiveprotrusionsobservable(c.content)[].bottom
+
+effective_protrusion(c::GridContent, ::Left, s::Union{Left, BottomLeft, TopLeft}) = something(determinedirsize(c, Col(), s), 0f0)
+effective_protrusion(c::GridContent, ::Right, s::Union{Right, BottomRight, TopRight}) = something(determinedirsize(c, Col(), s), 0f0)
+effective_protrusion(c::GridContent, ::Bottom, s::Union{Bottom, BottomRight, BottomLeft}) = something(determinedirsize(c, Row(), s), 0f0)
+effective_protrusion(c::GridContent, ::Top, s::Union{Top, TopRight, TopLeft}) = something(determinedirsize(c, Row(), s), 0f0)
+effective_protrusion(c::GridContent, _, _) = 0f0
 
 sideoffset(gl, ::Union{Right, Left}) = offset(gl, Col())
 sideoffset(gl, ::Union{Top, Bottom}) = offset(gl, Row())
