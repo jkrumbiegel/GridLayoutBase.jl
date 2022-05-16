@@ -631,7 +631,16 @@ end
 function Base.show(io::IO, gl::GridLayout)
     print(io, "GridLayout[$(nrows(gl)), $(ncols(gl))] ($(length(gl.content)) children)")
 end
+        
 
+"""
+    colsize!(gl::GridLayout, i::Int64, s::Union{Aspect, Auto, Fixed, Relative, Real})
+        
+Set the size of the `i`th column in `gl`, i.e., `gl[:, i]`.
+Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
+        
+See also [Aspect](@ref), [Auto](@ref), [Fixed](@ref), and [Relative](@ref).
+"""
 function colsize!(gl::GridLayout, i::Int, s::ContentSize)
     if !(firstcol(gl) <= i <= lastcol(gl))
         error("Can't set size of invalid column $i.")
@@ -643,6 +652,14 @@ end
 
 colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
 
+"""
+    rowsize!(gl::GridLayout, i::Int64, s::Union{Aspect, Auto, Fixed, Relative, Real})
+        
+Set the size of the `i`th row in `gl`, i.e., `gl[i, :]`.
+Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
+        
+See also [Aspect](@ref), [Auto](@ref), [Fixed](@ref), and [Relative](@ref).
+"""
 function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
     if !(firstrow(gl) <= i <= lastrow(gl))
         error("Can't set size of invalid row $i.")
@@ -654,6 +671,16 @@ end
 
 rowsize!(gl::GridLayout, i::Int, s::Real) = rowsize!(gl, i, Fixed(s))
 
+"""
+    colgap!(gl::GridLayout, i::Int64, s::Union{Fixed, Relative, Real})
+    colgap!(gl::GridLayout, s::Union{Fixed, Relative, Real})
+        
+Set the gap between columns in `gl`.  The two-argument version sets all column gaps
+in `gl`.  The three-argument version sets the gap between columns `i` and `i+1`.
+Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
+        
+See also [Fixed](@ref) and [Relative](@ref).
+"""
 function colgap!(gl::GridLayout, i::Int, s::GapSize)
     if !(1 <= i <= (ncols(gl) - 1))
         error("Can't set size of invalid column gap $i.")
@@ -674,6 +701,16 @@ function colgap!(gl::GridLayout, r::Real)
     update!(gl)
 end
 
+"""
+    rowgap!(gl::GridLayout, i::Int64, s::Union{Fixed, Relative, Real})
+    rowgap!(gl::GridLayout, s::Union{Fixed, Relative, Real})
+        
+Set the gap between rows in `gl`.  The two-argument version sets all row gaps
+in `gl`.  The three-argument version sets the gap between rows `i` and `i+1`.
+Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
+        
+See also [Fixed](@ref) and [Relative](@ref).
+"""
 function rowgap!(gl::GridLayout, i::Int, s::GapSize)
     if !(1 <= i <= (nrows(gl) - 1))
         error("Can't set size of invalid row gap $i.")
