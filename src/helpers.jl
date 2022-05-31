@@ -113,16 +113,11 @@ right(rect::Rect{2}) = maximum(rect)[1]
 bottom(rect::Rect{2}) = minimum(rect)[2]
 top(rect::Rect{2}) = maximum(rect)[2]
 
-width(rect::Rect{2}) = right(rect) - left(rect)
-height(rect::Rect{2}) = top(rect) - bottom(rect)
-
-
 function BBox(left::Number, right::Number, bottom::Number, top::Number)
     mini = (left, bottom)
     maxi = (right, top)
     return Rect2f(mini, maxi .- mini)
 end
-
 
 function RowCols(ncols::Int, nrows::Int)
     return RowCols(

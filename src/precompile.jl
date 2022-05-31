@@ -4,10 +4,11 @@ let
         gl = GridLayout()
         gl2 = GridLayout()
         gl[1, 1] = gl2
-        GridLayoutBase.determinedirsize(gl, GridLayoutBase.Row())
-        GridLayoutBase.compute_rowcols(gl, GridLayoutBase.suggestedbboxobservable(gl)[])
-        GridLayoutBase.update!(gl)
-        GridLayoutBase.align_to_bbox!(gl2, GridLayoutBase.suggestedbboxobservable(gl2)[])
+        determinedirsize(gl, GridLayoutBase.Row())
+        compute_rowcols(gl, GridLayoutBase.suggestedbboxobservable(gl)[])
+        update!(gl)
+        align_to_bbox!(gl2, GridLayoutBase.suggestedbboxobservable(gl2)[])
+        compute_rowcols(gl2, GridLayoutBase.suggestedbboxobservable(gl2)[])
         break
     end
     nothing
