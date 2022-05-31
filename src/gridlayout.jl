@@ -113,11 +113,7 @@ function GridLayout(nrows::Int, ncols::Int;
         default_rowgap,
         default_colgap
     )
-
-    on(computedbboxobservable(gl)) do cbb
-        align_to_bbox!(gl, cbb)
-    end
-
+    onany(align_to_bbox!, gl, computedbboxobservable(gl))
     gl
 end
 
@@ -487,7 +483,7 @@ function deletecol!(gl::GridLayout, icol::Int)
     for c in to_remove
         remove_from_gridlayout!(c)
     end
-    
+
     idx = icol - coloffset(gl)
     deleteat!(gl.colsizes, idx)
     deleteat!(gl.addedcolgaps, idx == 1 ? 1 : idx - 1)
@@ -766,7 +762,7 @@ function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
     # padding that needs to be removed
     alignmode = gl.alignmode[]
     content_bbox = _compute_content_bbox(suggestedbbox, alignmode)
-    
+
     # first determine how big the protrusions on each side of all columns and rows are
     maxgrid = _compute_maxgrid(gl)
 
@@ -1418,7 +1414,7 @@ function GridContent(content, span::Span, side::Side)
     gc.reportedsize_handle = on(reportedsizeobservable(content)) do c
         update!(gc)
     end
-    
+
     gc
 end
 
@@ -1652,7 +1648,7 @@ function protrusion(x::T, side::Side) where T
 end
 
 function protrusion(gc::GridContent, side::Side)
-    prot = 
+    prot =
         if gc.side isa Inner
             protrusion(gc.content, side)
         # elseif gc.side isa Outer; BBox(l - pl, r + pr, b - pb, t + pt)
