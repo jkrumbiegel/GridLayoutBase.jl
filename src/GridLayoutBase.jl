@@ -2,6 +2,7 @@ module GridLayoutBase
 
 using GeometryBasics
 using Observables
+import GeometryBasics: height, width
 
 const DEFAULT_COLGAP = Ref{Float64}(20.0)
 const DEFAULT_ROWGAP = Ref{Float64}(20.0)
