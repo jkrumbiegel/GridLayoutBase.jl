@@ -999,8 +999,8 @@ function dirgaps(gl::GridLayout, dir::GridDir)
     stops = zeros(Float32, dirlength(gl, dir))
     for c in gl.content
         span = getspan(c, dir)
-        start = span.start
-        stop = span.stop
+        start = unoffset(gl, span.start, dir)
+        stop = unoffset(gl, span.stop, dir)
         starts[start] = max(starts[start], protrusion(c, startside(dir)))
         stops[stop] = max(stops[stop], protrusion(c, stopside(dir)))
     end
