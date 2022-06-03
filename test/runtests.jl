@@ -892,6 +892,15 @@ end
     @test gridcontent(g2).span == GridLayoutBase.Span(-1:1, -1:-1)
 end
 
+# https://github.com/JuliaPlots/Makie.jl/issues/2018
+@testset "fixed size dirgaps" begin
+    gl = GridLayout(width = 800, height = 600)
+    gl[1, 1] = DebugRect(width = 600, height = 600)
+    @test begin
+        gl[0, 1] = DebugRect(height = 40, width = 100)
+        true
+    end
+end
 @testset "Effective protrusions" begin
     bbox = BBox(0, 1000, 0, 1000)
     gl = GridLayout(bbox = bbox, alignmode = Outside(0))
