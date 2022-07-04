@@ -883,6 +883,17 @@ end
     @test gridboxes.bottoms == [750, 0]
 end
 
+# issue 37
+@testset "Aspect indexing bug" begin
+    gl = GridLayout()
+    gl[0, 1] = DebugRect(height = 200)
+    @test_nowarn colsize!(gl, 1, Aspect(0, 1.0))
+
+    gl = GridLayout()
+    gl[1, 0] = DebugRect(width = 200)
+    @test_nowarn rowsize!(gl, 1, Aspect(0, 1.0))
+end
+
 @testset "colon rows/cols with offsets" begin
     gl = GridLayout()
     gl[0, 0] = GridLayout()
