@@ -1190,14 +1190,14 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
 
     # now aspect sizes that refer to already determined counterparts
     filterenum(Aspect, gl.colsizes) do (i, aspect)
-        aspectindex_unoffset = unoffset(gl, aspect.index, Col())
+        aspectindex_unoffset = unoffset(gl, aspect.index, Row())
         if determinedrows[aspectindex_unoffset]
             colwidths[i] = aspect.ratio * rowheights[aspectindex_unoffset]
             determinedcols[i] = true
         end
     end
     filterenum(Aspect, gl.rowsizes) do (i, aspect)
-        aspectindex_unoffset = unoffset(gl, aspect.index, Row())
+        aspectindex_unoffset = unoffset(gl, aspect.index, Col())
         if determinedcols[aspectindex_unoffset]
             rowheights[i] = aspect.ratio * colwidths[aspectindex_unoffset]
             determinedrows[i] = true
@@ -1262,7 +1262,7 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
     # now if either columns or rows had no aspects left, they should have all sizes determined
     # we run over the aspects again
     filterenum(Aspect, gl.colsizes) do (i, aspect)
-        aspectindex_unoffset = unoffset(gl, aspect.index, Col())
+        aspectindex_unoffset = unoffset(gl, aspect.index, Row())
         if determinedrows[aspectindex_unoffset]
             colwidths[i] = aspect.ratio * rowheights[aspectindex_unoffset]
             determinedcols[i] = true
@@ -1271,7 +1271,7 @@ function compute_col_row_sizes(spaceforcolumns, spaceforrows, gl)::Tuple{Vector{
         end
     end
     filterenum(Aspect, gl.rowsizes) do (i, aspect)
-        aspectindex_unoffset = unoffset(gl, aspect.index, Row())
+        aspectindex_unoffset = unoffset(gl, aspect.index, Col())
         if determinedcols[aspectindex_unoffset]
             rowheights[i] = aspect.ratio * colwidths[aspectindex_unoffset]
             determinedrows[i] = true
