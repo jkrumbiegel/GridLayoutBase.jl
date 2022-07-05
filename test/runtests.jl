@@ -952,3 +952,15 @@ end
     @test GridLayoutBase.protrusionsobservable(gl)[] == GridLayoutBase.RectSides{Float32}(0, 200, 0, 0)
     @test GridLayoutBase.effectiveprotrusionsobservable(gl)[] == GridLayoutBase.RectSides{Float32}(0, 200, 0, 0)
 end
+
+@testset "GridLayout GridPosition/GridSubposition constructor" begin
+    gl = GridLayout()
+    gl2 = GridLayout(gl[1, 1])
+    @test gl2.parent == gl
+    @test gl2.layoutobservables.gridcontent[].span == GridLayoutBase.Span(1:1, 1:1)
+    gl3 = GridLayout(gl[1, 2][1, 1])
+    @test gl3.parent != gl
+    @test gl3.parent == gl.content[2].content
+    @test gl3.layoutobservables.gridcontent[].span == GridLayoutBase.Span(1:1, 1:1)
+    @test gl.content[2].content.layoutobservables.gridcontent[].span == GridLayoutBase.Span(1:1, 2:2)
+end
