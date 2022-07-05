@@ -1,4 +1,19 @@
+"""
+    GridLayout(; kwargs...)
+
+Create a `GridLayout` without parent and with size [1, 1].
+"""
 GridLayout(; kwargs...) = GridLayout(1, 1; kwargs...)
+
+"""
+    GridLayout(g::Union{GridPosition, GridSubposition}, args...; kwargs...)
+
+Create a `GridLayout` at position `g` in the parent `GridLayout` of `g` if it is a `GridPosition`
+and in a nested child `GridLayout` if it is a `GridSubposition`. The `args` and `kwargs` are passed on to the normal `GridLayout` constructor.
+"""
+function GridLayout(g::Union{GridPosition, GridSubposition}, args...; kwargs...)
+    return g[] = GridLayout(args...; kwargs...)
+end
 
 observablify(x::Observable) = x
 observablify(x, type=Any) = Observable{type}(x)
@@ -44,6 +59,28 @@ Base.convert(::Type{SizeAttribute}, a::Auto) = a
     end
 end
 
+"""
+    function GridLayout(nrows::Int, ncols::Int;
+        parent = nothing,
+        rowsizes = nothing,
+        colsizes = nothing,
+        addedrowgaps = nothing,
+        addedcolgaps = nothing,
+        alignmode = Inside(),
+        equalprotrusiongaps = (false, false),
+        bbox = nothing,
+        width = Auto(),
+        height = Auto(),
+        tellwidth::Bool = true,
+        tellheight::Bool = true,
+        halign = :center,
+        valign = :center,
+        default_rowgap = get_default_rowgap(),
+        default_colgap = get_default_colgap(),
+        kwargs...)
+
+Create a `GridLayout` with optional parent `parent` with `nrows` rows and `ncols` columns.
+"""
 function GridLayout(nrows::Int, ncols::Int;
         parent = nothing,
         rowsizes = nothing,
