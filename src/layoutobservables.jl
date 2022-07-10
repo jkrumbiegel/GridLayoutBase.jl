@@ -35,6 +35,7 @@ function LayoutObservables(width::Observable, height::Observable,
     suggestedbbox_observable = make_suggestedbbox!(suggestedbbox)
     protrusions = make_protrusions!(protrusions)
 
+    # effective protrusions are the protrusions modified by the alignmode, as seen from a containing GridLayout
     effective_protrusions = map(effective_protrusion, protrusions, alignmode)
     tellsizeobservable = map(tuple, tellwidth, tellheight)
 
