@@ -40,7 +40,7 @@ function LayoutObservables(width::Observable, height::Observable,
     tellsizeobservable = map(tuple, tellwidth, tellheight)
 
     autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
-    reportedsize = make_reportedsize!(sizeobservable, autosizeobservable, alignmode, protrusions, tellsizeobservable)
+    reportedsize = make_reportedsize!(sizeobservable, autosizeobservable, tellsizeobservable)
     computedbbox = make_computedbbox!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
@@ -102,24 +102,20 @@ function sizeobservable!(widthattr::Observable{SizeAttribute}, heightattr::Obser
     sizeattrs
 end
 
-function make_reportedsize!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
-        alignmode, protrusions, tellsizeobservable)
+function make_reportedsize!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}}, tellsizeobservable)
 
     # set up rsizeobservable with correct type manually
     rsizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
 
-    onany(sizeattrs, autosizeobservable, alignmode, protrusions, tellsizeobservable) do sizeattrs::Tuple{SizeAttribute,SizeAttribute},
-            autosize, alignmode::AlignMode, protrusions, tellsizeobservable
-        rsizeobservable[] = _reportedsizeobservable(sizeattrs, autosize, alignmode, protrusions, tellsizeobservable)
-    end
+    map!(_reportedsizeobservable, rsizeobservable, sizeattrs, autosizeobservable, tellsizeobservable)
 
-    # trigger first value
-    notify(sizeattrs)
+    # # trigger first value
+    # notify(sizeattrs)
 
     rsizeobservable
 end
 
-function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,SizeAttribute}), @nospecialize(autosize::Tuple{AutoSize,AutoSize}), @nospecialize(alignmode::AlignMode), protrusions, tellsizeobservable::Tuple{Bool,Bool})
+function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,SizeAttribute}), @nospecialize(autosize::Tuple{AutoSize,AutoSize}), tellsizeobservable::Tuple{Bool,Bool})
     wattr, hattr = sizeattrs
     wauto, hauto = autosize
     tellw, tellh = tellsizeobservable
@@ -127,48 +123,7 @@ function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,Si
     wsize = computed_size(wattr, wauto, tellw)
     hsize = computed_size(hattr, hauto, tellh)
 
-    return if alignmode isa Inside
-        (wsize, hsize)
-    elseif alignmode isa Outside
-        (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
-         isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
-    elseif alignmode isa Mixed
-        w = if isnothing(wsize)
-            nothing
-        else
-            w = wsize
-            if alignmode.sides.left isa Float32
-                w += protrusions.left + alignmode.sides.left
-            elseif alignmode.sides.left isa Protrusion
-                w += alignmode.sides.left.p
-            end
-            if alignmode.sides.right isa Float32
-                w += protrusions.right + alignmode.sides.right
-            elseif alignmode.sides.right isa Protrusion
-                w += alignmode.sides.right.p
-            end
-            w
-        end
-        h = if isnothing(hsize)
-            nothing
-        else
-            h = hsize
-            if alignmode.sides.bottom isa Float32
-                h += protrusions.bottom + alignmode.sides.bottom
-            elseif alignmode.sides.bottom isa Protrusion
-                h += alignmode.sides.bottom.p
-            end
-            if alignmode.sides.top isa Float32
-                h += protrusions.top + alignmode.sides.top
-            elseif alignmode.sides.top isa Protrusion
-                h += alignmode.sides.top.p
-            end
-            h
-        end
-        (w, h)
-    else
-        error("Unknown alignmode $alignmode")
-    end
+    (wsize, hsize)
 end
 
 function computed_size(sizeattr, autosize, tellsize)

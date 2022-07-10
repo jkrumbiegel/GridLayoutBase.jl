@@ -121,12 +121,11 @@ end
 @testset "alignmodes and known size" begin
     gl = GridLayout()
     dr = gl[1, 1] = DebugRect(width = 200, height = 300, alignmode = Mixed(left = 1, right = 2, bottom = 3, top = 4))
-    @test reportedsizeobservable(dr)[] == (203, 307)
+    @test reportedsizeobservable(dr)[] == (200, 300)
     dr.alignmode[] = Inside()
     @test reportedsizeobservable(dr)[] == (200, 300)
     dr.alignmode[] = Mixed(left = Protrusion(10), right = Protrusion(10), bottom = Protrusion(10), top = Protrusion(10))
-    # shouldn't this be without the protrusions? have to check implementation again
-    @test_broken reportedsizeobservable(dr)[] == (200, 300)
+    @test reportedsizeobservable(dr)[] == (200, 300)
 end
 
 @testset "assigning content to protrusions" begin
