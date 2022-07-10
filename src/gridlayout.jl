@@ -168,9 +168,12 @@ function update!(gl::GridLayout)
         protrusion(gl, Top()),
     )
 
+    # if autosize and protrusions didn't change, then we only need to trigger a relayout in this gridlayout
+    # but don't retrigger autosize and protrusions which would go up to a possible parent gridlayout
     if autosizeobservable(gl)[] == new_autosize &&
             protrusionsobservable(gl)[] == new_protrusions
 
+        # the suggestedbbox trigger causes relayout
         notify(suggestedbboxobservable(gl))
     else
         # otherwise these values will not already be up to date when adding the
@@ -180,12 +183,15 @@ function update!(gl::GridLayout)
         protrusionsobservable(gl)[] = new_protrusions
         autosizeobservable(gl)[] = new_autosize
 
+        # if the gridlayout is child of another gridlayout, the suggestedbbox update will have come through its relayout process 
+        # already after updating the protrusions and autosize above,
+        # if it's not, we need to trigger relayout manually
         if isnothing(gridcontent(gl))
             notify(suggestedbboxobservable(gl))
         end
     end
 
-    nothing
+    return
 end
 
 function validategridlayout(gl::GridLayout)
