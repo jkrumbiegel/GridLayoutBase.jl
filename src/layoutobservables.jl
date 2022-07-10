@@ -25,9 +25,6 @@ function LayoutObservables(width::Observable, height::Observable,
         valign::Observable, alignmode::Observable = Observable{AlignMode}(Inside());
         suggestedbbox = nothing,
         protrusions = nothing,
-        reportedsize = nothing,
-        autosize = nothing,
-        computedbbox = nothing,
         gridcontent = nothing) where T
 
     width_obs = convert(Observable{SizeAttribute}, width)
@@ -35,19 +32,26 @@ function LayoutObservables(width::Observable, height::Observable,
     sizeobservable = sizeobservable!(width_obs, height_obs)
     alignment = map(align_shift_tuple, halign, valign)
 
-    suggestedbbox_observable = create_suggested_bboxobservable(suggestedbbox)
-    protrusions = create_protrusions(protrusions)
+    suggestedbbox_observable = make_suggestedbbox!(suggestedbbox)
+    protrusions = make_protrusions!(protrusions)
 
     effective_protrusions = map(effective_protrusion, protrusions, alignmode)
-    
     tellsizeobservable = map(tuple, tellwidth, tellheight)
 
     autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
-    reportedsize = reportedsizeobservable!(sizeobservable, autosizeobservable, alignmode, protrusions, tellsizeobservable)
-    finalbbox = alignedbboxobservable!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
+    reportedsize = make_reportedsize!(sizeobservable, autosizeobservable, alignmode, protrusions, tellsizeobservable)
+    computedbbox = make_computedbbox!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions)
 
-    LayoutObservables{GridLayout}(suggestedbbox_observable, protrusions, effective_protrusions, reportedsize, autosizeobservable, finalbbox, Ref{Optional{GridContent{GridLayout}}}(gridcontent))
+    LayoutObservables{GridLayout}(
+        suggestedbbox_observable,
+        protrusions,
+        effective_protrusions,
+        reportedsize,
+        autosizeobservable,
+        computedbbox,
+        Ref{Optional{GridContent{GridLayout}}}(gridcontent)
+    )
 end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
@@ -73,11 +77,11 @@ function effective_protrusion(prot, @nospecialize(al::AlignMode))
     end
 end
 
-create_suggested_bboxobservable(n::Nothing) = Observable(BBox(0, 100, 0, 100))
-create_suggested_bboxobservable(tup::Tuple) = Observable(BBox(tup...))
-create_suggested_bboxobservable(bbox::Rect{2}) = Observable(Rect2f(bbox))
-create_suggested_bboxobservable(observable::Observable{Rect2f}) = observable
-function create_suggested_bboxobservable(observable::Observable{<:Rect{2}})
+make_suggestedbbox!(n::Nothing) = Observable(BBox(0, 100, 0, 100))
+make_suggestedbbox!(tup::Tuple) = Observable(BBox(tup...))
+make_suggestedbbox!(bbox::Rect{2}) = Observable(Rect2f(bbox))
+make_suggestedbbox!(observable::Observable{Rect2f}) = observable
+function make_suggestedbbox!(observable::Observable{<:Rect{2}})
     bbox = Observable(Rect2f(observable[]))
     on(observable) do o
         bbox[] = Rect2f(o)
@@ -85,10 +89,9 @@ function create_suggested_bboxobservable(observable::Observable{<:Rect{2}})
     bbox
 end
 
-create_protrusions(p::Nothing) = Observable(RectSides{Float32}(0, 0, 0, 0))
-create_protrusions(p::Observable{RectSides{Float32}}) = p
-create_protrusions(p::RectSides{Float32}) = Observable(p)
-
+make_protrusions!(p::Nothing) = Observable(RectSides{Float32}(0, 0, 0, 0))
+make_protrusions!(p::Observable{RectSides{Float32}}) = p
+make_protrusions!(p::RectSides{Float32}) = Observable(p)
 
 function sizeobservable!(widthattr::Observable{SizeAttribute}, heightattr::Observable{SizeAttribute})
     sizeattrs = Observable{Tuple{SizeAttribute, SizeAttribute}}((widthattr[], heightattr[]))
@@ -98,7 +101,7 @@ function sizeobservable!(widthattr::Observable{SizeAttribute}, heightattr::Obser
     sizeattrs
 end
 
-function reportedsizeobservable!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
+function make_reportedsize!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
         alignmode, protrusions, tellsizeobservable)
 
     # set up rsizeobservable with correct type manually
@@ -191,7 +194,7 @@ function computed_size(sizeattr, autosize, tellsize)
 end
 
 
-function alignedbboxobservable!(
+function make_computedbbox!(
     suggestedbbox::Observable{Rect2f},
     reportedsize::Observable{NTuple{2, Optional{Float32}}},
     alignment::Observable,
@@ -199,7 +202,7 @@ function alignedbboxobservable!(
     autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
     alignmode, protrusions)
 
-    finalbbox = Observable(BBox(0, 100, 0, 100))
+    computedbbox = Observable(BBox(0, 100, 0, 100))
 
     onany(suggestedbbox, alignment, reportedsize) do sbbox, al, rsize
         
@@ -323,13 +326,13 @@ function alignedbboxobservable!(
         r = l + inner_w
         t = b + inner_h
         newbbox = BBox(l, r, b, t)
-        # if finalbbox[] != newbbox
-        #     finalbbox[] = newbbox
+        # if computedbbox[] != newbbox
+        #     computedbbox[] = newbbox
         # end
-        finalbbox[] = newbbox
+        computedbbox[] = newbbox
     end
 
-    finalbbox
+    computedbbox
 end
 
 """
