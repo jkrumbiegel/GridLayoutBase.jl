@@ -177,6 +177,7 @@ function update!(gl::GridLayout)
 
     gc = gridcontent(gl)
 
+    # TODO: if we skip this because protrusions/autosize are unchanged, we get update failures when adding new objects that don't change these values to a gridlayout
     if gc === nothing
         # no parent exists, so protrusions/autosize will trigger computedbbox, which will trigger relayout
         bu = gl.block_updates
