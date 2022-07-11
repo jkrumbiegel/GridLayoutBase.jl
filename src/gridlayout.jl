@@ -150,7 +150,13 @@ function GridLayout(nrows::Int, ncols::Int;
         default_rowgap,
         default_colgap
     )
-    onany(align_to_bbox!, gl, computedbboxobservable(gl))
+    on(computedbboxobservable(gl)) do bbox
+        # block_updates can block update! but not setting computedbbox directly through protrusions/etc
+        # so this one needs to be blocked as well
+        if !gl.block_updates
+            align_to_bbox!(gl, bbox)
+        end
+    end
     gl
 end
 
@@ -168,24 +174,36 @@ function update!(gl::GridLayout)
         protrusion(gl, Top()),
     )
 
-    if autosizeobservable(gl)[] == new_autosize &&
-            protrusionsobservable(gl)[] == new_protrusions
+    # if autosize and protrusions didn't change, then we only need to trigger a relayout in this gridlayout
+    # but don't retrigger autosize and protrusions which would go up to a possible parent gridlayout
 
-        notify(suggestedbboxobservable(gl))
+    gc = gridcontent(gl)
+
+    # TODO: if we skip this because protrusions/autosize are unchanged, we get update failures when adding new objects that don't change these values to a gridlayout
+    if gc === nothing
+        # no parent exists, so protrusions/autosize will trigger computedbbox, which will trigger relayout
+        bu = gl.block_updates
+        # this will prohibit align_to_bbox! triggering from computedbbox
+        gl.block_updates = true
+        protrusionsobservable(gl)[] = new_protrusions
+        autosizeobservable(gl)[] = new_autosize
+        gl.block_updates = bu
+        # now we trigger computedbbox ourselves which will call align_to_bbox! and relayout children
+        notify(computedbboxobservable(gl))
     else
-        # otherwise these values will not already be up to date when adding the
-        # gridlayout into the next one
+        # parent exists, so protrusions/autosize will not trigger computedbbox
+        # don't update parent by setting protrusions / autosize
+        layoutobservables(gl).block_updates[] = true
 
-        # TODO: this is a double update?
         protrusionsobservable(gl)[] = new_protrusions
         autosizeobservable(gl)[] = new_autosize
 
-        if isnothing(gridcontent(gl))
-            notify(suggestedbboxobservable(gl))
-        end
+        layoutobservables(gl).block_updates[] = false
+        # update parent manually
+        update!(gc)
     end
 
-    nothing
+    return
 end
 
 function validategridlayout(gl::GridLayout)
@@ -225,17 +243,23 @@ function connect_layoutobservables!(gc::GridContent)
 
     disconnect_layoutobservables!(gc::GridContent)
 
-    gc.protrusions_handle = on(protrusionsobservable(gc.content)) do p
-        update!(gc)
-    end
-    gc.reportedsize_handle = on(reportedsizeobservable(gc.content)) do c
-        update!(gc)
+    let content = gc.content
+        gc.protrusions_handle = on(effectiveprotrusionsobservable(content)) do p
+            if !layoutobservables(content).block_updates[]::Bool
+                update!(gc)
+            end
+        end
+        gc.reportedsize_handle = on(reportedsizeobservable(content)) do c
+            if !layoutobservables(content).block_updates[]::Bool
+                update!(gc)
+            end
+        end
     end
 end
 
 function disconnect_layoutobservables!(gc::GridContent)
     if !isnothing(gc.protrusions_handle)
-        Observables.off(protrusionsobservable(gc.content), gc.protrusions_handle)
+        Observables.off(effectiveprotrusionsobservable(gc.content), gc.protrusions_handle)
         gc.protrusions_handle = nothing
     end
     if !isnothing(gc.reportedsize_handle)
@@ -1042,7 +1066,7 @@ function tight_bbox(gl::GridLayout)
 end
 
 function align_to_bbox!(gl::GridLayout, suggestedbbox::Rect2f)
-
+    # nesting_level(gl) == 2 && error()
     maxgrid, gridboxes = compute_rowcols(gl, suggestedbbox)
 
     # now we can solve the content thats inside the grid because we know where each
@@ -1481,14 +1505,7 @@ end
 function GridContent(content, span::Span, side::Side)
     # connect the correct observables
     gc = GridContent{GridLayout}(nothing, content, span, side, nothing, nothing)
-
-    gc.protrusions_handle = on(protrusionsobservable(content)) do p
-        update!(gc)
-    end
-    gc.reportedsize_handle = on(reportedsizeobservable(content)) do c
-        update!(gc)
-    end
-
+    connect_layoutobservables!(gc)
     gc
 end
 
@@ -1497,7 +1514,7 @@ function update!(gc::GridContent)
     if p isa GridLayout
         update!(p)
     end
-    nothing
+    return
 end
 
 function add_content!(g::GridLayout, content, rows, cols, side::Side)

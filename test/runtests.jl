@@ -121,12 +121,11 @@ end
 @testset "alignmodes and known size" begin
     gl = GridLayout()
     dr = gl[1, 1] = DebugRect(width = 200, height = 300, alignmode = Mixed(left = 1, right = 2, bottom = 3, top = 4))
-    @test reportedsizeobservable(dr)[] == (203, 307)
+    @test reportedsizeobservable(dr)[] == (200, 300)
     dr.alignmode[] = Inside()
     @test reportedsizeobservable(dr)[] == (200, 300)
     dr.alignmode[] = Mixed(left = Protrusion(10), right = Protrusion(10), bottom = Protrusion(10), top = Protrusion(10))
-    # shouldn't this be without the protrusions? have to check implementation again
-    @test_broken reportedsizeobservable(dr)[] == (200, 300)
+    @test reportedsizeobservable(dr)[] == (200, 300)
 end
 
 @testset "assigning content to protrusions" begin
@@ -739,7 +738,7 @@ end
 
     g2 = GridLayout()
     g[1, 1] = g2
-    @test n[] == 1
+    @test n[] == 0
 
     m = Ref(0)
     on(g2.layoutobservables.suggestedbbox) do _
@@ -751,7 +750,7 @@ end
     # one update for each gridlayout
     @test m[] == 10
     # g shouldn't have changed
-    @test n[] == 1
+    @test n[] == 0
     with_updates_suspended(g2) do
         for i in 1:10
             g2[1, i] = GridLayout()
@@ -760,6 +759,19 @@ end
     # only one update should have happened at the end
     @test m[] == 11
     # still nothing for g
+    @test n[] == 0
+end
+
+@testset "Number of updates 2" begin
+    gl = GridLayout()
+    gl2 = GridLayout(gl[1, 1])
+    dr = gl2[1, 1] = DebugRect(width = 100, height = 100)
+    dr2 = gl2[1, 2] = DebugRect(width =  100, height = 200)
+    n = Ref(0)
+    on(dr2.layoutobservables.suggestedbbox) do bb
+        n[] += 1
+    end
+    dr2.rightprot[] = 10
     @test n[] == 1
 end
 
