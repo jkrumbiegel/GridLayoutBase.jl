@@ -759,6 +759,17 @@ end
     # only one update should have happened at the end
     @test m[] == 11
     # still nothing for g
+
+@testset "Number of updates 2" begin
+    gl = GridLayout()
+    gl2 = GridLayout(gl[1, 1])
+    dr = gl2[1, 1] = DebugRect(width = 100, height = 100)
+    dr2 = gl2[1, 2] = DebugRect(width =  100, height = 200)
+    n = Ref(0)
+    on(dr2.layoutobservables.suggestedbbox) do bb
+        n[] += 1
+    end
+    dr2.rightprot[] = 10
     @test n[] == 1
 end
 
