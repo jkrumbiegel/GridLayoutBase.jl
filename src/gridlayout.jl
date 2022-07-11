@@ -151,6 +151,8 @@ function GridLayout(nrows::Int, ncols::Int;
         default_colgap
     )
     on(computedbboxobservable(gl)) do bbox
+        # block_updates can block update! but not setting computedbbox directly through protrusions/etc
+        # so this one needs to be blocked as well
         if !gl.block_updates
             align_to_bbox!(gl, bbox)
         end
