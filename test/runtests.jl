@@ -738,7 +738,7 @@ end
 
     g2 = GridLayout()
     g[1, 1] = g2
-    @test n[] == 1
+    @test n[] == 0
 
     m = Ref(0)
     on(g2.layoutobservables.suggestedbbox) do _
@@ -750,7 +750,7 @@ end
     # one update for each gridlayout
     @test m[] == 10
     # g shouldn't have changed
-    @test n[] == 1
+    @test n[] == 0
     with_updates_suspended(g2) do
         for i in 1:10
             g2[1, i] = GridLayout()
@@ -759,6 +759,8 @@ end
     # only one update should have happened at the end
     @test m[] == 11
     # still nothing for g
+    @test n[] == 0
+end
 
 @testset "Number of updates 2" begin
     gl = GridLayout()
