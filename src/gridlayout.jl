@@ -191,12 +191,12 @@ function update!(gl::GridLayout)
     else
         # parent exists, so protrusions/autosize will not trigger computedbbox
         # don't update parent by setting protrusions / autosize
-        layoutobservables(gl).block_update[] = true
+        layoutobservables(gl).block_updates[] = true
 
         protrusionsobservable(gl)[] = new_protrusions
         autosizeobservable(gl)[] = new_autosize
 
-        layoutobservables(gl).block_update[] = false
+        layoutobservables(gl).block_updates[] = false
         # update parent manually
         update!(gc)
     end
@@ -243,12 +243,12 @@ function connect_layoutobservables!(gc::GridContent)
 
     let content = gc.content
         gc.protrusions_handle = on(effectiveprotrusionsobservable(content)) do p
-            if !layoutobservables(content).block_update[]::Bool
+            if !layoutobservables(content).block_updates[]::Bool
                 update!(gc)
             end
         end
         gc.reportedsize_handle = on(reportedsizeobservable(content)) do c
-            if !layoutobservables(content).block_update[]::Bool
+            if !layoutobservables(content).block_updates[]::Bool
                 update!(gc)
             end
         end

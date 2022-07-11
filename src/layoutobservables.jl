@@ -26,7 +26,7 @@ function LayoutObservables(width::Observable, height::Observable,
         suggestedbbox = nothing,
         protrusions = nothing,
         gridcontent = nothing,
-        block_update::Bool = false) where T
+        block_updates::Bool = false) where T
 
     width_obs = convert(Observable{SizeAttribute}, width)
     height_obs = convert(Observable{SizeAttribute}, height)
@@ -55,7 +55,7 @@ function LayoutObservables(width::Observable, height::Observable,
         autosizeobservable,
         computedbbox,
         gridcontent_ref,
-        Ref{Bool}(block_update),
+        Ref{Bool}(block_updates),
     )
 end
 
