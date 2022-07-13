@@ -133,6 +133,11 @@ end
 const ContentSize = Union{Auto, Fixed, Relative, Aspect}
 const GapSize = Union{Fixed, Relative}
 
+struct Dimensions
+    inner::Tuple{Optional{Float32}, Optional{Float32}}
+    outer::RectSides{Float32}
+end
+
 """
     struct LayoutObservables{G}
 
@@ -142,7 +147,7 @@ A collection of `Observable`s and an optional `GridContent` that are needed to i
 
 - `suggestedbbox::Observable{Rect2f}`: The bounding box that an element should place itself in. Depending on the element's `width` and `height` attributes, this is not necessarily equal to the computedbbox.
 - `protrusions::Observable{RectSides{Float32}}`: The sizes of content "sticking out" of the main element into the `GridLayout` gaps.
-- `reportedsize::Observable{NTuple{2, Optional{Float32}}}`: The width and height that the element computes for itself if possible (else `nothing`).
+- `reporteddimensions::Observable{Dimensions}`: The dimensions (inner and outer) that the object communicates to the containing `GridLayout`.
 - `autosize::Observable{NTuple{2, Optional{Float32}}}`: The width and height that the element reports to its parent `GridLayout`. If the element doesn't want to cause the parent to adjust to its size, autosize can hide the reportedsize from it by being set to `nothing`.
 - `computedbbox::Observable{Rect2f}`: The bounding box that the element computes for itself after it has received a suggestedbbox.
 - `gridcontent::Optional{GridContent{G}}`: A reference of a `GridContent` if the element is currently placed in a `GridLayout`. This can be used to retrieve the parent layout, remove the element from it or change its position, and assign it to a different layout.
@@ -151,7 +156,7 @@ struct LayoutObservables{G} # G again GridLayout
     suggestedbbox::Observable{Rect2f}
     protrusions::Observable{RectSides{Float32}}
     effective_protrusions::Observable{RectSides{Float32}}
-    reportedsize::Observable{NTuple{2, Optional{Float32}}}
+    reporteddimensions::Observable{Dimensions}
     autosize::Observable{NTuple{2, Optional{Float32}}}
     computedbbox::Observable{Rect2f}
     gridcontent::Base.RefValue{Optional{GridContent{G}}} # the connecting link to the gridlayout

@@ -32,7 +32,7 @@ export colsize!, rowsize!, colgap!, rowgap!
 export Left, Right, Top, Bottom, TopLeft, BottomLeft, TopRight, BottomRight
 export grid!, hbox!, vbox!
 export swap!
-export protrusionsobservable, suggestedbboxobservable, reportedsizeobservable, autosizeobservable, computedbboxobservable, gridcontent
+export protrusionsobservable, suggestedbboxobservable, reporteddimensionsobservable, autosizeobservable, computedbboxobservable, gridcontent
 export ncols, nrows, offsets
 export contents, content
 export tight_bbox
