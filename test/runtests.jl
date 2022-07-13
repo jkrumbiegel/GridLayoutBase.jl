@@ -7,7 +7,7 @@ using Observables
 
 include("debugrect.jl")
 
-Base.show(io::IO, b::GridLayoutBase.GeometryBasics.Rect2) = print(io, "BBox($(left(b)), $(right(b)), $(bottom(b)), $(top(b)))")
+# run this to make bboxes easier to read: Base.show(io::IO, b::GridLayoutBase.GeometryBasics.Rect2) = print(io, "BBox($(left(b)), $(right(b)), $(bottom(b)), $(top(b)))")
 
 @testset "GridLayout Zero Outside AlignMode" begin
     bbox = BBox(0, 1000, 0, 1000)
@@ -999,12 +999,11 @@ end
     dr4.rightprot[] = 100
     @test reporteddimensionsobservable(dr4)[].inner == (200, nothing)
     @test reporteddimensionsobservable(dr4)[].outer == RectSides(0f0, 100f0, 0f0, 0f0)
-    @test computedbboxobservable(dr4)[] == BBox(700, 900, 0, 250)
     @test suggestedbboxobservable(dr4)[] == BBox(700, 900, 0, 250)
+    @test computedbboxobservable(dr4)[] == BBox(700, 900, 0, 250)
     dr4.alignmode[] = Outside(0)
     @test reporteddimensionsobservable(dr4)[].inner == (300, nothing)
     @test reporteddimensionsobservable(dr4)[].outer == RectSides(0f0, 0f0, 0f0, 0f0)
-    @test suggestedbboxobservable(dr4)[] == BBox(800, 1000, 0, 250)
-    @test computedbboxobservable(dr4)[] == BBox(800, 900, 0, 250)
+    @test suggestedbboxobservable(dr4)[] == BBox(700, 1000, 0, 250)
+    @test computedbboxobservable(dr4)[] == BBox(700, 900, 0, 250)
 end
-

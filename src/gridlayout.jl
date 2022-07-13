@@ -168,10 +168,10 @@ function update!(gl::GridLayout)
 
     new_autosize = (w, h)
     new_protrusions = RectSides{Float32}(
-        protrusion(gl, Left()),
-        protrusion(gl, Right()),
-        protrusion(gl, Bottom()),
-        protrusion(gl, Top()),
+        compute_effective_protrusion(gl, Left()),
+        compute_effective_protrusion(gl, Right()),
+        compute_effective_protrusion(gl, Bottom()),
+        compute_effective_protrusion(gl, Top()),
     )
 
     # if autosize and protrusions didn't change, then we only need to trigger a relayout in this gridlayout
@@ -785,13 +785,7 @@ function _compute_maxgrid(gl)
         # TODO this RowCols{Int} should actually just be a RectSides and RowCols should always store vectors
         idx_rect = side_indices(gl, c)
         mapsides(idx_rect, maxgrid) do side, idx, grid
-            if c.side === Inner()
-                # for an Inner object, the protrusions themselves count
-                grid[idx] = max(grid[idx], effective_protrusion(c, side))
-            else
-                # for all the sides, the width or height of the object counts
-                grid[idx] = max(grid[idx], effective_protrusion(c, side, c.side)::Float32)
-            end
+            grid[idx] = max(grid[idx], effective_protrusion(c, side, c.side)::Float32)
         end
     end
     maxgrid
@@ -801,6 +795,11 @@ effective_protrusion(c::GridContent, ::Left) = effectiveprotrusionsobservable(c.
 effective_protrusion(c::GridContent, ::Right) = effectiveprotrusionsobservable(c.content)[].right
 effective_protrusion(c::GridContent, ::Top) = effectiveprotrusionsobservable(c.content)[].top
 effective_protrusion(c::GridContent, ::Bottom) = effectiveprotrusionsobservable(c.content)[].bottom
+
+effective_protrusion(c::GridContent, ::Left, ::Inner) = effectiveprotrusionsobservable(c.content)[].left
+effective_protrusion(c::GridContent, ::Right, ::Inner) = effectiveprotrusionsobservable(c.content)[].right
+effective_protrusion(c::GridContent, ::Top, ::Inner) = effectiveprotrusionsobservable(c.content)[].top
+effective_protrusion(c::GridContent, ::Bottom, ::Inner) = effectiveprotrusionsobservable(c.content)[].bottom
 
 effective_protrusion(c::GridContent, ::Left, s::Union{Left, BottomLeft, TopLeft}) = something(determinedirsize(c, Col(), s), 0f0)
 effective_protrusion(c::GridContent, ::Right, s::Union{Right, BottomRight, TopRight}) = something(determinedirsize(c, Col(), s), 0f0)
@@ -855,7 +854,6 @@ the grid are not taken into account. This is needed if the grid is itself placed
 inside another grid.
 """
 function compute_rowcols(gl::GridLayout, suggestedbbox::Rect2f)
-
     # compute the actual bbox for the content given that there might be outside
     # padding that needs to be removed
     alignmode = gl.alignmode[]
@@ -1797,6 +1795,39 @@ getside(m::Mixed, ::Left) = m.sides.left
 getside(m::Mixed, ::Right) = m.sides.right
 getside(m::Mixed, ::Top) = m.sides.top
 getside(m::Mixed, ::Bottom) = m.sides.bottom
+
+function compute_effective_protrusion(gl::GridLayout, side::Side)
+    al = gl.alignmode[]
+    if al isa Outside
+        return 0f0
+    elseif al isa Inside
+        compute_effective_protrusion_inside(gl, side)
+    elseif al isa Mixed
+        si = getside(al, side)
+        if isnothing(si)
+            compute_effective_protrusion_inside(gl, side)
+        elseif si isa Protrusion
+            si.p
+        else
+            # Outside alignment
+            0f0
+        end
+    else
+        error("Unknown AlignMode of type $(typeof(al))")
+    end
+end
+
+function compute_effective_protrusion_inside(gl::GridLayout, side::Side)
+    prot = 0f0
+    for elem in gl.content
+        if ismostin(elem, gl, side)
+            # take the max protrusion of all elements that are sticking
+            # out at this side
+            prot = max(effective_protrusion(elem, side, elem.side), prot)
+        end
+    end
+    return prot
+end
 
 function inside_protrusion(gl::GridLayout, side::Side)
     prot = 0.0
