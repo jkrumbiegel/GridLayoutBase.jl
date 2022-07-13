@@ -43,15 +43,15 @@ function LayoutObservables(width::Observable, height::Observable,
     gridcontent_ref = Ref{Optional{GridContent{GridLayout}}}(gridcontent)
 
     autosizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
-    reportedsize = make_reportedsize!(sizeobservable, autosizeobservable, tellsizeobservable)
-    computedbbox = make_computedbbox!(suggestedbbox_observable, reportedsize, alignment, sizeobservable, autosizeobservable,
+    reporteddimensions = make_reporteddimensions!(sizeobservable, autosizeobservable, tellsizeobservable, protrusions, alignmode)
+    computedbbox = make_computedbbox!(suggestedbbox_observable, reporteddimensions, alignment, sizeobservable, autosizeobservable,
         alignmode, protrusions, gridcontent_ref)
 
     LayoutObservables{GridLayout}(
         suggestedbbox_observable,
         protrusions,
         effective_protrusions,
-        reportedsize,
+        reporteddimensions,
         autosizeobservable,
         computedbbox,
         gridcontent_ref,
@@ -106,20 +106,29 @@ function sizeobservable!(widthattr::Observable{SizeAttribute}, heightattr::Obser
     sizeattrs
 end
 
-function make_reportedsize!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}}, tellsizeobservable)
+function make_reporteddimensions!(sizeattrs, autosizeobservable::Observable{NTuple{2, Optional{Float32}}}, tellsizeobservable, protrusions, alignmode)
 
     # set up rsizeobservable with correct type manually
-    rsizeobservable = Observable{NTuple{2, Optional{Float32}}}((nothing, nothing))
+    rdimobservable = Observable{Dimensions}(Dimensions((nothing, nothing), RectSides(0f0, 0f0, 0f0, 0f0)))
 
-    map!(_reportedsizeobservable, rsizeobservable, sizeattrs, autosizeobservable, tellsizeobservable)
+    map!(_reporteddimensionsobservable, rdimobservable, sizeattrs, autosizeobservable, tellsizeobservable, protrusions, alignmode)
 
     # # trigger first value
     # notify(sizeattrs)
 
-    rsizeobservable
+    rdimobservable
 end
 
-function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,SizeAttribute}), @nospecialize(autosize::Tuple{AutoSize,AutoSize}), tellsizeobservable::Tuple{Bool,Bool})
+function _reporteddimensionsobservable(
+        @nospecialize(sizeattrs::Tuple{SizeAttribute,SizeAttribute}),
+        @nospecialize(autosize::Tuple{AutoSize,AutoSize}),
+        tellsizeobservable::Tuple{Bool,Bool},
+        protrusions,
+        alignmode,
+    )
+
+    outer = effective_protrusion(protrusions, alignmode)
+
     wattr, hattr = sizeattrs
     wauto, hauto = autosize
     tellw, tellh = tellsizeobservable
@@ -127,7 +136,50 @@ function _reportedsizeobservable(@nospecialize(sizeattrs::Tuple{SizeAttribute,Si
     wsize = computed_size(wattr, wauto, tellw)
     hsize = computed_size(hattr, hauto, tellh)
 
-    (wsize, hsize)
+    inner = if alignmode isa Inside
+        (wsize, hsize)
+    elseif alignmode isa Outside
+        (isnothing(wsize) ? nothing : wsize + protrusions.left + protrusions.right + alignmode.padding.left + alignmode.padding.right,
+         isnothing(hsize) ? nothing : hsize + protrusions.top + protrusions.bottom + alignmode.padding.top + alignmode.padding.bottom)
+    elseif alignmode isa Mixed
+        w = if isnothing(wsize)
+            nothing
+        else
+            w = wsize
+            if alignmode.sides.left isa Float32
+                w += protrusions.left + alignmode.sides.left
+            elseif alignmode.sides.left isa Protrusion
+                w
+            end
+            if alignmode.sides.right isa Float32
+                w += protrusions.right + alignmode.sides.right
+            elseif alignmode.sides.right isa Protrusion
+                w
+            end
+            w
+        end
+        h = if isnothing(hsize)
+            nothing
+        else
+            h = hsize
+            if alignmode.sides.bottom isa Float32
+                h += protrusions.bottom + alignmode.sides.bottom
+            elseif alignmode.sides.bottom isa Protrusion
+                h
+            end
+            if alignmode.sides.top isa Float32
+                h += protrusions.top + alignmode.sides.top
+            elseif alignmode.sides.top isa Protrusion
+                h
+            end
+            h
+        end
+        (w, h)
+    else
+        error("Unknown alignmode $alignmode")
+    end
+
+    Dimensions(inner, outer)
 end
 
 function computed_size(sizeattr, autosize, tellsize)
@@ -156,7 +208,7 @@ end
 
 function make_computedbbox!(
     suggestedbbox::Observable{Rect2f},
-    reportedsize::Observable{NTuple{2, Optional{Float32}}},
+    reporteddimensions::Observable{Dimensions},
     alignment::Observable,
     sizeattrs::Observable,
     autosizeobservable::Observable{NTuple{2, Optional{Float32}}},
@@ -166,22 +218,22 @@ function make_computedbbox!(
 
     # suggestedbbox and alignment don't affect the parent gridlayout
     onany(suggestedbbox, alignment) do sbbox, ali
-        update_computedbbox!(computedbbox, sbbox, ali, reportedsize[], alignmode[], protrusions[], sizeattrs, autosizeobservable)
+        update_computedbbox!(computedbbox, sbbox, ali, reporteddimensions[], alignmode[], protrusions[], sizeattrs, autosizeobservable)
     end
 
     # these will trigger the update of a parent gridlayout if there is one, so an update
     # through suggestedbbox will come back after the parent has updated, so here we only update if
     # the object is standalone
-    onany(reportedsize, alignmode, protrusions) do rsize, al, prot
+    onany(reporteddimensions) do rdims
         if gridcontent_ref[] === nothing
-            update_computedbbox!(computedbbox, suggestedbbox[], alignment[], rsize, al, prot, sizeattrs, autosizeobservable)
+            update_computedbbox!(computedbbox, suggestedbbox[], alignment[], rdims, alignmode[], protrusions[], sizeattrs, autosizeobservable)
         end
     end
 
     computedbbox
 end
 
-function update_computedbbox!(computedbbox, suggestedbbox, alignment, reportedsize, alignmode, protrusions, sizeattrs, autosizeobservable)
+function update_computedbbox!(computedbbox, suggestedbbox, alignment, reporteddimensions, alignmode, protrusions, sizeattrs, autosizeobservable)
 
     bw = width(suggestedbbox)
     bh = height(suggestedbbox)
@@ -193,7 +245,7 @@ function update_computedbbox!(computedbbox, suggestedbbox, alignment, reportedsi
     widthattr, heightattr = sizeattrs[]
     T = eltype(protrusions)
 
-    cwidth, cheight = reportedsize
+    cwidth, cheight = reporteddimensions.inner
     w_target = T(if isnothing(cwidth)
         if widthattr isa Relative
             widthattr.x * bw
@@ -328,7 +380,7 @@ end
 protrusionsobservable(x) = layoutobservables(x).protrusions
 effectiveprotrusionsobservable(x) = layoutobservables(x).effective_protrusions
 suggestedbboxobservable(x) = layoutobservables(x).suggestedbbox
-reportedsizeobservable(x) = layoutobservables(x).reportedsize
+reporteddimensionsobservable(x) = layoutobservables(x).reporteddimensions
 autosizeobservable(x) = layoutobservables(x).autosize
 computedbboxobservable(x) = layoutobservables(x).computedbbox
 gridcontent(x) = layoutobservables(x).gridcontent[]

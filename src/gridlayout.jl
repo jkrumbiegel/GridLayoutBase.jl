@@ -244,12 +244,12 @@ function connect_layoutobservables!(gc::GridContent)
     disconnect_layoutobservables!(gc::GridContent)
 
     let content = gc.content
-        gc.protrusions_handle = on(effectiveprotrusionsobservable(content)) do p
-            if !layoutobservables(content).block_updates[]::Bool
-                update!(gc)
-            end
-        end
-        gc.reportedsize_handle = on(reportedsizeobservable(content)) do c
+        # gc.protrusions_handle = on(effectiveprotrusionsobservable(content)) do p
+        #     if !layoutobservables(content).block_updates[]::Bool
+        #         update!(gc)
+        #     end
+        # end
+        gc.reportedsize_handle = on(reporteddimensionsobservable(content)) do c
             if !layoutobservables(content).block_updates[]::Bool
                 update!(gc)
             end
@@ -258,12 +258,12 @@ function connect_layoutobservables!(gc::GridContent)
 end
 
 function disconnect_layoutobservables!(gc::GridContent)
-    if !isnothing(gc.protrusions_handle)
-        Observables.off(effectiveprotrusionsobservable(gc.content), gc.protrusions_handle)
-        gc.protrusions_handle = nothing
-    end
+    # if !isnothing(gc.protrusions_handle)
+    #     Observables.off(effectiveprotrusionsobservable(gc.content), gc.protrusions_handle)
+    #     gc.protrusions_handle = nothing
+    # end
     if !isnothing(gc.reportedsize_handle)
-        Observables.off(reportedsizeobservable(gc.content), gc.reportedsize_handle)
+        Observables.off(reporteddimensionsobservable(gc.content), gc.reportedsize_handle)
         gc.reportedsize_handle = nothing
     end
 end
@@ -1888,11 +1888,11 @@ means that the layout reports only its full width but not its height, because
 an element placed in the left protrusion loses its ability to influence height.
 """
 function determinedirsize(content, gdir::GridDir, side::Side)
-    reportedsize = reportedsizeobservable(content)
+    reportedsize = reporteddimensionsobservable(content)[].inner
     if gdir isa Row
         if side isa Union{Inner, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight}
             # TODO: is reportedsize the correct thing to return? or plus protrusions depending on the side
-            ifnothing(reportedsize[][2], nothing)
+            ifnothing(reportedsize[2], nothing)
         elseif side isa Union{Left, Right}
             nothing
         else
@@ -1900,7 +1900,7 @@ function determinedirsize(content, gdir::GridDir, side::Side)
         end
     else
         if side isa Union{Inner, Left, Right, TopLeft, TopRight, BottomLeft, BottomRight}
-            ifnothing(reportedsize[][1], nothing)
+            ifnothing(reportedsize[1], nothing)
         elseif side isa Union{Top, Bottom}
             nothing
         else
