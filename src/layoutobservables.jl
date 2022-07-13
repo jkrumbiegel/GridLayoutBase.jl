@@ -36,8 +36,6 @@ function LayoutObservables(width::Observable, height::Observable,
     suggestedbbox_observable = make_suggestedbbox!(suggestedbbox)
     protrusions = make_protrusions!(protrusions)
 
-    # effective protrusions are the protrusions modified by the alignmode, as seen from a containing GridLayout
-    effective_protrusions = map(effective_protrusion, protrusions, alignmode)
     tellsizeobservable = map(tuple, tellwidth, tellheight)
 
     gridcontent_ref = Ref{Optional{GridContent{GridLayout}}}(gridcontent)
@@ -50,7 +48,6 @@ function LayoutObservables(width::Observable, height::Observable,
     LayoutObservables{GridLayout}(
         suggestedbbox_observable,
         protrusions,
-        effective_protrusions,
         reporteddimensions,
         autosizeobservable,
         computedbbox,
@@ -61,7 +58,7 @@ end
 
 maprectsides(f) = RectSides(map(f, (:left, :right, :bottom, :top))...)
 
-function effective_protrusion(prot, @nospecialize(al::AlignMode))
+function effective_protrusion(prot::RectSides, @nospecialize(al::AlignMode))
     x = if al isa Inside
         prot
     elseif al isa Outside
@@ -378,7 +375,6 @@ end
 
 # These are the default API functions to retrieve the layout parts from an object
 protrusionsobservable(x) = layoutobservables(x).protrusions
-effectiveprotrusionsobservable(x) = layoutobservables(x).effective_protrusions
 suggestedbboxobservable(x) = layoutobservables(x).suggestedbbox
 reporteddimensionsobservable(x) = layoutobservables(x).reporteddimensions
 autosizeobservable(x) = layoutobservables(x).autosize
