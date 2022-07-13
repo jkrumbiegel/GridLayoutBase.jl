@@ -940,35 +940,35 @@ end
 
     dr1.alignmode[] = Mixed(right = Protrusion(0), bottom = Protrusion(0))
     @test GridLayoutBase.protrusionsobservable(dr1)[] == RectSides{Float32}(0, 50, 100, 0)
-    @test GridLayoutBase.effectiveprotrusionsobservable(dr1)[] == RectSides{Float32}(0, 0, 0, 0)
+    @test reporteddimensionsobservable(dr1)[].outer == RectSides{Float32}(0, 0, 0, 0)
     @test GridLayoutBase.suggestedbboxobservable(dr1)[] == BBox(0, 1000, 0, 1000)
     @test GridLayoutBase.computedbboxobservable(dr1)[] == BBox(0, 1000, 0, 1000)
 
     dr1.alignmode[] = Mixed(right = 50, bottom = 50)
     @test GridLayoutBase.protrusionsobservable(dr1)[] == RectSides{Float32}(0, 50, 100, 0)
-    @test GridLayoutBase.effectiveprotrusionsobservable(dr1)[] == RectSides{Float32}(0, 0, 0, 0)
+    @test reporteddimensionsobservable(dr1)[].outer == RectSides{Float32}(0, 0, 0, 0)
     @test GridLayoutBase.suggestedbboxobservable(dr1)[] == BBox(0, 1000, 0, 1000)
     @test GridLayoutBase.computedbboxobservable(dr1)[] == BBox(0, 900, 150, 1000)
 
     dr1.alignmode[] = Mixed(right = Protrusion(50), bottom = Protrusion(50), left = Protrusion(50), top = Protrusion(50))
     @test GridLayoutBase.protrusionsobservable(dr1)[] == RectSides{Float32}(0, 50, 100, 0)
-    @test GridLayoutBase.effectiveprotrusionsobservable(dr1)[] == RectSides{Float32}(50, 50, 50, 50)
+    @test reporteddimensionsobservable(dr1)[].outer == RectSides{Float32}(50, 50, 50, 50)
     @test GridLayoutBase.suggestedbboxobservable(dr1)[] == BBox(50, 950, 50, 950)
     @test GridLayoutBase.computedbboxobservable(dr1)[] == BBox(50, 950, 50, 950)
 
     dr1.layoutobservables.protrusions[] = RectSides{Float32}(0, 0, 0, 0)
     @test GridLayoutBase.protrusionsobservable(dr1)[] == RectSides{Float32}(0, 0, 0, 0)
-    @test GridLayoutBase.effectiveprotrusionsobservable(dr1)[] == RectSides{Float32}(50, 50, 50, 50)
+    @test reporteddimensionsobservable(dr1)[].outer == RectSides{Float32}(50, 50, 50, 50)
 
     dr1.alignmode[] = Mixed(left = Protrusion(1), right = Protrusion(2), bottom = Protrusion(3), top = Protrusion(4))
     @test GridLayoutBase.protrusionsobservable(dr1)[] == RectSides{Float32}(0, 0, 0, 0)
-    @test GridLayoutBase.effectiveprotrusionsobservable(dr1)[] == RectSides{Float32}(1, 2, 3, 4)
+    @test reporteddimensionsobservable(dr1)[].outer == RectSides{Float32}(1, 2, 3, 4)
 
     gl = GridLayout()
     @test GridLayoutBase.protrusionsobservable(gl)[] == RectSides{Float32}(0, 0, 0, 0)
     gl[1, 1, Right()] = DebugRect(width = 200)
     @test GridLayoutBase.protrusionsobservable(gl)[] == RectSides{Float32}(0, 200, 0, 0)
-    @test GridLayoutBase.effectiveprotrusionsobservable(gl)[] == RectSides{Float32}(0, 200, 0, 0)
+    @test reporteddimensionsobservable(gl)[].outer == RectSides{Float32}(0, 200, 0, 0)
 end
 
 @testset "GridLayout GridPosition/GridSubposition constructor" begin

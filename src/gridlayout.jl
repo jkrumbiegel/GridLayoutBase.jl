@@ -791,15 +791,15 @@ function _compute_maxgrid(gl)
     maxgrid
 end
 
-effective_protrusion(c::GridContent, ::Left) = effectiveprotrusionsobservable(c.content)[].left
-effective_protrusion(c::GridContent, ::Right) = effectiveprotrusionsobservable(c.content)[].right
-effective_protrusion(c::GridContent, ::Top) = effectiveprotrusionsobservable(c.content)[].top
-effective_protrusion(c::GridContent, ::Bottom) = effectiveprotrusionsobservable(c.content)[].bottom
+effective_protrusion(c::GridContent, ::Left) = reporteddimensionsobservable(c.content)[].outer.left
+effective_protrusion(c::GridContent, ::Right) = reporteddimensionsobservable(c.content)[].outer.right
+effective_protrusion(c::GridContent, ::Top) = reporteddimensionsobservable(c.content)[].outer.top
+effective_protrusion(c::GridContent, ::Bottom) = reporteddimensionsobservable(c.content)[].outer.bottom
 
-effective_protrusion(c::GridContent, ::Left, ::Inner) = effectiveprotrusionsobservable(c.content)[].left
-effective_protrusion(c::GridContent, ::Right, ::Inner) = effectiveprotrusionsobservable(c.content)[].right
-effective_protrusion(c::GridContent, ::Top, ::Inner) = effectiveprotrusionsobservable(c.content)[].top
-effective_protrusion(c::GridContent, ::Bottom, ::Inner) = effectiveprotrusionsobservable(c.content)[].bottom
+effective_protrusion(c::GridContent, ::Left, ::Inner) = reporteddimensionsobservable(c.content)[].outer.left
+effective_protrusion(c::GridContent, ::Right, ::Inner) = reporteddimensionsobservable(c.content)[].outer.right
+effective_protrusion(c::GridContent, ::Top, ::Inner) = reporteddimensionsobservable(c.content)[].outer.top
+effective_protrusion(c::GridContent, ::Bottom, ::Inner) = reporteddimensionsobservable(c.content)[].outer.bottom
 
 effective_protrusion(c::GridContent, ::Left, s::Union{Left, BottomLeft, TopLeft}) = something(determinedirsize(c, Col(), s), 0f0)
 effective_protrusion(c::GridContent, ::Right, s::Union{Right, BottomRight, TopRight}) = something(determinedirsize(c, Col(), s), 0f0)

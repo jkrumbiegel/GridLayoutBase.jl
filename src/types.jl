@@ -155,7 +155,6 @@ A collection of `Observable`s and an optional `GridContent` that are needed to i
 struct LayoutObservables{G} # G again GridLayout
     suggestedbbox::Observable{Rect2f}
     protrusions::Observable{RectSides{Float32}}
-    effective_protrusions::Observable{RectSides{Float32}}
     reporteddimensions::Observable{Dimensions}
     autosize::Observable{NTuple{2, Optional{Float32}}}
     computedbbox::Observable{Rect2f}
