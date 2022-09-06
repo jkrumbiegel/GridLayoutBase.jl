@@ -1214,6 +1214,8 @@ function determinedirsize(idir::Int64, gl::GridLayout, dir::GridDir)::Optional{F
     nothing
 end
 
+determinedirsize(idir::Integer, gl::GridLayout, dir::GridDir) = determinedirsize(Int64(idir), gl, dir)
+
 # a function that iterates over those sizes that belong to a type T
 # while enumerating all indices, so that i can be used to index colwidths / rowheights
 # and determinedcols / determinedrows
