@@ -26,7 +26,7 @@ function LayoutObservables(width::Observable, height::Observable,
         suggestedbbox = nothing,
         protrusions = nothing,
         gridcontent = nothing,
-        block_updates::Bool = false) where T
+        block_updates::Bool = false)
 
     width_obs = convert(Observable{SizeAttribute}, width)
     height_obs = convert(Observable{SizeAttribute}, height)
