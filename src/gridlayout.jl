@@ -1174,7 +1174,7 @@ end
 Determine the size of one row or column of a grid layout.
 `idir` is the dir index including offset (so can be negative)
 """
-function determinedirsize(idir::Int64, gl::GridLayout, dir::GridDir)::Optional{Float32}
+function determinedirsize(idir::Integer, gl::GridLayout, dir::GridDir)::Optional{Float32}
 
     sz = dirsizes(gl, dir)[unoffset(gl, idir, dir)]
 
@@ -1213,8 +1213,6 @@ function determinedirsize(idir::Int64, gl::GridLayout, dir::GridDir)::Optional{F
     end
     nothing
 end
-
-determinedirsize(idir::Integer, gl::GridLayout, dir::GridDir) = determinedirsize(Int64(idir), gl, dir)
 
 # a function that iterates over those sizes that belong to a type T
 # while enumerating all indices, so that i can be used to index colwidths / rowheights
