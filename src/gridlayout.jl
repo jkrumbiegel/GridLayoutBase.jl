@@ -655,14 +655,14 @@ end
 function Base.show(io::IO, gl::GridLayout)
     print(io, "GridLayout[$(nrows(gl)), $(ncols(gl))] ($(length(gl.content)) children)")
 end
-        
+
 
 """
     colsize!(gl::GridLayout, i::Int64, s::Union{Aspect, Auto, Fixed, Relative, Real})
-        
+
 Set the size of the `i`th column in `gl`, i.e., `gl[:, i]`.
 Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
-        
+
 See also [Aspect](@ref), [Auto](@ref), [Fixed](@ref), and [Relative](@ref).
 """
 function colsize!(gl::GridLayout, i::Int, s::ContentSize)
@@ -678,10 +678,10 @@ colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
 
 """
     rowsize!(gl::GridLayout, i::Int64, s::Union{Aspect, Auto, Fixed, Relative, Real})
-        
+
 Set the size of the `i`th row in `gl`, i.e., `gl[i, :]`.
 Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
-        
+
 See also [Aspect](@ref), [Auto](@ref), [Fixed](@ref), and [Relative](@ref).
 """
 function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
@@ -698,11 +698,11 @@ rowsize!(gl::GridLayout, i::Int, s::Real) = rowsize!(gl, i, Fixed(s))
 """
     colgap!(gl::GridLayout, i::Int64, s::Union{Fixed, Relative, Real})
     colgap!(gl::GridLayout, s::Union{Fixed, Relative, Real})
-        
+
 Set the gap between columns in `gl`.  The two-argument version sets all column gaps
 in `gl`.  The three-argument version sets the gap between columns `i` and `i+1`.
 Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
-        
+
 See also [Fixed](@ref) and [Relative](@ref).
 """
 function colgap!(gl::GridLayout, i::Int, s::GapSize)
@@ -728,11 +728,11 @@ end
 """
     rowgap!(gl::GridLayout, i::Int64, s::Union{Fixed, Relative, Real})
     rowgap!(gl::GridLayout, s::Union{Fixed, Relative, Real})
-        
+
 Set the gap between rows in `gl`.  The two-argument version sets all row gaps
 in `gl`.  The three-argument version sets the gap between rows `i` and `i+1`.
 Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
-        
+
 See also [Fixed](@ref) and [Relative](@ref).
 """
 function rowgap!(gl::GridLayout, i::Int, s::GapSize)
@@ -1174,7 +1174,7 @@ end
 Determine the size of one row or column of a grid layout.
 `idir` is the dir index including offset (so can be negative)
 """
-function determinedirsize(idir::Int64, gl::GridLayout, dir::GridDir)::Optional{Float32}
+function determinedirsize(idir::Int, gl::GridLayout, dir::GridDir)::Optional{Float32}
 
     sz = dirsizes(gl, dir)[unoffset(gl, idir, dir)]
 
