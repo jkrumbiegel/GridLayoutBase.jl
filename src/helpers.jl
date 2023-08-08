@@ -119,7 +119,7 @@ function BBox(left::Number, right::Number, bottom::Number, top::Number)
     return Rect2f(mini, maxi .- mini)
 end
 
-function RowCols(ncols::Int, nrows::Int)
+function RowCols(ncols::Integer, nrows::Integer)
     return RowCols(
         zeros(Float32, ncols),
         zeros(Float32, ncols),
