@@ -52,10 +52,11 @@ Base.convert(::Type{SizeAttribute}, r::Relative) = r
 Base.convert(::Type{SizeAttribute}, a::Auto) = a
 
 @inline function Base.setproperty!(g::GridLayout, s::Symbol, value)
-    if fieldtype(GridLayout, s) <: Observable
+    T = fieldtype(GridLayout, s)
+    if T <: Observable
         setindex!(getfield(g, s), value)
     else
-        setfield!(g, s, value)
+        setfield!(g, s, convert(T, value))
     end
 end
 
