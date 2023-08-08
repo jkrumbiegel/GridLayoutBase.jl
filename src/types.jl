@@ -41,8 +41,8 @@ Used to specify space that is occupied in a grid. Like 1:1|1:1 for the first squ
 or 2:3|1:4 for a rect over the 2nd and 3rd row and the first four columns.
 """
 struct Span
-    rows::UnitRange{Int}
-    cols::UnitRange{Int}
+    rows::UnitRange{Int64}
+    cols::UnitRange{Int64}
 end
 
 """

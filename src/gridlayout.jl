@@ -60,7 +60,7 @@ Base.convert(::Type{SizeAttribute}, a::Auto) = a
 end
 
 """
-    function GridLayout(nrows::Int, ncols::Int;
+    function GridLayout(nrows::Integer, ncols::Integer;
         parent = nothing,
         rowsizes = nothing,
         colsizes = nothing,
@@ -81,7 +81,7 @@ end
 
 Create a `GridLayout` with optional parent `parent` with `nrows` rows and `ncols` columns.
 """
-function GridLayout(nrows::Int, ncols::Int;
+function GridLayout(nrows::Integer, ncols::Integer;
         parent = nothing,
         rowsizes = nothing,
         colsizes = nothing,
@@ -338,7 +338,7 @@ function convert_gapsizes(n, gaps, defaultsize)::Vector{GapSize}
     end
 end
 
-function appendrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=nothing, update = true)
+function appendrows!(gl::GridLayout, n::Integer; rowsizes=nothing, addedrowgaps=nothing, update = true)
 
     rowsizes = convert_contentsizes(n, rowsizes)
     addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
@@ -350,7 +350,7 @@ function appendrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=noth
     end
 end
 
-function appendcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing, update = true)
+function appendcols!(gl::GridLayout, n::Integer; colsizes=nothing, addedcolgaps=nothing, update = true)
     colsizes = convert_contentsizes(n, colsizes)
     addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
 
@@ -361,7 +361,7 @@ function appendcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=noth
     end
 end
 
-function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=nothing, update = true)
+function prependrows!(gl::GridLayout, n::Integer; rowsizes=nothing, addedrowgaps=nothing, update = true)
 
     rowsizes = convert_contentsizes(n, rowsizes)
     addedrowgaps = convert_gapsizes(n, addedrowgaps, gl.default_rowgap)
@@ -374,7 +374,7 @@ function prependrows!(gl::GridLayout, n::Int; rowsizes=nothing, addedrowgaps=not
     end
 end
 
-function prependcols!(gl::GridLayout, n::Int; colsizes=nothing, addedcolgaps=nothing, update = true)
+function prependcols!(gl::GridLayout, n::Integer; colsizes=nothing, addedcolgaps=nothing, update = true)
 
     colsizes = convert_contentsizes(n, colsizes)
     addedcolgaps = convert_gapsizes(n, addedcolgaps, gl.default_colgap)
@@ -389,7 +389,7 @@ end
 
 
 """
-    insertrows!(gl::GridLayout, at::Int, n::Int; rowsizes=nothing, addedrowgaps=nothing)
+    insertrows!(gl::GridLayout, at::Integer, n::Integer; rowsizes=nothing, addedrowgaps=nothing)
 
 Insert `n` rows at row `at` into `GridLayout` `gl`. The new row sizes and row gaps can be
 optionally set with `rowsizes` and `addedrowgaps` keywords.
@@ -397,7 +397,7 @@ Objects spanning from at least `at-1` up to or beyond `at` are getting extended 
 over the new rows. Objects from `at` and beyond are pushed back, objects before `at` are
 unaffected.
 """
-function insertrows!(gl::GridLayout, at::Int, n::Int; rowsizes=nothing, addedrowgaps=nothing)
+function insertrows!(gl::GridLayout, at::Integer, n::Integer; rowsizes=nothing, addedrowgaps=nothing)
 
     if !(1 <= at <= nrows(gl))
         error("Invalid row insertion at row $at. GridLayout has $(nrows(gl)) rows.")
@@ -428,7 +428,7 @@ function insertrows!(gl::GridLayout, at::Int, n::Int; rowsizes=nothing, addedrow
 end
 
 """
-    insertcols!(gl::GridLayout, at::Int, n::Int; colsizes=nothing, addedcolgaps=nothing)
+    insertcols!(gl::GridLayout, at::Integer, n::Integer; colsizes=nothing, addedcolgaps=nothing)
 
 Insert `n` columns at column `at` into `GridLayout` `gl`. The new column sizes and column gaps can be
 optionally set with `colsizes` and `addedcolgaps` keywords.
@@ -436,7 +436,7 @@ Objects spanning from at least `at-1` up to or beyond `at` are getting extended 
 over the new columns. Objects from `at` and beyond are pushed back, objects before `at` are
 unaffected.
 """
-function insertcols!(gl::GridLayout, at::Int, n::Int; colsizes=nothing, addedcolgaps=nothing)
+function insertcols!(gl::GridLayout, at::Integer, n::Integer; colsizes=nothing, addedcolgaps=nothing)
 
     if !(1 <= at <= ncols(gl))
         error("Invalid column insertion at column $at. GridLayout has $(ncols(gl)) columns.")
@@ -466,7 +466,7 @@ function insertcols!(gl::GridLayout, at::Int, n::Int; colsizes=nothing, addedcol
     end
 end
 
-function deleterow!(gl::GridLayout, irow::Int)
+function deleterow!(gl::GridLayout, irow::Integer)
     if !(firstrow(gl) <= irow <= lastrow(gl))
         error("Row $irow does not exist.")
     end
@@ -511,7 +511,7 @@ end
 rowoffset(gl) = offset(gl, Row())
 coloffset(gl) = offset(gl, Col())
 
-function deletecol!(gl::GridLayout, icol::Int)
+function deletecol!(gl::GridLayout, icol::Integer)
     if !(firstcol(gl) <= icol <= lastcol(gl))
         error("Col $icol does not exist.")
     end
@@ -552,7 +552,7 @@ function deletecol!(gl::GridLayout, icol::Int)
     update!(gl)
 end
 
-function Base.isempty(gl::GridLayout, dir::GridDir, i::Int)
+function Base.isempty(gl::GridLayout, dir::GridDir, i::Integer)
     !any(gl.content) do c
         span = dir isa Row ? c.span.rows : c.span.cols
         i in span
@@ -658,14 +658,14 @@ end
 
 
 """
-    colsize!(gl::GridLayout, i::Int, s::Union{Aspect, Auto, Fixed, Relative, Real})
+    colsize!(gl::GridLayout, i::Integer, s::Union{Aspect, Auto, Fixed, Relative, Real})
 
 Set the size of the `i`th column in `gl`, i.e., `gl[:, i]`.
 Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
 
 See also [Aspect](@ref), [Auto](@ref), [Fixed](@ref), and [Relative](@ref).
 """
-function colsize!(gl::GridLayout, i::Int, s::ContentSize)
+function colsize!(gl::GridLayout, i::Integer, s::ContentSize)
     if !(firstcol(gl) <= i <= lastcol(gl))
         error("Can't set size of invalid column $i.")
     end
@@ -674,17 +674,17 @@ function colsize!(gl::GridLayout, i::Int, s::ContentSize)
     update!(gl)
 end
 
-colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
+colsize!(gl::GridLayout, i::Integer, s::Real) = colsize!(gl, i, Fixed(s))
 
 """
-    rowsize!(gl::GridLayout, i::Int, s::Union{Aspect, Auto, Fixed, Relative, Real})
+    rowsize!(gl::GridLayout, i::Integer, s::Union{Aspect, Auto, Fixed, Relative, Real})
 
 Set the size of the `i`th row in `gl`, i.e., `gl[i, :]`.
 Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
 
 See also [Aspect](@ref), [Auto](@ref), [Fixed](@ref), and [Relative](@ref).
 """
-function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
+function rowsize!(gl::GridLayout, i::Integer, s::ContentSize)
     if !(firstrow(gl) <= i <= lastrow(gl))
         error("Can't set size of invalid row $i.")
     end
@@ -693,10 +693,10 @@ function rowsize!(gl::GridLayout, i::Int, s::ContentSize)
     update!(gl)
 end
 
-rowsize!(gl::GridLayout, i::Int, s::Real) = rowsize!(gl, i, Fixed(s))
+rowsize!(gl::GridLayout, i::Integer, s::Real) = rowsize!(gl, i, Fixed(s))
 
 """
-    colgap!(gl::GridLayout, i::Int, s::Union{Fixed, Relative, Real})
+    colgap!(gl::GridLayout, i::Integer, s::Union{Fixed, Relative, Real})
     colgap!(gl::GridLayout, s::Union{Fixed, Relative, Real})
 
 Set the gap between columns in `gl`.  The two-argument version sets all column gaps
@@ -705,7 +705,7 @@ Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
 
 See also [Fixed](@ref) and [Relative](@ref).
 """
-function colgap!(gl::GridLayout, i::Int, s::GapSize)
+function colgap!(gl::GridLayout, i::Integer, s::GapSize)
     if !(1 <= i <= (ncols(gl) - 1))
         error("Can't set size of invalid column gap $i.")
     end
@@ -713,7 +713,7 @@ function colgap!(gl::GridLayout, i::Int, s::GapSize)
     update!(gl)
 end
 
-colgap!(gl::GridLayout, i::Int, s::Real) = colgap!(gl, i, Fixed(s))
+colgap!(gl::GridLayout, i::Integer, s::Real) = colgap!(gl, i, Fixed(s))
 
 function colgap!(gl::GridLayout, s::GapSize)
     gl.addedcolgaps .= Ref(s)
@@ -726,7 +726,7 @@ function colgap!(gl::GridLayout, r::Real)
 end
 
 """
-    rowgap!(gl::GridLayout, i::Int, s::Union{Fixed, Relative, Real})
+    rowgap!(gl::GridLayout, i::Integer, s::Union{Fixed, Relative, Real})
     rowgap!(gl::GridLayout, s::Union{Fixed, Relative, Real})
 
 Set the gap between rows in `gl`.  The two-argument version sets all row gaps
@@ -735,7 +735,7 @@ Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
 
 See also [Fixed](@ref) and [Relative](@ref).
 """
-function rowgap!(gl::GridLayout, i::Int, s::GapSize)
+function rowgap!(gl::GridLayout, i::Integer, s::GapSize)
     if !(1 <= i <= (nrows(gl) - 1))
         error("Can't set size of invalid row gap $i.")
     end
@@ -743,7 +743,7 @@ function rowgap!(gl::GridLayout, i::Int, s::GapSize)
     update!(gl)
 end
 
-rowgap!(gl::GridLayout, i::Int, s::Real) = rowgap!(gl, i, Fixed(s))
+rowgap!(gl::GridLayout, i::Integer, s::Real) = rowgap!(gl, i, Fixed(s))
 
 function rowgap!(gl::GridLayout, s::GapSize)
     gl.addedrowgaps .= Ref(s)
@@ -1174,7 +1174,7 @@ end
 Determine the size of one row or column of a grid layout.
 `idir` is the dir index including offset (so can be negative)
 """
-function determinedirsize(idir::Int, gl::GridLayout, dir::GridDir)::Optional{Float32}
+function determinedirsize(idir::Integer, gl::GridLayout, dir::GridDir)::Optional{Float32}
 
     sz = dirsizes(gl, dir)[unoffset(gl, idir, dir)]
 
