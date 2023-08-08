@@ -658,7 +658,7 @@ end
 
 
 """
-    colsize!(gl::GridLayout, i::Int64, s::Union{Aspect, Auto, Fixed, Relative, Real})
+    colsize!(gl::GridLayout, i::Int, s::Union{Aspect, Auto, Fixed, Relative, Real})
 
 Set the size of the `i`th column in `gl`, i.e., `gl[:, i]`.
 Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
@@ -677,7 +677,7 @@ end
 colsize!(gl::GridLayout, i::Int, s::Real) = colsize!(gl, i, Fixed(s))
 
 """
-    rowsize!(gl::GridLayout, i::Int64, s::Union{Aspect, Auto, Fixed, Relative, Real})
+    rowsize!(gl::GridLayout, i::Int, s::Union{Aspect, Auto, Fixed, Relative, Real})
 
 Set the size of the `i`th row in `gl`, i.e., `gl[i, :]`.
 Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
@@ -696,7 +696,7 @@ end
 rowsize!(gl::GridLayout, i::Int, s::Real) = rowsize!(gl, i, Fixed(s))
 
 """
-    colgap!(gl::GridLayout, i::Int64, s::Union{Fixed, Relative, Real})
+    colgap!(gl::GridLayout, i::Int, s::Union{Fixed, Relative, Real})
     colgap!(gl::GridLayout, s::Union{Fixed, Relative, Real})
 
 Set the gap between columns in `gl`.  The two-argument version sets all column gaps
@@ -726,7 +726,7 @@ function colgap!(gl::GridLayout, r::Real)
 end
 
 """
-    rowgap!(gl::GridLayout, i::Int64, s::Union{Fixed, Relative, Real})
+    rowgap!(gl::GridLayout, i::Int, s::Union{Fixed, Relative, Real})
     rowgap!(gl::GridLayout, s::Union{Fixed, Relative, Real})
 
 Set the gap between rows in `gl`.  The two-argument version sets all row gaps
