@@ -226,8 +226,3 @@ struct GridSubposition
     cols
     side::Side
 end
-
-struct GridLayoutSpec
-    content::Vector{Pair{Tuple{Indexables, Indexables, Side}, Any}}
-    kwargs::Dict{Symbol, Any}
-end

@@ -15,10 +15,8 @@ include("types.jl")
 include("gridlayout.jl")
 include("layoutobservables.jl")
 include("helpers.jl")
-include("gridlayoutspec.jl")
 
 export GridLayout, GridPosition
-export GridLayoutSpec
 export BBox
 export LayoutObservables
 export Inside, Outside, Mixed, Protrusion
