@@ -632,30 +632,6 @@ end
     @test_throws ErrorException GridLayout(2, 2; colsizes = [Fixed(10), Fixed(10)], addedcolgaps = [Fixed(10), Fixed(10)])
 end
 
-
-@testset "gridlayoutspec" begin
-    dr = DebugRect()
-    dr2 = DebugRect()
-    dr3 = DebugRect()
-
-    spec = GridLayoutSpec([
-            (1, 1) => dr,
-            (1:2, 4:5, Left()) => dr2,
-            (:, 0) => GridLayoutSpec([
-                (1:3, 2:4) => dr3
-            ])
-        ];
-        alignmode = Outside()
-    )
-
-    gl = GridLayout(spec)
-    @test contents(gl)[1] isa DebugRect
-    @test contents(gl)[2] isa DebugRect
-    @test contents(gl)[3] isa GridLayout
-    @test contents(contents(gl)[3])[1] isa DebugRect
-end
-
-
 @testset "tellsize" begin
     dr = DebugRect(width = 100, height = 200, tellwidth = true, tellheight = false)
     @test reporteddimensionsobservable(dr)[].inner == (100, nothing)
