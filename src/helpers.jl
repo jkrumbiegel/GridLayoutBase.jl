@@ -113,6 +113,13 @@ right(rect::Rect{2}) = maximum(rect)[1]
 bottom(rect::Rect{2}) = minimum(rect)[2]
 top(rect::Rect{2}) = maximum(rect)[2]
 
+"""
+    BBox(left::Number, right::Number, bottom::Number, top::Number)
+
+Create a rectangular bounding box.
+
+See also `GridLayout`.
+"""
 function BBox(left::Number, right::Number, bottom::Number, top::Number)
     mini = (left, bottom)
     maxi = (right, top)
