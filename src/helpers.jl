@@ -15,6 +15,12 @@ function Base.foreach(f::Function, contenttype::Type, layout::GridLayout; recurs
     end
 end
 
+function Base.empty!(g::GridLayout)
+    foreach(delete!, Any, g)
+    foreach(remove_from_gridlayout!, g.content)
+    return g
+end
+
 """
 Swaps or rotates the layout positions of the given elements to their neighbor's.
 """
