@@ -229,6 +229,12 @@ function validategridlayout(gl::GridLayout)
     end
 end
 
+"""
+    with_updates_suspended(f::Function, gl::GridLayout; update = true)
+
+Disable layout updates for `gl` and call the function `f`. If `update` is true,
+force a layout update after `f` returns.
+"""
 function with_updates_suspended(f::Function, gl::GridLayout; update = true)
     prev_block_value = gl.block_updates
     gl.block_updates = true
@@ -560,6 +566,11 @@ function Base.isempty(gl::GridLayout, dir::GridDir, i::Integer)
     end
 end
 
+"""
+    trim!(gl::GridLayout)
+
+Remove empty rows and columns from `gl`.
+"""
 function trim!(gl::GridLayout)
     irow = firstrow(gl)
     while irow <= lastrow(gl) && nrows(gl) > 1
@@ -1579,7 +1590,17 @@ function Base.setindex!(gp::GridPosition, element, rows, cols, side = Inner())
     element
 end
 
+"""
+    nrows(g::GridLayout)
+
+Return the number of rows in `g`.
+"""
 nrows(g::GridLayout) = size(g)[1]
+"""
+    ncols(g::GridLayout)
+
+Return the number of columns in `g`.
+"""
 ncols(g::GridLayout) = size(g)[2]
 Base.size(g::GridLayout) = g.size
 offsets(g::GridLayout) = g.offsets
@@ -1670,6 +1691,15 @@ function contents(g::GridSubposition; exact = false)
     contents(layout[g.rows, g.cols, g.side], exact = exact)
 end
 
+"""
+    content(g::Union{GridPosition,GridSubposition})
+
+Return the one object placed in the `GridLayout` at the `Span` and `Side`
+stored in the `GridPosition` `g`. If there is more than one object at that
+position, throw an error.
+
+See also `contents`.
+"""
 function content(g::Union{GridPosition,GridSubposition})
     cs = contents(g, exact = true)
     if length(cs) == 1

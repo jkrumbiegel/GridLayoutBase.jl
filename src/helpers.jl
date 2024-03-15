@@ -113,6 +113,12 @@ right(rect::Rect{2}) = maximum(rect)[1]
 bottom(rect::Rect{2}) = minimum(rect)[2]
 top(rect::Rect{2}) = maximum(rect)[2]
 
+"""
+    BBox(left::Real, right::Real, bottom::Real, top::Real)
+
+Convenience constructor to create a `Rect2` with left, right, bottom and top
+extent instead of the usual origin, widths combination.
+"""
 function BBox(left::T1, right::T2, bottom::T3, top::T4) where {T1 <: Real, T2 <: Real, T3 <: Real, T4 <: Real}
     T = promote_type(T1, T2, T3, T4, Float32) # Float32 to skip Int outputs
     return BBox(T, left, right, bottom, top)
