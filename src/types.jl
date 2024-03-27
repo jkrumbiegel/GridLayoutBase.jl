@@ -59,15 +59,40 @@ mutable struct GridContent{G} # G should be GridLayout but can't be used before 
     reportedsize_handle::Optional{Function}
 end
 
-"AlignMode that excludes the protrusions from the bounding box."
+"""
+AlignMode that excludes the protrusions from the bounding box. Construct with
+`Inside()`.
+
+See also `Outside` and `Mixed`.
+"""
 struct Inside end
 
-"AlignMode that includes the protrusions within the bounding box, plus paddings."
+"""
+AlignMode that includes the protrusions within the bounding box, plus paddings.
+
+See also `Inside` and `Mixed`.
+"""
 struct Outside
     padding::RectSides{Float32}
 end
+
+"""
+    Outside()
+
+Construct an `Outside` AlignMode with no padding.
+"""
 Outside() = Outside(0f0)
+"""
+    Outside(padding::Real)
+
+Construct an `Outside` AlignMode with equal padding on all sides.
+"""
 Outside(padding::Real) = Outside(RectSides{Float32}(padding, padding, padding, padding))
+"""
+    Outside(left::Real, right::Real, bottom::Real, top::Real)
+
+Construct an `Outside` AlignMode with different paddings on each side.
+"""
 Outside(left::Real, right::Real, bottom::Real, top::Real) =
     Outside(RectSides{Float32}(left, right, bottom, top))
 
@@ -81,13 +106,25 @@ struct Protrusion
 end
 
 """
-AlignMode that is Inside where padding is Nothing, Outside where it is Real, and
-overrides the protrusion with a fixed value where it is a `Protrusion`.
+AlignMode that is `Inside` where `padding` is `Nothing`, `Outside` where it is
+`Real`, and overrides the protrusion with a fixed value where it is a
+`Protrusion`.
+
+See also `Inside` and `Outside`.
 """
 struct Mixed
     sides::RectSides{Union{Nothing, Float32, Protrusion}}
 end
 
+"""
+    Mixed(; left = nothing, right = nothing, bottom = nothing, top = nothing)
+
+Construct a `Mixed` AlignMode, which has different behavior on each side.
+Arguments that are `nothing` will exclude protrusions from the bounding box on
+that side. Those that are real numbers will be padded by that amount and
+include protrusions from the bounding box on that side. Arguments that are
+`Protrusion` will override the protrusion with a fixed value.
+"""
 function Mixed(; left = nothing, right = nothing, bottom = nothing, top = nothing)
     sides = map((left, right, bottom, top)) do side
         (side === nothing || side isa Protrusion) ? side : Float32(side)
