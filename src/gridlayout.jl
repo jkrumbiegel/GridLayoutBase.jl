@@ -100,6 +100,7 @@ function GridLayout(nrows::Integer, ncols::Integer;
         default_rowgap = get_default_rowgap(),
         default_colgap = get_default_colgap(),
         kwargs...)
+    Base.@nospecialize
 
     default_rowgap::GapSize = default_rowgap isa Number ? Fixed(default_rowgap)::Fixed : default_rowgap
     default_colgap::GapSize = default_colgap isa Number ? Fixed(default_colgap)::Fixed : default_colgap
