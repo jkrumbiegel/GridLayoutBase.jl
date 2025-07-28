@@ -520,6 +520,19 @@ end
     @test gp[CartesianIndex(1, 1)].parent == gp
     @test gp[CartesianIndex(1, 1)].rows == 1
     @test gp[CartesianIndex(1, 1)].cols == 1
+    
+    # Test begin/end indexing for GridLayout
+    @test layout[begin, begin] == GridPosition(layout, 1, 1)
+    @test layout[begin, end] == GridPosition(layout, 1, 2)
+    @test layout[end, begin] == GridPosition(layout, 2, 1)
+    
+    # Test begin/end indexing for GridPosition
+    @test gp[begin, begin] isa GridSubposition
+    @test gp[begin, end] isa GridSubposition
+    @test gp[end, begin] isa GridSubposition
+    @test gp[end, end] isa GridSubposition
+    @test gp[begin, 1].rows == 1 && gp[begin, 1].cols == 1
+    @test gp[1, begin].rows == 1 && gp[1, begin].cols == 1
 end
 
 @testset "gridposition contents" begin
@@ -694,6 +707,14 @@ end
     @test gsp2.parent == gp
     @test gsp2.rows == 2
     @test gsp2.cols == 3
+    
+    # Test begin/end indexing for GridSubposition
+    @test gsp[begin, begin] isa GridSubposition
+    @test gsp[begin, end] isa GridSubposition
+    @test gsp[end, begin] isa GridSubposition
+    @test gsp[end, end] isa GridSubposition
+    @test gsp[begin, 1].parent == gsp
+    @test gsp[1, begin].parent == gsp
 end
 
 @testset "Parents" begin
