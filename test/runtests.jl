@@ -513,6 +513,13 @@ end
     gp = GridPosition(layout, 1, 1)
     gp[] = dr
     @test gridcontent(dr).span == GridLayoutBase.Span(1:1, 1:1)
+    
+    # Test CartesianIndex{2} indexing
+    @test layout[CartesianIndex(2, 2)] == GridPosition(layout, 2, 2)
+    @test gp[CartesianIndex(1, 1)] isa GridSubposition
+    @test gp[CartesianIndex(1, 1)].parent == gp
+    @test gp[CartesianIndex(1, 1)].rows == 1
+    @test gp[CartesianIndex(1, 1)].cols == 1
 end
 
 @testset "gridposition contents" begin
@@ -680,6 +687,13 @@ end
     @test content(l[1, 1][1, 2]) == r2
     r3 = l[1, 1][1, 3][1, 1] = DebugRect()
     @test content(l[1, 1][1, 3][1, 1]) == r3
+    
+    # Test CartesianIndex{2} indexing for GridSubposition
+    gsp2 = gp[CartesianIndex(2, 3)]
+    @test gsp2 isa GridSubposition
+    @test gsp2.parent == gp
+    @test gsp2.rows == 2
+    @test gsp2.cols == 3
 end
 
 @testset "Parents" begin

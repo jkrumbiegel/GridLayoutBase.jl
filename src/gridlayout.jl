@@ -1580,6 +1580,8 @@ function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables, side =
     GridPosition(g, rows, cols, side)
 end
 
+Base.getindex(g::GridLayout, ix::CartesianIndex{2}) = g[ix[1], ix[2]]
+
 function Base.setindex!(gp::GridPosition, element)
     gp.layout[gp.span.rows, gp.span.cols, gp.side] = element
 end
@@ -1649,6 +1651,8 @@ end
 function Base.getindex(gp::Union{GridPosition, GridSubposition}, rows, cols, side = Inner())
     GridSubposition(gp, rows, cols, side)
 end
+
+Base.getindex(pos::Union{GridPosition, GridSubposition}, ix::CartesianIndex{2}) = pos[ix[1], ix[2]]
 
 function Base.setindex!(parent::GridSubposition, obj,
     rows, cols, side = GridLayoutBase.Inner())
