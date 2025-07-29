@@ -1551,21 +1551,11 @@ function add_content!(g::GridLayout, content, rows, cols, side::Side)
     add_to_gridlayout!(g, gc)
 end
 
-function Base.lastindex(g::GridLayout, d)
+function Base.axes(g::GridLayout, d)
     if d == 1
-        lastrow(g)
+        firstrow(g):lastrow(g)
     elseif d == 2
-        lastcol(g)
-    else
-        error("A grid only has two dimensions, you're indexing dimension $d.")
-    end
-end
-
-function Base.firstindex(g::GridLayout, d)
-    if d == 1
-        firstrow(g)
-    elseif d == 2
-        firstcol(g)
+        firstcol(g):lastcol(g)
     else
         error("A grid only has two dimensions, you're indexing dimension $d.")
     end
