@@ -1637,15 +1637,14 @@ function contents(g::GridLayout)
     end
 end
 
-Base.axes(gp::GridPosition, d::Int) =
-    d == 1 ? gp.span.rows :
-    d == 2 ? gp.span.cols :
-    error("A grid only has two dimensions, you're indexing dimension $d.")
-
-Base.axes(gsp::GridSubposition, d::Int) =
-    d == 1 ? (minimum(gsp.rows):maximum(gsp.rows)) :
-    d == 2 ? (minimum(gsp.cols):maximum(gsp.cols)) :
-    error("A grid only has two dimensions, you're indexing dimension $d.")
+function Base.axes(gp::Union{GridPosition,GridSubposition}, d::Int)
+    cs = contents(gp; exact=true)
+    isempty(cs) && return 1:1
+    length(cs) > 1 && error("There are multiple contents at the GridPosition $gp, can't return axes.")
+    c = only(cs)
+    c isa GridLayout && return axes(c, d)
+    return 1:1
+end
 
 function Base.getindex(gp::Union{GridPosition, GridSubposition}, rows, cols, side = Inner())
     GridSubposition(gp, rows, cols, side)
