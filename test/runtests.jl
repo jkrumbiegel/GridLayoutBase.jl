@@ -513,6 +513,24 @@ end
     gp = GridPosition(layout, 1, 1)
     gp[] = dr
     @test gridcontent(dr).span == GridLayoutBase.Span(1:1, 1:1)
+    
+    # Test CartesianIndex{2} indexing
+    @test layout[CartesianIndex(2, 2)] === layout[2, 2]
+    @test gp[CartesianIndex(1, 1)] === gp[1, 1]
+    
+    # Test begin/end indexing for GridLayout
+    layout[-1, 1] = DebugRect()
+    @test layout[begin, begin] === layout[-1, 1]
+    @test layout[begin, end] === layout[-1, 2]
+    @test layout[end, begin] === layout[2, 1]
+    
+    # Test begin/end indexing for GridPosition
+    gp = layout[1, 2]
+    @test gp[begin, end] === gp[1, 1]
+    gp[2, 3] = DebugRect()
+    gp[-1, 1] = DebugRect()
+    @test gp[begin, begin] === gp[-1, 1]
+    @test gp[end, end] === gp[2, 3]
 end
 
 @testset "gridposition contents" begin
@@ -680,6 +698,17 @@ end
     @test content(l[1, 1][1, 2]) == r2
     r3 = l[1, 1][1, 3][1, 1] = DebugRect()
     @test content(l[1, 1][1, 3][1, 1]) == r3
+    
+    # Test CartesianIndex{2} indexing for GridSubposition
+    @test gp[CartesianIndex(2, 3)] === gp[2, 3]
+    
+    # Test begin/end indexing for GridSubposition
+    gsp = gp[1, 4]
+    @test gsp[begin, end] === gsp[1, 1]
+    gsp[2, 3] = DebugRect()
+    gsp[-1, 1] = DebugRect()
+    @test gsp[begin, end] === gsp[-1, 3]
+    @test gsp[end, begin] === gsp[2, 1]
 end
 
 @testset "Parents" begin

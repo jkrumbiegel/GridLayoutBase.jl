@@ -1551,21 +1551,11 @@ function add_content!(g::GridLayout, content, rows, cols, side::Side)
     add_to_gridlayout!(g, gc)
 end
 
-function Base.lastindex(g::GridLayout, d)
+function Base.axes(g::GridLayout, d)
     if d == 1
-        lastrow(g)
+        firstrow(g):lastrow(g)
     elseif d == 2
-        lastcol(g)
-    else
-        error("A grid only has two dimensions, you're indexing dimension $d.")
-    end
-end
-
-function Base.firstindex(g::GridLayout, d)
-    if d == 1
-        firstrow(g)
-    elseif d == 2
-        firstcol(g)
+        firstcol(g):lastcol(g)
     else
         error("A grid only has two dimensions, you're indexing dimension $d.")
     end
@@ -1579,6 +1569,8 @@ end
 function Base.getindex(g::GridLayout, rows::Indexables, cols::Indexables, side = Inner())
     GridPosition(g, rows, cols, side)
 end
+
+Base.getindex(g::GridLayout, ix::CartesianIndex{2}) = g[ix[1], ix[2]]
 
 function Base.setindex!(gp::GridPosition, element)
     gp.layout[gp.span.rows, gp.span.cols, gp.side] = element
@@ -1645,10 +1637,20 @@ function contents(g::GridLayout)
     end
 end
 
+function Base.axes(gp::Union{GridPosition,GridSubposition}, d::Int)
+    cs = contents(gp; exact=true)
+    isempty(cs) && return 1:1
+    length(cs) > 1 && error("There are multiple contents at the GridPosition $gp, can't return axes.")
+    c = only(cs)
+    c isa GridLayout && return axes(c, d)
+    return 1:1
+end
 
 function Base.getindex(gp::Union{GridPosition, GridSubposition}, rows, cols, side = Inner())
     GridSubposition(gp, rows, cols, side)
 end
+
+Base.getindex(pos::Union{GridPosition, GridSubposition}, ix::CartesianIndex{2}) = pos[ix[1], ix[2]]
 
 function Base.setindex!(parent::GridSubposition, obj,
     rows, cols, side = GridLayoutBase.Inner())
