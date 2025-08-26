@@ -1771,7 +1771,8 @@ function protrusion(gc::GridContent, side::Side)
     prot =
         if gc.side isa Inner
             protrusion(gc.content, side)
-        # elseif gc.side isa Outer; BBox(l - pl, r + pr, b - pb, t + pt)
+        elseif gc.side isa Outer
+            0.0
         elseif gc.side isa Union{Left, Right}
             if side isa typeof(gc.side)
                 determinedirsize(gc.content, Col(), gc.side)

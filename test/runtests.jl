@@ -167,8 +167,27 @@ end
     @test GridLayoutBase.protrusion(subgl, Left()) == 230
     @test GridLayoutBase.protrusion(subgl, Bottom()) == 230
 
-    # dr = subgl[1, 1, GridLayoutBase.Outer()] = DebugRect()
-    # @test computedbboxobservable(dr)[].widths == (1000, 1000)
+    # issue 66
+    bbox = BBox(0, 1000, 0, 1000)
+    layout = GridLayout(bbox = bbox, alignmode = Outside(0))
+    subgl = layout[1, 1] = GridLayout()
+    dr = subgl[1, 1, GridLayoutBase.Outer()] = DebugRect()
+    @test GridLayoutBase.protrusion(subgl, Left()) == 0
+    @test GridLayoutBase.protrusion(subgl, Right()) == 0
+    @test GridLayoutBase.protrusion(subgl, Bottom()) == 0
+    @test GridLayoutBase.protrusion(subgl, Top()) == 0
+
+    @test width(computedbboxobservable(dr)[]) ≈ 1000
+    @test height(computedbboxobservable(dr)[]) ≈ 1000
+
+    subgl[1, 1] = DebugRect(width = 200, height = 300, leftprot = 10, rightprot = 20, bottomprot = 30, topprot = 40)
+    @test GridLayoutBase.protrusion(subgl, Left()) == 10
+    @test GridLayoutBase.protrusion(subgl, Right()) == 20
+    @test GridLayoutBase.protrusion(subgl, Bottom()) == 30
+    @test GridLayoutBase.protrusion(subgl, Top()) == 40
+
+    @test width(computedbboxobservable(dr)[]) ≈ 200 + 10 + 20
+    @test height(computedbboxobservable(dr)[]) ≈ 300 + 30 + 40
 end
 
 
