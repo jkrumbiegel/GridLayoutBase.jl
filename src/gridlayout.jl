@@ -718,11 +718,12 @@ Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
 See also [Fixed](@ref) and [Relative](@ref).
 """
 function colgap!(gl::GridLayout, i::Integer, s::GapSize)
-    if !(1 <= i <= (ncols(gl) - 1))
+    if !(firstcol(gl) <= i <= lastcol(gl) - 1)
         error("Can't set size of invalid column gap $i.")
     end
-    gl.addedcolgaps[i] = s
-    update!(gl)
+    i_unoffset = unoffset(gl, i, Col())
+    gl.addedcolgaps[i_unoffset] = s
+    return update!(gl)
 end
 
 colgap!(gl::GridLayout, i::Integer, s::Real) = colgap!(gl, i, Fixed(s))
@@ -748,11 +749,12 @@ Passing a real number to `s` has the same behaviour as passing `Fixed(s)`.
 See also [Fixed](@ref) and [Relative](@ref).
 """
 function rowgap!(gl::GridLayout, i::Integer, s::GapSize)
-    if !(1 <= i <= (nrows(gl) - 1))
+    if !(firstrow(gl) <= i <= lastrow(gl) - 1)
         error("Can't set size of invalid row gap $i.")
     end
-    gl.addedrowgaps[i] = s
-    update!(gl)
+    i_unoffset = unoffset(gl, i, Row())
+    gl.addedrowgaps[i_unoffset] = s
+    return update!(gl)
 end
 
 rowgap!(gl::GridLayout, i::Integer, s::Real) = rowgap!(gl, i, Fixed(s))

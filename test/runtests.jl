@@ -864,6 +864,24 @@ end
     @test suggestedbboxobservable(dr3)[] == BBox(100, 1000, 0, 800)
 end
 
+@testset "offset row/col gap indexing" begin
+    bbox = BBox(0, 1000, 0, 1000)
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0))
+    gl[0, 1] = DebugRect()
+    gl[1, 0] = DebugRect()
+    gl[1, 1] = DebugRect()
+
+    @test_nowarn colgap!(gl, 0, Fixed(10))
+    @test gl.addedcolgaps[1] == Fixed(10)
+    @test_nowarn rowgap!(gl, 0, Fixed(20))
+    @test gl.addedrowgaps[1] == Fixed(20)
+
+    @test_throws ErrorException colgap!(gl, -1, Fixed(10))
+    @test_throws ErrorException rowgap!(gl, -1, Fixed(10))
+    @test_throws ErrorException colgap!(gl, 1, Fixed(10))
+    @test_throws ErrorException rowgap!(gl, 1, Fixed(10))
+end
+
 @testset "offset aspect" begin
     bbox = BBox(0, 1000, 0, 1000)
     gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
