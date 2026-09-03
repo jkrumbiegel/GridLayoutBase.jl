@@ -406,7 +406,7 @@ unaffected.
 """
 function insertrows!(gl::GridLayout, at::Integer, n::Integer; rowsizes=nothing, addedrowgaps=nothing)
 
-    if !(1 <= at <= nrows(gl))
+    if !(firstrow(gl) <= at <= lastrow(gl))
         error("Invalid row insertion at row $at. GridLayout has $(nrows(gl)) rows.")
     end
 
@@ -427,10 +427,12 @@ function insertrows!(gl::GridLayout, at::Integer, n::Integer; rowsizes=nothing, 
         gc.span = newspan
     end
 
+    at_unoffset = unoffset(gl, at, Row())
+
     with_updates_suspended(gl) do
         set_nrows!(gl, nrows(gl) + n)
-        splice!(gl.rowsizes, at:at-1, rowsizes)
-        splice!(gl.addedrowgaps, at:at-1, addedrowgaps)
+        splice!(gl.rowsizes, at_unoffset:at_unoffset-1, rowsizes)
+        splice!(gl.addedrowgaps, at_unoffset:at_unoffset-1, addedrowgaps)
     end
 end
 
@@ -445,7 +447,7 @@ unaffected.
 """
 function insertcols!(gl::GridLayout, at::Integer, n::Integer; colsizes=nothing, addedcolgaps=nothing)
 
-    if !(1 <= at <= ncols(gl))
+    if !(firstcol(gl) <= at <= lastcol(gl))
         error("Invalid column insertion at column $at. GridLayout has $(ncols(gl)) columns.")
     end
 
@@ -466,10 +468,12 @@ function insertcols!(gl::GridLayout, at::Integer, n::Integer; colsizes=nothing, 
         gc.span = newspan
     end
 
+    at_unoffset = unoffset(gl, at, Col())
+
     with_updates_suspended(gl) do
         set_ncols!(gl, ncols(gl) + n)
-        splice!(gl.colsizes, at:at-1, colsizes)
-        splice!(gl.addedcolgaps, at:at-1, addedcolgaps)
+        splice!(gl.colsizes, at_unoffset:at_unoffset-1, colsizes)
+        splice!(gl.addedcolgaps, at_unoffset:at_unoffset-1, addedcolgaps)
     end
 end
 

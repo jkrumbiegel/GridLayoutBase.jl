@@ -882,6 +882,44 @@ end
     @test_throws ErrorException rowgap!(gl, 1, Fixed(10))
 end
 
+@testset "offset row/col insertion" begin
+    bbox = BBox(0, 1000, 0, 1000)
+
+    gl = GridLayout(bbox = bbox, alignmode = Outside(0), default_rowgap = 0, default_colgap = 0)
+    dr1 = gl[-1, 1] = DebugRect()
+    dr2 = gl[0:1, 1] = DebugRect()
+    dr3 = gl[-1:1, 2] = DebugRect()
+
+    @test_throws ErrorException insertrows!(gl, -2, 1)
+    @test_throws ErrorException insertrows!(gl, 2, 1)
+
+    insertrows!(gl, 0, 1, rowsizes = Fixed(100))
+    @test (GridLayoutBase.firstrow(gl), GridLayoutBase.lastrow(gl)) == (-1, 2)
+    @test gridcontent(dr1).span.rows == -1:-1
+    @test gridcontent(dr2).span.rows == 1:2
+    @test gridcontent(dr3).span.rows == -1:2
+    @test suggestedbboxobservable(dr1)[] == BBox(0, 500, 700, 1000)
+    @test suggestedbboxobservable(dr2)[] == BBox(0, 500, 0, 600)
+    @test suggestedbboxobservable(dr3)[] == BBox(500, 1000, 0, 1000)
+
+    gl2 = GridLayout(bbox = bbox, alignmode = Outside(0), default_rowgap = 0, default_colgap = 0)
+    dc1 = gl2[1, -1] = DebugRect()
+    dc2 = gl2[1, 0:1] = DebugRect()
+    dc3 = gl2[2, -1:1] = DebugRect()
+
+    @test_throws ErrorException insertcols!(gl2, -2, 1)
+    @test_throws ErrorException insertcols!(gl2, 2, 1)
+
+    insertcols!(gl2, 0, 1, colsizes = Fixed(100))
+    @test (GridLayoutBase.firstcol(gl2), GridLayoutBase.lastcol(gl2)) == (-1, 2)
+    @test gridcontent(dc1).span.cols == -1:-1
+    @test gridcontent(dc2).span.cols == 1:2
+    @test gridcontent(dc3).span.cols == -1:2
+    @test suggestedbboxobservable(dc1)[] == BBox(0, 300, 500, 1000)
+    @test suggestedbboxobservable(dc2)[] == BBox(400, 1000, 500, 1000)
+    @test suggestedbboxobservable(dc3)[] == BBox(0, 1000, 0, 500)
+end
+
 @testset "offset aspect" begin
     bbox = BBox(0, 1000, 0, 1000)
     gl = GridLayout(bbox = bbox, alignmode = Outside(0), halign = :center)
